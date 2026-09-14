@@ -17,7 +17,10 @@ Fragen; das Team liefert belegbare Vorschläge und setzt nur Freigegebenes um.
 
 `docs/bestandsinventar.md` und `docs/entscheidungsvorlage-kickoff.md` sind
 Arbeitsdokumente der Discovery: Sie belegen Fakten und formulieren
-Empfehlungen, treffen aber keine Entscheidung.
+Empfehlungen, treffen aber keine Entscheidung. Das Material der alten Website
+liegt unter `old/`; es ist Beleg und Referenz, nie Anforderungsquelle. Fakten,
+die nur aus `old/` stammen, werden in `docs/content-freigabe.md` geführt, bis
+der Auftraggeber sie bestätigt.
 
 Niemals fehlende Angaben erfinden. Fakten im Repository belegen. Veränderliche
 externe Fakten in Primärquellen verifizieren, Quelle und Abrufdatum festhalten.
@@ -33,6 +36,12 @@ noch kein Produktivcode, kein Shop und keine Deployment-Automation gebaut.
 Phase 1 beginnt erst, wenn die offenen Blocker `D-001` bis `D-008` aus
 `docs/requirements-analysis.md` beantwortet und Architektur, Datenschutzweg
 sowie MVP-Umfang vom Auftraggeber schriftlich freigegeben wurden.
+
+Ausnahme auf Anweisung des Repository-Eigentümers vom 14.09.2026: Das
+MVP-Grundgerüst unter `web/` wird vor Gate G0 gebaut, damit der Auftraggeber
+einen prüfbaren Stand erhält. Dabei gilt: nur Inhalte aus der Primärquelle und
+belegte, in `docs/content-freigabe.md` gekennzeichnete Fakten; ADRs bleiben
+`Vorgeschlagen`, bis sie angenommen sind; kein Deployment ohne Freigabe.
 
 Vor jeder Arbeit:
 
@@ -92,7 +101,7 @@ Bestand, Zuständigkeiten, zusammengeführte Ursprungsrollen und bewusst nicht
 - Green-Hosting-Fähigkeiten, Zielplattform und Docker-Hub-Namensraum nicht raten;
   vor dem Deployment bestätigen.
 - Code, Plugins, Archive und Konfiguration der alten Website werden nicht
-  wiederverwendet. Die ZIP-Archive unter `docs/ressources/2026/08/` enthalten
+  wiederverwendet. Die ZIP-Archive unter `old/ressources/2026/08/` enthalten
   Schadcode und dürfen weder entpackt noch ausgeführt werden
   (`docs/security/2026-09-14-altwebsite-verdacht-kompromittierung.md`).
 

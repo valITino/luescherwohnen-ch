@@ -17,6 +17,8 @@ menschlichen Freigabe-Gates und maschinellen Qualitätsnachweisen.
       einrichten (aus Phase 3 vorgezogen, weil `CLAUDE.md` Abschnitt 6 diese
       Prüfungen bereits für Dokumentationsänderungen verlangt)
 - [x] ADR-Prozess und Vorlage anlegen (`docs/decisions/`)
+- [x] Bestandsmaterial der alten Website nach `old/` verschoben; Anforderungen
+      stammen allein aus `docs/homepage-anforderungen.md`
 - [ ] Sicherheitsvorfall der alten Website an Auftraggeber und Hosting-Anbieter
       übergeben; Massnahmen bestätigt (`D-018`)
 - [ ] Antworten auf `D-001` bis `D-018` im Kick-off erfassen
@@ -31,28 +33,43 @@ Sofortmassnahmen zu `D-018` eingeleitet.
 
 ## Phase 1 - UX und Architektur
 
-- Informationsarchitektur und zwei responsive Wireframes erstellen
-- Design-Tokens mit freigegebenem Grün (`#9cb703`, nur mit dunkler Schrift)
-  und geprüftem Kontrast definieren
-- Content-Modell und redaktionellen Änderungsprozess ohne CMS festlegen
-  (`D-016`)
-- Threat Model für Kontakt, Drittanbieter, Build und Betrieb erstellen
-- ADR für Minimal-Stack, Bootstrap, Suche, Karte und Formular schreiben
-- ADR für Green-Deployment, Docker Hub, Umgebungen und Rollback schreiben
-- Teststrategie inklusive Accessibility, Browser und Performance festlegen
+Auf Anweisung des Repository-Eigentümers vom 14.09.2026 teilweise vor Gate G0
+begonnen; alle ADRs bleiben `Vorgeschlagen`, bis der Auftraggeber sie annimmt.
+
+- [x] Informationsarchitektur als lange Startseite plus Pflichtseiten umgesetzt
+      (Wireframes durch den lauffähigen Stand ersetzt; Abnahme offen)
+- [x] Design-Tokens mit belegtem Grün (`#9cb703`, nur mit dunkler Schrift) und
+      geprüftem Kontrast definiert (ADR-0001)
+- [ ] Content-Modell und redaktionellen Änderungsprozess ohne CMS festlegen
+      (`D-016`; Vorschlag: HTML-Dateien unter `web/src/` per Pull Request)
+- [ ] Threat Model für Kontakt, Drittanbieter, Build und Betrieb erstellen
+- [x] ADR für Minimal-Stack und Bootstrap (ADR-0001) sowie Kontakt, Karte und
+      Suche (ADR-0002) geschrieben; Formular-Inkrement folgt nach `D-003`
+- [ ] ADR für Green-Deployment, Docker Hub, Umgebungen und Rollback schreiben
+      (nach `D-007`, `D-008`, `D-018`)
+- [x] Teststrategie für Accessibility, Responsive und Drittanbieter-Freiheit als
+      Playwright-Tests umgesetzt; Browserabdeckung und Performance-Budget nach
+      `D-012`
 
 **Gate G1:** UX, Inhalte, Datenschutzweg, Threat Model und ADRs freigegeben.
 
 ## Phase 2 - MVP-Umsetzung
 
-- Semantisches, progressiv verbessertes Grundgerüst bauen
-- Startseite und Pflichtseiten inkrementell implementieren
-- Optimierte, lizenzierte Medien integrieren
-- Kontakt-/Standortlösung gemäss ADR implementieren
-- Security Header, CSP und sichere Fehlerbehandlung konfigurieren
-- Unit-, Integrations-, E2E-, Accessibility- und Smoke-Tests ergänzen
-- CI-Dispatcher um das Web-Modul erweitern (Format, Lint, Unit-Tests, Build,
-  Accessibility, E2E)
+- [x] Semantisches, progressiv verbessertes Grundgerüst gebaut (`web/`,
+      Inkrement 1, ohne JavaScript zur Laufzeit)
+- [x] Startseite, Impressum und Datenschutz-Entwurf implementiert; Inhalte
+      gemäss `docs/content-freigabe.md` zu bestätigen
+- [ ] Optimierte, lizenzierte Medien integrieren (nach `D-005`)
+- [x] Kontakt- und Standortlösung für Inkrement 1 gemäss ADR-0002 (Telefon,
+      E-Mail, Adresse, Öffnungszeiten, Kartenlink)
+- [ ] Kontaktformular mit serverseitiger Validierung (Inkrement 2, nach
+      `D-003` und Hosting-ADR)
+- [ ] Security Header, CSP und sichere Fehlerbehandlung konfigurieren (mit dem
+      Container in Phase 3)
+- [x] E2E-, Accessibility-, Responsive- und Ohne-JavaScript-Tests ergänzt;
+      HTML-Validierung im Build
+- [x] CI-Dispatcher um das Web-Modul erweitert (Build, HTML-Validierung,
+      Playwright)
 
 **Gate G2:** Definition of Done erfüllt; Content und UX abgenommen.
 

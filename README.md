@@ -12,12 +12,13 @@ des Auftraggebers (Gate G0).
 |---|---|
 | Phase | 0 – Discovery und Freigabe |
 | Nächstes Gate | G0: `D-001` bis `D-008` beantwortet, MVP schriftlich freigegeben |
-| Nächster Schritt | Kick-off mit dem Auftraggeber anhand der Entscheidungsvorlage |
+| Website | Inkrement 1 unter `web/` (Startseite, Impressum, Datenschutz-Entwurf), auf Anweisung vom 14.09.2026 vor G0 gebaut; Inhalte gemäss `docs/content-freigabe.md` zu bestätigen |
+| Nächster Schritt | Kick-off mit dem Auftraggeber anhand der Entscheidungsvorlage; Prüfung des Website-Stands |
 | Sicherheitsbefund | Alt-Website vermutlich kompromittiert, siehe Hinweis unten |
 
 ## Wichtiger Sicherheitshinweis
 
-Im Export der alten Website unter `docs/ressources/2026/08/` liegen zwei
+Im Export der alten Website unter `old/ressources/2026/08/` liegen zwei
 ZIP-Archive mit PHP-Schadcode (WordPress-Backdoor). Sie dürfen nicht entpackt,
 ausgeführt oder auf einen Webserver kopiert werden. Befund, Belege und
 Sofortmassnahmen stehen in
@@ -32,22 +33,45 @@ Sofortmassnahmen stehen in
 | [`docs/requirements-analysis.md`](docs/requirements-analysis.md) | Anforderungsanalyse, MVP-Vorschlag und Entscheidungsregister |
 | [`docs/entscheidungsvorlage-kickoff.md`](docs/entscheidungsvorlage-kickoff.md) | Kick-off-Vorlage: jede offene Entscheidung mit Belegen, Optionen und Empfehlung |
 | [`docs/bestandsinventar.md`](docs/bestandsinventar.md) | Inventar des Bestandsmaterials: HTML, Word-Dokument, Medien, Archive |
+| [`docs/content-freigabe.md`](docs/content-freigabe.md) | Jede Aussage auf der Website mit Quelle und Freigabestatus |
 | [`docs/project-plan.md`](docs/project-plan.md) | Phasen, Gates und Nachweise |
-| [`docs/decisions/README.md`](docs/decisions/README.md) | Architecture Decision Records: Prozess und Vorlage |
+| [`docs/decisions/README.md`](docs/decisions/README.md) | Architecture Decision Records: ADR-0001 Minimal-Stack, ADR-0002 Kontakt, Karte, Suche |
+| [`old/README.md`](old/README.md) | Bestandsmaterial der alten Website: Referenz, keine Anforderungsquelle |
 | [`.claude/README.md`](.claude/README.md) | Teamrollen und lokale Skills für Claude Code |
+
+## Website bauen und ansehen
+
+Die Website ist statisch: Seiten und gemeinsame Teile liegen unter `web/src/`,
+das Build-Ergebnis entsteht unter `web/dist/` (nicht versioniert). Bootstrap wird
+als reduzierter Sass-Build selbst gehostet; es gibt kein JavaScript zur Laufzeit
+und keine Abrufe von Drittanbietern (ADR-0001, ADR-0002).
+
+```bash
+make build     # web/src -> web/dist (Seiten zusammenfügen, Sass kompilieren)
+make preview   # lokale Vorschau unter http://127.0.0.1:4173/
+```
+
+| Pfad | Inhalt |
+|---|---|
+| `web/src/pages/` | `index.html`, `impressum.html`, `datenschutz.html` |
+| `web/src/partials/` | Kopf, Kopfzeile mit Navigation, Fusszeile |
+| `web/src/styles/site.scss` | Design-Tokens und Bootstrap-Teilmenge |
+| `web/src/assets/` | Logo und weitere statische Dateien |
+| `web/tests/` | Playwright-Tests: Struktur, Tastatur, axe-core, Responsive, ohne JavaScript, keine Drittanbieter |
 
 ## Qualitätsprüfungen
 
 Voraussetzungen: Node.js 20 oder neuer, Python 3.11 oder neuer, `curl`, `make`.
 
 ```bash
-make install   # npm ci und ruff (Hash-gepinnt) in .venv
-make check     # Markdown-Lint, ruff, Konfigurationsvalidierung, Unit-Tests, Secret-Scan
-make links     # Link-Prüfung, benötigt das lychee-Binary
+make install           # npm ci und ruff (Hash-gepinnt) in .venv
+make install-browsers  # Chromium für Playwright (einmalig)
+make check             # Markdown-Lint, ruff, Validator, Unit-Tests, HTML-Validierung, Playwright, Secret-Scan
+make links             # Link-Prüfung, benötigt das lychee-Binary
 ```
 
 In GitHub Actions ist `.github/workflows/ci.yml` der Dispatcher: der Secret-Scan
-läuft immer, Dokumentations- und Python-Prüfungen nur bei betroffenen Pfaden.
+läuft immer, Dokumentations-, Python- und Website-Prüfungen nur bei betroffenen Pfaden.
 Alle Actions sind auf vollständige Commit-SHAs gepinnt; Dependabot hält die
 Pins wöchentlich aktuell.
 

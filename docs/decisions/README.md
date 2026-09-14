@@ -25,4 +25,5 @@ Suche, Green-Deployment, Docker Hub, Umgebungen und Rollback).
 
 | ADR | Titel | Status |
 |---|---|---|
-| – | Noch keine ADR erfasst. | – |
+| [ADR-0001](ADR-0001-minimal-stack-statische-website.md) | Minimal-Stack als statische Website mit reduziertem Bootstrap | Vorgeschlagen |
+| [ADR-0002](ADR-0002-kontakt-karte-suche-im-mvp.md) | Kontaktweg, Karte und Suche im MVP | Vorgeschlagen |

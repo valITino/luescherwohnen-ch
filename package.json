@@ -1,14 +1,27 @@
 {
   "name": "luescherwohnen-ch",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
-  "description": "Relaunch luescherwohnen.ch: Projektdokumentation und Qualitätswerkzeuge (Phase 0).",
+  "description": "Relaunch luescherwohnen.ch: statische Website, Projektdokumentation und Qualitätswerkzeuge.",
   "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
+    "build": "node scripts/build.mjs && sass --no-source-map --style=compressed --quiet-deps --silence-deprecation=import --load-path=node_modules web/src/styles/site.scss web/dist/assets/site.css",
+    "preview": "node scripts/serve.mjs 4173 web/dist",
     "lint:md": "markdownlint-cli2",
-    "lint:md:fix": "markdownlint-cli2 --fix"
+    "lint:md:fix": "markdownlint-cli2 --fix",
+    "lint:html": "html-validate web/dist/*.html",
+    "test:web": "playwright test"
   },
   "devDependencies": {
-    "markdownlint-cli2": "0.23.2"
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.56.1",
+    "bootstrap": "5.3.8",
+    "html-validate": "11.15.0",
+    "markdownlint-cli2": "0.23.2",
+    "sass": "1.104.1"
   }
 }

@@ -25,13 +25,14 @@ jobs:
     outputs:
       docs: ${{ steps.filter.outputs.docs }}
       python: ${{ steps.filter.outputs.python }}
+      web: ${{ steps.filter.outputs.web }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
           sparse-checkout: |
             /*
-            !/docs/ressources
+            !/old
           sparse-checkout-cone-mode: false
       - id: filter
         uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3.0.4
@@ -53,6 +54,16 @@ jobs:
               - 'requirements-dev.txt'
               - '.github/workflows/ci.yml'
               - '.github/workflows/_python-quality.yml'
+            web:
+              - 'web/**'
+              - 'scripts/build.mjs'
+              - 'scripts/serve.mjs'
+              - 'playwright.config.mjs'
+              - '.htmlvalidate.json'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/_web-quality.yml'
 
   secret-scan:
     name: Secret-Scan
@@ -74,5 +85,13 @@ jobs:
     needs: changes
     if: needs.changes.outputs.python == 'true'
     uses: ./.github/workflows/_python-quality.yml
+    permissions:
+      contents: read
+
+  web-quality:
+    name: Website
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    uses: ./.github/workflows/_web-quality.yml
     permissions:
       contents: read
