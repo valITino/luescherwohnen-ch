@@ -64,8 +64,8 @@ begonnen; alle ADRs bleiben `Vorgeschlagen`, bis der Auftraggeber sie annimmt.
       E-Mail, Adresse, Öffnungszeiten, Kartenlink)
 - [ ] Kontaktformular mit serverseitiger Validierung (Inkrement 2, nach
       `D-003` und Hosting-ADR)
-- [ ] Security Header, CSP und sichere Fehlerbehandlung konfigurieren (mit dem
-      Container in Phase 3)
+- [x] Security Header, CSP und eigene Fehlerseite im Container konfiguriert
+      (ADR-0003)
 - [x] E2E-, Accessibility-, Responsive- und Ohne-JavaScript-Tests ergänzt;
       HTML-Validierung im Build
 - [x] CI-Dispatcher um das Web-Modul erweitert (Build, HTML-Validierung,
@@ -75,14 +75,19 @@ begonnen; alle ADRs bleiben `Vorgeschlagen`, bis der Auftraggeber sie annimmt.
 
 ## Phase 3 - Lieferkette und Staging
 
-- Multi-Stage-Dockerfile und lokale Compose-Vorschau erstellen
-- CI-Dispatcher um das Container-Modul erweitern (Lint, Policy, Build, SBOM,
-  Image-Scan); PR-Prüfung von Image-Publish und Deployment trennen
-- Docker-Hub-Publish mit SBOM, Signatur/Provenance und Image-Scan einrichten
-- Geschütztes Staging mit Smoke Test, Concurrency Lock und Rollback ausrollen
-- Restore-, Incident- und Update-Runbooks prüfen
-- Voraussetzung: Vorfall `D-018` abgeschlossen; keine Übernahme von Code,
-  Plugins oder Konfiguration der alten Website
+- [x] Multi-Stage-Dockerfile mit rootless nginx, gepinnten Digests,
+      Sicherheits-Headern, 404-Seite und Healthcheck (ADR-0003, vorgezogen)
+- [x] CI-Dispatcher um das Container-Modul erweitert (hadolint, Build ohne
+      Push, SBOM, Trivy, Smoke-Test read-only)
+- [ ] Security Header gegen das Threat Model abgleichen; HSTS an der
+      TLS-terminierenden Stelle (`D-007`)
+- [ ] Docker-Hub-Publish mit SBOM, Signatur/Provenance und Image-Scan
+      einrichten (nach `D-008`)
+- [ ] Geschütztes Staging mit Smoke Test, Concurrency Lock und Rollback
+      ausrollen (nach `D-007`)
+- [ ] Restore-, Incident- und Update-Runbooks prüfen
+- Voraussetzung für Betrieb: Vorfall `D-018` abgeschlossen; keine Übernahme
+  von Code, Plugins oder Konfiguration der alten Website
 
 **Gate G3:** Keine Critical/High-Befunde; Staging-Abnahme und Rollback-Test
 erfolgreich; Produktionsfreigabe schriftlich dokumentiert.

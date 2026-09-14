@@ -26,6 +26,7 @@ jobs:
       docs: ${{ steps.filter.outputs.docs }}
       python: ${{ steps.filter.outputs.python }}
       web: ${{ steps.filter.outputs.web }}
+      container: ${{ steps.filter.outputs.container }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
@@ -64,6 +65,16 @@ jobs:
               - 'package-lock.json'
               - '.github/workflows/ci.yml'
               - '.github/workflows/_web-quality.yml'
+            container:
+              - 'Dockerfile'
+              - '.dockerignore'
+              - 'web/**'
+              - 'scripts/build.mjs'
+              - 'scripts/container_smoke.sh'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/_container-quality.yml'
 
   secret-scan:
     name: Secret-Scan
@@ -93,5 +104,13 @@ jobs:
     needs: changes
     if: needs.changes.outputs.web == 'true'
     uses: ./.github/workflows/_web-quality.yml
+    permissions:
+      contents: read
+
+  container-quality:
+    name: Container
+    needs: changes
+    if: needs.changes.outputs.container == 'true'
+    uses: ./.github/workflows/_container-quality.yml
     permissions:
       contents: read

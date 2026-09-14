@@ -1,0 +1,7 @@
+# Nur das Nötige in den Build-Kontext; das Bestandsmaterial (old/) bleibt draussen.
+*
+!package.json
+!package-lock.json
+!scripts/build.mjs
+!web/src/
+!web/docker/

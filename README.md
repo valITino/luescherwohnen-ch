@@ -35,7 +35,7 @@ Sofortmassnahmen stehen in
 | [`docs/bestandsinventar.md`](docs/bestandsinventar.md) | Inventar des Bestandsmaterials: HTML, Word-Dokument, Medien, Archive |
 | [`docs/content-freigabe.md`](docs/content-freigabe.md) | Jede Aussage auf der Website mit Quelle und Freigabestatus |
 | [`docs/project-plan.md`](docs/project-plan.md) | Phasen, Gates und Nachweise |
-| [`docs/decisions/README.md`](docs/decisions/README.md) | Architecture Decision Records: ADR-0001 Minimal-Stack, ADR-0002 Kontakt, Karte, Suche |
+| [`docs/decisions/README.md`](docs/decisions/README.md) | Architecture Decision Records: ADR-0001 Minimal-Stack, ADR-0002 Kontakt, Karte, Suche, ADR-0003 Container |
 | [`old/README.md`](old/README.md) | Bestandsmaterial der alten Website: Referenz, keine Anforderungsquelle |
 | [`.claude/README.md`](.claude/README.md) | Teamrollen und lokale Skills für Claude Code |
 
@@ -58,6 +58,19 @@ make preview   # lokale Vorschau unter http://127.0.0.1:4173/
 | `web/src/styles/site.scss` | Design-Tokens und Bootstrap-Teilmenge |
 | `web/src/assets/` | Logo und weitere statische Dateien |
 | `web/tests/` | Playwright-Tests: Struktur, Tastatur, axe-core, Responsive, ohne JavaScript, keine Drittanbieter |
+| `web/docker/` | nginx-Konfiguration und Sicherheits-Header für das Container-Image |
+
+## Container-Image
+
+`Dockerfile` baut die Website in ein rootless nginx-Image (ADR-0003): Basen per
+Digest gepinnt, Port 8080, read-only lauffähig, strikte Sicherheits-Header,
+eigene 404-Seite und `/healthz`. Es wird nicht publiziert, bis Registry und
+Hosting entschieden sind (`D-007`, `D-008`).
+
+```bash
+make image     # docker build --tag luescherwohnen-ch:local .
+make smoke     # startet das Image read-only und prüft Seiten, 404 und Header
+```
 
 ## Qualitätsprüfungen
 
@@ -71,7 +84,8 @@ make links             # Link-Prüfung, benötigt das lychee-Binary
 ```
 
 In GitHub Actions ist `.github/workflows/ci.yml` der Dispatcher: der Secret-Scan
-läuft immer, Dokumentations-, Python- und Website-Prüfungen nur bei betroffenen Pfaden.
+läuft immer, Dokumentations-, Python-, Website- und Container-Prüfungen nur bei
+betroffenen Pfaden.
 Alle Actions sind auf vollständige Commit-SHAs gepinnt; Dependabot hält die
 Pins wöchentlich aktuell.
 

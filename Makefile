@@ -6,7 +6,7 @@ VENV ?= .venv
 PYTHON ?= python3
 RUFF := $(VENV)/bin/ruff
 
-.PHONY: check install install-browsers build preview lint-md lint-md-fix lint-html lint-py validate test-py test-web links secrets
+.PHONY: check install install-browsers build preview lint-md lint-md-fix lint-html lint-py validate test-py test-web links secrets image smoke
 
 check: lint-md lint-py validate test-py lint-html test-web secrets
 
@@ -50,6 +50,13 @@ validate:
 
 test-py:
 	$(PYTHON) -m unittest discover -s tests -p 'test_*.py'
+
+# Container-Image bauen und Smoke-Test ausführen (benötigt Docker).
+image:
+	docker build --tag luescherwohnen-ch:local .
+
+smoke: image
+	scripts/container_smoke.sh luescherwohnen-ch:local 8080
 
 # Benötigt das lychee-Binary (https://github.com/lycheeverse/lychee/releases).
 links:

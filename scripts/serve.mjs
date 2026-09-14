@@ -20,9 +20,16 @@ const types = {
   ".xml": "application/xml; charset=utf-8",
 };
 
-function notFound(res) {
-  res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
-  res.end("404 Not Found");
+async function notFound(res) {
+  // Wie im Container (nginx error_page): eigene 404-Seite, wenn vorhanden.
+  try {
+    const page = await readFile(path.join(root, "404.html"));
+    res.writeHead(404, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+    res.end(page);
+  } catch {
+    res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+    res.end("404 Not Found");
+  }
 }
 
 createServer(async (req, res) => {
@@ -33,11 +40,11 @@ createServer(async (req, res) => {
     }
     const file = path.resolve(root, `.${pathname}`);
     if (!file.startsWith(root + path.sep)) {
-      return notFound(res);
+      return await notFound(res);
     }
     const info = await stat(file);
     if (!info.isFile()) {
-      return notFound(res);
+      return await notFound(res);
     }
     res.writeHead(200, {
       "content-type": types[path.extname(file)] ?? "application/octet-stream",
@@ -46,7 +53,7 @@ createServer(async (req, res) => {
     });
     res.end(await readFile(file));
   } catch {
-    notFound(res);
+    await notFound(res);
   }
 }).listen(Number(port), "127.0.0.1", () => {
   console.log(`serve: ${root} unter http://127.0.0.1:${port}/`);
