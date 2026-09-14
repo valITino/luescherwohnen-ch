@@ -1,0 +1,12 @@
+# Überlagerung für den CI-Smoke-Test: lokal gebaute Images, Anfragen werden
+# nur protokolliert, kein SMTP. Nicht für den Betrieb.
+services:
+  web:
+    image: luescherwohnen-web:ci
+  kontakt:
+    image: luescherwohnen-kontakt:ci
+    environment:
+      TRUST_PROXY: "1"
+      MAIL_MODE: log
+      KONTAKT_SECRET: nur-fuer-ci-0123456789abcdef0123456789abcdef # gitleaks:allow synthetischer Testwert
+      KONTAKT_MIN_AGE_MS: "500"

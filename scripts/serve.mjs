@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 // Kleiner statischer Server für Vorschau und Tests: node scripts/serve.mjs [port] [dir]
 // Nur 127.0.0.1, keine Verzeichnislisten, kein Zugriff ausserhalb des Ordners.
-import { createServer } from "node:http";
+// Optional reicht er /kontakt an den Kontakt-Dienst weiter (KONTAKT_UPSTREAM,
+// z. B. http://127.0.0.1:4174), so wie nginx im Container.
+import { createServer, request as httpRequest } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
 const [port = "4173", dir = "web/dist"] = process.argv.slice(2);
 const root = path.resolve(dir);
+const upstream = process.env.KONTAKT_UPSTREAM ? new URL(process.env.KONTAKT_UPSTREAM) : null;
 const types = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -32,7 +35,31 @@ async function notFound(res) {
   }
 }
 
+function proxy(req, res) {
+  const forwarded = httpRequest(
+    {
+      hostname: upstream.hostname,
+      port: upstream.port,
+      method: req.method,
+      path: req.url,
+      headers: { ...req.headers, "x-forwarded-for": req.socket.remoteAddress ?? "" },
+    },
+    (answer) => {
+      res.writeHead(answer.statusCode ?? 502, answer.headers);
+      answer.pipe(res);
+    },
+  );
+  forwarded.on("error", () => {
+    res.writeHead(502, { "content-type": "text/plain; charset=utf-8" });
+    res.end("502 Kontakt-Dienst nicht erreichbar");
+  });
+  req.pipe(forwarded);
+}
+
 createServer(async (req, res) => {
+  if (upstream && (req.url === "/kontakt" || req.url?.startsWith("/kontakt/"))) {
+    return proxy(req, res);
+  }
   try {
     let pathname = decodeURIComponent(new URL(req.url, "http://127.0.0.1").pathname);
     if (pathname.endsWith("/")) {

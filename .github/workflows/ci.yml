@@ -57,6 +57,7 @@ jobs:
               - '.github/workflows/_python-quality.yml'
             web:
               - 'web/**'
+              - 'kontakt/**'
               - 'scripts/build.mjs'
               - 'scripts/serve.mjs'
               - 'playwright.config.mjs'
@@ -69,6 +70,8 @@ jobs:
               - 'Dockerfile'
               - '.dockerignore'
               - 'web/**'
+              - 'kontakt/**'
+              - 'deploy/**'
               - 'scripts/build.mjs'
               - 'scripts/container_smoke.sh'
               - 'package.json'

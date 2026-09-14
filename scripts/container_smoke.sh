@@ -1,21 +1,19 @@
 #!/usr/bin/env bash
-# Smoke-Test des Container-Images: read-only starten, Seiten, 404, Healthcheck
-# und Sicherheits-Header prüfen. Aufruf: scripts/container_smoke.sh [image] [port]
+# Smoke-Test des Compose-Stacks (Website + Kontakt-Dienst): Seiten, 404,
+# Healthcheck, Sicherheits-Header und der zweistufige Formularversand.
+# Aufruf: scripts/container_smoke.sh [port]   (Stack muss laufen, z. B. via
+# docker compose -f deploy/compose.yml -f deploy/compose.ci.yml up -d)
 set -euo pipefail
 
-image="${1:-luescherwohnen-ch:local}"
-port="${2:-8080}"
+port="${1:-8080}"
 base="http://127.0.0.1:${port}"
 
-cid="$(docker run -d --rm --read-only --tmpfs /tmp -p "127.0.0.1:${port}:8080" "$image")"
-trap 'docker stop "$cid" >/dev/null 2>&1 || true' EXIT
+fail() { echo "container_smoke: FEHLER: $*" >&2; exit 1; }
 
 for _ in $(seq 1 30); do
   if curl -fsS "$base/healthz" >/dev/null 2>&1; then break; fi
   sleep 1
 done
-
-fail() { echo "container_smoke: FEHLER: $*" >&2; exit 1; }
 
 curl -fsS "$base/healthz" | grep -q '^ok' || fail "healthz antwortet nicht mit ok"
 for path in / /impressum.html /datenschutz.html /assets/site.css /assets/images/logo.png; do
@@ -39,4 +37,17 @@ check_headers /
 check_headers /assets/site.css
 check_headers /gibt-es-nicht
 
-echo "container_smoke: ok ($image)"
+# Kontaktformular über nginx: Schritt 1 (prüfen), Schritt 2 (senden)
+curl -fsS "$base/kontakt/healthz" | grep -q '^ok' || fail "Kontakt-Dienst über nginx nicht erreichbar"
+daten='name=Smoke+Test&email=smoke%40example.com&telefon=&nachricht=Automatischer+Smoke-Test+des+Kontaktformulars.'
+schritt1="$(curl -s -o /tmp/schritt1.html -w '%{http_code}' -H 'Origin: http://127.0.0.1:'"$port" --data "$daten" "$base/kontakt")"
+[[ "$schritt1" == "200" ]] || fail "Formular-Schritt 1 liefert $schritt1 statt 200"
+token="$(grep -o 'name="token" value="[^"]*"' /tmp/schritt1.html | head -1 | sed 's/.*value="//; s/"$//')"
+[[ -n "$token" ]] || fail "kein Token in der Bestätigungsseite"
+sleep 1
+schritt2="$(curl -s -o /dev/null -w '%{http_code}' --data "${daten}&token=${token}" "$base/kontakt/senden")"
+[[ "$schritt2" == "303" ]] || fail "Formular-Schritt 2 liefert $schritt2 statt 303"
+curl -s "$base/kontakt/danke" | grep -q "Vielen Dank" || fail "Danke-Seite fehlt"
+curl -sI "$base/kontakt/danke" | grep -qi 'content-security-policy:' || fail "Sicherheits-Header fehlen beim Kontakt-Dienst"
+
+echo "container_smoke: ok"

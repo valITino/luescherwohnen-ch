@@ -2,7 +2,7 @@
 # Geprüft werden relative Dateipfade, Anker und externe Links in Markdown.
 
 # Vendorte Skills enthalten Beispiel-URLs, das Bestandsmaterial ist kein Liefergegenstand.
-exclude_path = ["node_modules", ".claude/skills", "old", ".git", ".tools", ".venv"]
+exclude_path = ["node_modules", "kontakt/node_modules", ".claude/skills", "old", ".git", ".tools", ".venv"]
 
 # Die bestehende Website beantwortet automatisierte Abrufe mit HTTP 403
 # (Web Application Firewall; belegt am 12.09.2026 und 14.09.2026).

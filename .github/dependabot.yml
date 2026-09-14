@@ -13,6 +13,12 @@ updates:
       interval: weekly
     commit-message:
       prefix: "chore"
+  - package-ecosystem: npm
+    directory: /kontakt
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore"
   - package-ecosystem: pip
     directory: /
     schedule:

@@ -5,7 +5,7 @@
   // wird nicht umformatiert).
   "globs": ["**/*.md"],
   "ignores": [
-    "node_modules/**",
+    "**/node_modules/**",
     ".claude/skills/**",
     "old/**",
     "docs/homepage-anforderungen.md"

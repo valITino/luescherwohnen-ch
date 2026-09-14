@@ -6,11 +6,14 @@ VENV ?= .venv
 PYTHON ?= python3
 RUFF := $(VENV)/bin/ruff
 
-.PHONY: check install install-browsers build preview lint-md lint-md-fix lint-html lint-py validate test-py test-web links secrets image smoke
+.PHONY: check install install-browsers build preview lint-md lint-md-fix lint-html lint-py validate test-py test-kontakt test-web links secrets image smoke
 
-check: lint-md lint-py validate test-py lint-html test-web secrets
+check: lint-md lint-py validate test-py test-kontakt lint-html test-web secrets
 
-install: node_modules/.package-lock.json $(RUFF)
+install: node_modules/.package-lock.json kontakt/node_modules/.package-lock.json $(RUFF)
+
+kontakt/node_modules/.package-lock.json: kontakt/package-lock.json
+	npm --prefix kontakt ci --ignore-scripts --no-audit --no-fund
 
 # Chromium für die Playwright-Tests (einmalig).
 install-browsers: node_modules/.package-lock.json
@@ -42,7 +45,10 @@ preview: build
 lint-html: build
 	npm run lint:html
 
-test-web: build
+test-kontakt: kontakt/node_modules/.package-lock.json
+	npm --prefix kontakt test
+
+test-web: build kontakt/node_modules/.package-lock.json
 	npm run test:web
 
 validate:
@@ -53,10 +59,14 @@ test-py:
 
 # Container-Image bauen und Smoke-Test ausführen (benötigt Docker).
 image:
-	docker build --tag luescherwohnen-ch:local .
+	docker build --tag luescherwohnen-web:ci .
+	docker build --tag luescherwohnen-kontakt:ci --file kontakt/Dockerfile .
 
 smoke: image
-	scripts/container_smoke.sh luescherwohnen-ch:local 8080
+	printf 'WEB_IMAGE=luescherwohnen-web:ci\nKONTAKT_IMAGE=luescherwohnen-kontakt:ci\n' > deploy/.env
+	docker compose --project-directory deploy -f deploy/compose.yml -f deploy/compose.ci.yml up -d
+	scripts/container_smoke.sh 8080 || (docker compose --project-directory deploy -f deploy/compose.yml -f deploy/compose.ci.yml down; exit 1)
+	docker compose --project-directory deploy -f deploy/compose.yml -f deploy/compose.ci.yml down
 
 # Benötigt das lychee-Binary (https://github.com/lycheeverse/lychee/releases).
 links:

@@ -38,7 +38,14 @@ async function main() {
   const year = String(new Date().getFullYear());
   const pages = (await readdir(path.join(SRC, "pages"))).filter((name) => name.endsWith(".html"));
   for (const page of pages) {
-    const html = (await render(path.join("pages", page))).replaceAll("{{year}}", year);
+    const html = (await render(path.join("pages", page)))
+      .replaceAll("{{year}}", year)
+      // Formular-Platzhalter: statisch leer, der Kontakt-Dienst füllt sie bei Fehlern.
+      .replaceAll("{{formular_titel}}", "<h3>Anfrage senden</h3>")
+      .replace(/\{\{(?:wert|fehler|aria)_[a-z_]+\}\}|\{\{fehler_liste\}\}/g, "")
+      .replace(/ +>/g, ">")
+      .replace(/[ \t]+$/gm, "")
+      .replace(/\n{3,}/g, "\n\n");
     if (INCLUDE.test(html) || html.includes("{{")) {
       throw new Error(`Unaufgelöste Platzhalter in ${page}`);
     }

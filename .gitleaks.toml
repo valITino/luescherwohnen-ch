@@ -1,0 +1,16 @@
+# Secret-Scan (gitleaks): Standardregeln plus Ausschluss von Abhängigkeits- und
+# Build-Ordnern beim Scan des Arbeitsverzeichnisses. Synthetische Testwerte sind
+# im Code mit "gitleaks:allow" gekennzeichnet.
+title = "luescherwohnen-ch"
+
+[extend]
+useDefault = true
+
+[allowlist]
+paths = [
+  '''node_modules/''',
+  '''\.venv/''',
+  '''\.tools/''',
+  '''web/dist/''',
+  '''test-results/''',
+]

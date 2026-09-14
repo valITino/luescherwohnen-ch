@@ -21,7 +21,11 @@ jobs:
             !/old/ressources
           sparse-checkout-cone-mode: false
       - name: Abhängigkeiten aus Lockfile installieren
-        run: npm ci --ignore-scripts --no-audit --no-fund
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm --prefix kontakt ci --ignore-scripts --no-audit --no-fund
+      - name: "Kontakt-Dienst: Unit- und Integrationstests"
+        run: npm --prefix kontakt test
       - name: Build
         run: npm run build
       - name: HTML validieren

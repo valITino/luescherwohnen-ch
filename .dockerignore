@@ -5,3 +5,6 @@
 !scripts/build.mjs
 !web/src/
 !web/docker/
+!kontakt/
+kontakt/node_modules/
+kontakt/test/

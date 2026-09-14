@@ -25,3 +25,4 @@ reports/
 
 # On-Prem-Konfiguration mit Image-Versionen und Secrets
 deploy/.env
+deploy/kontakt.env

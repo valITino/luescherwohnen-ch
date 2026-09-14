@@ -1,0 +1,31 @@
+<form class="formular" method="post" action="/kontakt">
+  {{formular_titel}}
+  {{fehler_liste}}
+  <div class="feld">
+    <label for="name">Name <span class="feld__pflicht">(Pflichtfeld)</span></label>
+    <input class="feld__eingabe" id="name" name="name" type="text" autocomplete="name" required maxlength="100" value="{{wert_name}}" {{aria_name}}>
+    {{fehler_name}}
+  </div>
+  <div class="feld">
+    <label for="email">E-Mail</label>
+    <input class="feld__eingabe" id="email" name="email" type="email" autocomplete="email" maxlength="254" value="{{wert_email}}" {{aria_email}}>
+    {{fehler_email}}
+  </div>
+  <div class="feld">
+    <label for="telefon">Telefon</label>
+    <input class="feld__eingabe" id="telefon" name="telefon" type="tel" autocomplete="tel" maxlength="30" value="{{wert_telefon}}" {{aria_telefon}}>
+    {{fehler_telefon}}
+  </div>
+  <p class="feld__hinweis">Bitte geben Sie E-Mail oder Telefon an, damit wir Ihnen antworten können.</p>
+  <div class="feld">
+    <label for="nachricht">Ihre Nachricht <span class="feld__pflicht">(Pflichtfeld)</span></label>
+    <textarea class="feld__eingabe" id="nachricht" name="nachricht" rows="6" required maxlength="2000" {{aria_nachricht}}>{{wert_nachricht}}</textarea>
+    {{fehler_nachricht}}
+  </div>
+  <div class="feld feld--falle" aria-hidden="true">
+    <label for="firma_website">Firma Website</label>
+    <input id="firma_website" name="firma_website" type="text" tabindex="-1" autocomplete="off">
+  </div>
+  <p class="feld__hinweis">Ihre Angaben verwenden wir nur, um Ihre Anfrage zu beantworten. Mehr dazu im <a href="/datenschutz.html">Datenschutz</a>.</p>
+  <button class="btn btn-primary btn-lg" type="submit">Anfrage prüfen</button>
+</form>
