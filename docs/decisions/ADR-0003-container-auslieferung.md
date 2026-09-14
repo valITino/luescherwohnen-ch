@@ -32,6 +32,9 @@ Container-Betrieb ergibt).
 
 - Mehrstufiges `Dockerfile`: Build mit Node.js, Laufzeit mit
   `nginxinc/nginx-unprivileged` (Alpine, slim), beide per Digest gepinnt.
+- Der Kontakt-Dienst läuft im gleichen Node-Basisimage ohne npm-Client; der
+  Client wird in der Laufzeitstufe entfernt, weil seine gebündelten Pakete
+  Scan-Befunde liefern und zur Laufzeit nicht gebraucht werden.
 - Die Laufzeitstufe spielt die Sicherheitsupdates der Alpine-Basis ein
   (`apk upgrade`), weil Basisimages den Paketen hinterherlaufen; der
   Trivy-Scan bleibt die Kontrolle (erster Lauf am 14.09.2026: vier HIGH in

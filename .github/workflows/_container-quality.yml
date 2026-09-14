@@ -73,5 +73,6 @@ jobs:
       - name: Stack-Logs und Aufräumen
         if: always()
         run: |
+          test -f deploy/.env || printf 'WEB_IMAGE=luescherwohnen-web:ci\nKONTAKT_IMAGE=luescherwohnen-kontakt:ci\n' > deploy/.env
           docker compose --project-directory deploy -f deploy/compose.yml -f deploy/compose.ci.yml logs --no-color || true
           docker compose --project-directory deploy -f deploy/compose.yml -f deploy/compose.ci.yml down --remove-orphans || true
