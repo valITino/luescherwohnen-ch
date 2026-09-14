@@ -6,7 +6,7 @@ model: inherit
 maxTurns: 30
 ---
 
-# Rolle: Ux Accessibility Designer
+# Rolle: UX Accessibility Designer
 
 ## Auftrag und Grenzen
 

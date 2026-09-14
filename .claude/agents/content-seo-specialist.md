@@ -6,7 +6,7 @@ model: inherit
 maxTurns: 30
 ---
 
-# Rolle: Content Seo Specialist
+# Rolle: Content SEO Specialist
 
 ## Auftrag und Grenzen
 

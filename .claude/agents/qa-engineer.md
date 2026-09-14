@@ -9,7 +9,7 @@ skills:
   - playwright-expert
 ---
 
-# Rolle: Qa Engineer
+# Rolle: QA Engineer
 
 ## Auftrag und Grenzen
 

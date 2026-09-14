@@ -41,16 +41,25 @@ Voraus simuliert.
 
 Die Upstream-Herkunft und Lizenz stehen in `THIRD_PARTY_NOTICES.md`. Nicht
 ausgewählte Skills werden nicht vendort; das hält Kontext, Updatefläche und
-Supply-Chain-Prüfung klein.
+Supply-Chain-Prüfung klein. Am 14.09.2026 wurde der Bestand gegen den dort
+genannten Upstream-Commit geprüft: alle neun Skill-Verzeichnisse sind
+byte-identisch (`diff -r`), und der Lizenztext stimmt mit der Upstream-Datei
+`LICENSE` überein.
 
 ## Prüfung
 
 Nach jeder Änderung ausführen:
 
 ```bash
+make validate test-py
+# oder direkt:
 python scripts/validate_claude_config.py
 python -m unittest discover -s tests -p 'test_*.py'
 ```
 
 Der Validator prüft Agentenschema, eindeutige Namen, erlaubte Werkzeuge,
-vorhandene Skills und die Übereinstimmung von Skill-Ordner und Skill-Name.
+vorhandene Skills, die Übereinstimmung von Skill-Ordner und Skill-Name sowie,
+dass `CLAUDE.md` und diese Datei jede Rolle und jeden Skill referenzieren.
+Unabhängige Prüfrollen müssen eine explizite Werkzeugliste ohne `Edit` und
+`Write` deklarieren. In der CI läuft dieselbe Prüfung im Modul
+`.github/workflows/_python-quality.yml`.

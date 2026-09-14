@@ -8,7 +8,7 @@ skills:
   - devops-engineer
 ---
 
-# Rolle: Devops Platform Engineer
+# Rolle: DevOps Platform Engineer
 
 ## Auftrag und Grenzen
 

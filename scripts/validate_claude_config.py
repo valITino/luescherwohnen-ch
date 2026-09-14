@@ -27,8 +27,13 @@ ALLOWED_AGENT_FIELDS = {
 }
 ALLOWED_TOOLS = {"Read", "Grep", "Glob", "Edit", "Write", "Bash", "Skill"}
 NAME_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+BACKTICKED_NAME = re.compile(r"`([a-z0-9]+(?:-[a-z0-9]+)*)`")
 READ_ONLY_AGENTS = {"code-reviewer", "security-reviewer"}
 WRITE_TOOLS = {"Edit", "Write"}
+# Documents that must reference every agent (and, for the team README, every skill),
+# so the delegation table and the role inventory cannot silently drift.
+AGENT_INDEX_DOCUMENTS = ("CLAUDE.md", ".claude/README.md")
+SKILL_INDEX_DOCUMENTS = (".claude/README.md",)
 
 
 class ValidationError(ValueError):
@@ -77,6 +82,19 @@ def parse_agent(path: Path) -> dict[str, str | list[str]]:
     return result
 
 
+def parse_tools(agent: dict[str, str | list[str]]) -> set[str] | None:
+    """Return the declared tool set, or None when the agent inherits every tool."""
+    raw = agent.get("tools")
+    if raw is None or not str(raw).strip():
+        return None
+    return {item.strip() for item in str(raw).split(",") if item.strip()}
+
+
+def referenced_names(document: str) -> set[str]:
+    """Return every backticked kebab-case identifier mentioned in a document."""
+    return set(BACKTICKED_NAME.findall(document))
+
+
 def validate(root: Path = ROOT) -> list[str]:
     """Return every configuration error found below *root*."""
     errors: list[str] = []
@@ -115,15 +133,24 @@ def validate(root: Path = ROOT) -> list[str]:
             if name in seen_agents:
                 errors.append(f"{agent_file}: duplicate agent name {name!r}")
             seen_agents.add(name)
-            tools = {item.strip() for item in str(agent.get("tools", "")).split(",")}
-            unknown_tools = tools - ALLOWED_TOOLS
-            if unknown_tools:
-                errors.append(f"{agent_file}: unknown tools {sorted(unknown_tools)}")
-            if name in READ_ONLY_AGENTS and tools & WRITE_TOOLS:
-                errors.append(
-                    f"{agent_file}: independent reviewer has write tools "
-                    f"{sorted(tools & WRITE_TOOLS)}"
-                )
+            tools = parse_tools(agent)
+            if tools is None:
+                if name in READ_ONLY_AGENTS:
+                    errors.append(
+                        f"{agent_file}: independent reviewer must declare an "
+                        "explicit read-only tool list"
+                    )
+            else:
+                unknown_tools = tools - ALLOWED_TOOLS
+                if unknown_tools:
+                    errors.append(
+                        f"{agent_file}: unknown tools {sorted(unknown_tools)}"
+                    )
+                if name in READ_ONLY_AGENTS and tools & WRITE_TOOLS:
+                    errors.append(
+                        f"{agent_file}: independent reviewer has write tools "
+                        f"{sorted(tools & WRITE_TOOLS)}"
+                    )
             if agent.get("model") != "inherit":
                 errors.append(f"{agent_file}: model must be 'inherit'")
             declared_skills = agent.get("skills", [])
@@ -140,6 +167,18 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append(f"{agents_dir}: no agent definitions found")
     if not skill_names:
         errors.append(f"{skills_dir}: no skill definitions found")
+
+    for relative in AGENT_INDEX_DOCUMENTS:
+        document = root / relative
+        if not document.is_file():
+            errors.append(f"{document}: missing index document")
+            continue
+        names = referenced_names(document.read_text())
+        for agent_name in sorted(seen_agents - names):
+            errors.append(f"{document}: agent {agent_name!r} is not referenced")
+        if relative in SKILL_INDEX_DOCUMENTS:
+            for skill_name in sorted(skill_names - names):
+                errors.append(f"{document}: skill {skill_name!r} is not referenced")
     return errors
 
 
