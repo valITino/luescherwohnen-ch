@@ -65,9 +65,12 @@ test("405, 415 und 413 werden abgewiesen", async () => {
   assert.equal(r413.status, 413);
 });
 
-test("fremder Origin wird abgelehnt", async () => {
+test("fremder Origin wird abgelehnt, eigener Origin mit Port akzeptiert", async () => {
   const r = await post("/kontakt", gueltig, { origin: "https://boese.example" });
   assert.equal(r.status, 403);
+  const host = new URL(base).host;
+  const ok = await post("/kontakt", gueltig, { origin: `http://${host}`, host });
+  assert.equal(ok.status, 200);
 });
 
 test("Honeypot: stille Danke-Weiterleitung ohne Versand", async () => {
