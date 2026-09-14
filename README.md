@@ -44,8 +44,10 @@ Sofortmassnahmen stehen in
 
 Die Website ist statisch: Seiten und gemeinsame Teile liegen unter `web/src/`,
 das Build-Ergebnis entsteht unter `web/dist/` (nicht versioniert). Bootstrap wird
-als reduzierter Sass-Build selbst gehostet; es gibt kein JavaScript zur Laufzeit
-und keine Abrufe von Drittanbietern (ADR-0001, ADR-0002).
+als reduzierter Sass-Build selbst gehostet; es gibt kein JavaScript im Browser
+und keine Abrufe von Drittanbietern (ADR-0001, ADR-0002). Das Kontaktformular
+bedient ein kleiner Dienst unter `kontakt/`, den nginx unter `/kontakt`
+weiterreicht; die lokale Vorschau startet ihn mit `npm run test:web` automatisch.
 
 ```bash
 make build     # web/src -> web/dist (Seiten zusammenfügen, Sass kompilieren)
@@ -60,6 +62,7 @@ make preview   # lokale Vorschau unter http://127.0.0.1:4173/
 | `web/src/assets/` | Logo und weitere statische Dateien |
 | `web/tests/` | Playwright-Tests: Struktur, Tastatur, axe-core, Responsive, ohne JavaScript, keine Drittanbieter |
 | `web/docker/` | nginx-Konfiguration und Sicherheits-Header für das Container-Image |
+| `kontakt/` | Kontaktformular-Dienst: zwei Schritte ohne JavaScript, Validierung, Spam-Schutz, SMTP-Zustellung; eigene Tests mit `node --test` |
 
 ## Container-Image
 
@@ -69,8 +72,8 @@ eigene 404-Seite und `/healthz`. Es wird nicht publiziert, bis Registry und
 Hosting entschieden sind (`D-007`, `D-008`).
 
 ```bash
-make image     # docker build --tag luescherwohnen-ch:local .
-make smoke     # startet das Image read-only und prüft Seiten, 404 und Header
+make image     # baut luescherwohnen-web:ci und luescherwohnen-kontakt:ci
+make smoke     # startet den Compose-Stack read-only und prüft Seiten, 404, Header und Formular
 ```
 
 ## Qualitätsprüfungen

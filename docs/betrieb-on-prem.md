@@ -24,7 +24,7 @@ Deployment-Automation (`D-020`) sind noch nicht entschieden
 |---|---|---|
 | Settings, Variables | `DOCKERHUB_NAMESPACE` | Docker-Hub-Namensraum, z. B. Organisation oder Benutzer (`D-008`) |
 | Settings, Secrets | `DOCKERHUB_USERNAME` | Docker-Hub-Benutzer, der das Token besitzt |
-| Settings, Secrets | `DOCKERHUB_TOKEN` | Zugangstoken mit Schreibrecht nur für die Repositories `luescherwohnen-web` (später `luescherwohnen-kontakt`) |
+| Settings, Secrets | `DOCKERHUB_TOKEN` | Zugangstoken mit Schreibrecht nur für die Repositories `luescherwohnen-web` und `luescherwohnen-kontakt` |
 | Settings, Environments | `docker-hub` | Freigabepflicht (required reviewers) für jeden Publish |
 
 Ohne gesetzte Variable publiziert der Workflow nichts; Secrets stehen
@@ -40,29 +40,36 @@ Repository.
 - Ein Reverse-Proxy, der `https://<domain>` auf `127.0.0.1:8080` weiterleitet,
   TLS terminiert und HSTS setzt (`D-019`). Bis dahin ist die Website nur lokal
   auf dem Server erreichbar.
-- Ein Verzeichnis, z. B. `/opt/luescherwohnen`, mit `compose.yml` und `.env`
-  aus `deploy/`.
+- Ein Verzeichnis, z. B. `/opt/luescherwohnen`, mit `compose.yml`, `.env` und
+  `kontakt.env` aus `deploy/` (Vorlagen `.env.example`, `kontakt.env.example`).
+- Für das Kontaktformular: Empfängerpostfach, Absenderadresse und SMTP-Zugang
+  des Mailanbieters (`D-003`, `D-013`) sowie ein zufälliges `KONTAKT_SECRET`.
 
 ## 4. Start, Update und Rollback
 
 ```bash
 cd /opt/luescherwohnen
-cp .env.example .env            # einmalig; WEB_IMAGE auf die freigegebene Version setzen
+cp .env.example .env                # einmalig; WEB_IMAGE und KONTAKT_IMAGE auf die freigegebene Version setzen
+cp kontakt.env.example kontakt.env  # einmalig; Secret, Postfach und SMTP eintragen, Datei nur für root lesbar
 docker compose pull
 docker compose up -d
-curl -fsS http://127.0.0.1:8080/healthz   # erwartet: ok
-docker compose ps                          # Status "healthy" nach wenigen Sekunden
+curl -fsS http://127.0.0.1:8080/healthz          # erwartet: ok
+curl -fsS http://127.0.0.1:8080/kontakt/healthz  # erwartet: ok
+docker compose ps                                 # beide Dienste "healthy" nach wenigen Sekunden
 ```
 
 Update: Version in `.env` ändern, dann `docker compose pull && docker compose up -d`.
 Rollback: vorherige Version in `.env` eintragen, gleicher Befehl.
-Logs: `docker compose logs --tail=200 web`. Es gibt keine persistenten Daten
-und keine Datenbank; ein Backup umfasst nur `compose.yml` und `.env`.
+Logs: `docker compose logs --tail=200 web kontakt`; der Kontakt-Dienst
+protokolliert nur Ereignisse (gesendet, abgelehnt, Fehler), keine Inhalte. Es gibt
+keine persistenten Daten und keine Datenbank; ein Backup umfasst `compose.yml`,
+`.env` und `kontakt.env`.
 
 ## 5. Sicherheitsrahmen
 
-- Container läuft ohne Root (Benutzer 101), read-only, ohne zusätzliche
-  Capabilities und mit `no-new-privileges`.
+- Beide Container laufen ohne Root (Benutzer 101 beziehungsweise 1000),
+  read-only, ohne zusätzliche Capabilities und mit `no-new-privileges`; der
+  Kontakt-Dienst ist nur im internen Compose-Netz erreichbar.
 - Sicherheits-Header setzt nginx im Image (`web/docker/security-headers.conf`);
   HSTS setzt der Reverse-Proxy, sobald TLS steht.
 - Images werden vor dem Publish gescannt; auf dem Server nur Versionen aus dem

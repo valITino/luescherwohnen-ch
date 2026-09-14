@@ -62,8 +62,9 @@ begonnen; alle ADRs bleiben `Vorgeschlagen`, bis der Auftraggeber sie annimmt.
 - [ ] Optimierte, lizenzierte Medien integrieren (nach `D-005`)
 - [x] Kontakt- und Standortlösung für Inkrement 1 gemäss ADR-0002 (Telefon,
       E-Mail, Adresse, Öffnungszeiten, Kartenlink)
-- [ ] Kontaktformular mit serverseitiger Validierung (Inkrement 2, nach
-      `D-003` und Hosting-ADR)
+- [x] Kontaktformular mit serverseitiger Validierung, Spam-Schutz und
+      SMTP-Zustellung als Dienst `kontakt/` (Inkrement 2); Empfänger und
+      SMTP-Zugang folgen aus `D-003` und `D-013`
 - [x] Security Header, CSP und eigene Fehlerseite im Container konfiguriert
       (ADR-0003)
 - [x] E2E-, Accessibility-, Responsive- und Ohne-JavaScript-Tests ergänzt;

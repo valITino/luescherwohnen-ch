@@ -49,7 +49,10 @@ entschieden hat.
 - **Empfehlung:** (B) plus gut sichtbare Telefonnummer und E-Mail-Link als
   Fallback ohne JavaScript. Aufbewahrung nur im E-Mail-Postfach des
   Unternehmens; Löschfrist im Datenschutzhinweis nennen.
-- **Entscheid:** offen
+- **Stand:** (B) ist umgesetzt (`kontakt/`, ADR-0002). Noch nötig:
+  Empfängeradresse, Absenderadresse und SMTP-Zugang des Mailanbieters, die
+  auf dem Server in `deploy/kontakt.env` hinterlegt werden.
+- **Entscheid:** offen (Empfänger, Absender, SMTP)
 
 ### D-004 Standort, Öffnungszeiten und Karte
 
