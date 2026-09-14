@@ -1,0 +1,10 @@
+# Entwicklungswerkzeuge für Python mit Hash-Pinning.
+# Installation: python3 -m pip install --require-hashes -r requirements-dev.txt
+# Hashes aus https://pypi.org/pypi/ruff/0.15.8/json (abgerufen 14.09.2026).
+ruff==0.15.8 \
+    --hash=sha256:0f29b989a55572fb885b77464cf24af05500806ab4edf9a0fd8977f9759d85b1 \
+    --hash=sha256:fdce027ada77baa448077ccc6ebb2fa9c3c62fd110d8659d601cf2f475858d94 \
+    --hash=sha256:6ee3ae5c65a42f273f126686353f2e08ff29927b7b7e203b711514370d500de3 \
+    --hash=sha256:d3e3d0b6ba8dca1b7ef9ab80a28e840a20070c4b62e56d675c24f366ef330570 \
+    --hash=sha256:04f79eff02a72db209d47d665ba7ebcad609d8918a134f86cb13dd132159fc89 \
+    --hash=sha256:995f11f63597ee362130d1d5a327a87cb6f3f5eae3094c620bcc632329a4d26e

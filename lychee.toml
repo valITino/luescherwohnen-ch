@@ -1,0 +1,16 @@
+# Link-Prüfung (CI: lycheeverse/lychee-action, lokal: `make links`).
+# Geprüft werden relative Dateipfade, Anker und externe Links in Markdown.
+
+# Vendorte Skills enthalten Beispiel-URLs, das Bestandsmaterial ist kein Liefergegenstand.
+exclude_path = ["node_modules", ".claude/skills", "docs/ressources", ".git", ".tools", ".venv"]
+
+# Die bestehende Website beantwortet automatisierte Abrufe mit HTTP 403
+# (Web Application Firewall; belegt am 12.09.2026 und 14.09.2026).
+exclude = ["^https?://(www\\.)?luescherwohnen\\.ch"]
+exclude_all_private = true
+
+max_retries = 3
+timeout = 20
+max_concurrency = 8
+accept = [200, 201, 202, 203, 204, 206, 301, 302, 303, 307, 308, 429]
+no_progress = true

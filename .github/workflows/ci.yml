@@ -1,0 +1,78 @@
+# Zentraler Dispatcher (CLAUDE.md, Abschnitt 5): klassifiziert geänderte Pfade
+# und ruft nur die betroffenen, wiederverwendbaren Module auf. Der Secret-Scan
+# läuft immer. Web- und Container-Module folgen, sobald entsprechender Code
+# existiert. Alle Actions sind auf einen vollständigen Commit-SHA gepinnt.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Pfade klassifizieren
+    runs-on: ubuntu-24.04
+    # Pull Requests aus demselben Repository laufen bereits über das push-Ereignis.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    outputs:
+      docs: ${{ steps.filter.outputs.docs }}
+      python: ${{ steps.filter.outputs.python }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/docs/ressources
+          sparse-checkout-cone-mode: false
+      - id: filter
+        uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3.0.4
+        with:
+          filters: |
+            docs:
+              - '**/*.md'
+              - '.markdownlint-cli2.jsonc'
+              - 'lychee.toml'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/_docs-quality.yml'
+            python:
+              - 'scripts/**'
+              - 'tests/**'
+              - '.claude/**'
+              - 'CLAUDE.md'
+              - 'requirements-dev.txt'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/_python-quality.yml'
+
+  secret-scan:
+    name: Secret-Scan
+    needs: changes
+    uses: ./.github/workflows/_secret-scan.yml
+    permissions:
+      contents: read
+
+  docs-quality:
+    name: Dokumentation
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    uses: ./.github/workflows/_docs-quality.yml
+    permissions:
+      contents: read
+
+  python-quality:
+    name: Konfiguration und Skripte
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
+    uses: ./.github/workflows/_python-quality.yml
+    permissions:
+      contents: read

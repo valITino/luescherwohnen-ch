@@ -1,4 +1,15 @@
 {
+  // Markdown-Qualität für die Projektdokumentation.
+  // Nicht geprüft: vendorte Drittanbieter-Skills, Bestandsmaterial der alten
+  // Website und das vom Auftraggeber ausgefüllte Briefing-Formular (Quelle,
+  // wird nicht umformatiert).
+  "globs": ["**/*.md"],
+  "ignores": [
+    "node_modules/**",
+    ".claude/skills/**",
+    "docs/ressources/**",
+    "docs/homepage-anforderungen.md"
+  ],
   "config": {
     "MD013": false,
     "MD060": false
