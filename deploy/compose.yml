@@ -1,0 +1,21 @@
+# Compose-Stack für den On-Prem-Server (ADR-0003). Werte kommen aus deploy/.env,
+# Vorlage: deploy/.env.example. Die Website hört nur auf 127.0.0.1; TLS und
+# HSTS übernimmt der vorgelagerte Reverse-Proxy (Entscheid D-019).
+services:
+  web:
+    image: ${WEB_IMAGE:?WEB_IMAGE in deploy/.env setzen, z. B. namensraum/luescherwohnen-web:1.0.0}
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8080}:8080"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
