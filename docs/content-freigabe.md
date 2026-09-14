@@ -24,7 +24,7 @@ Ohne Bestätigung aller Zeilen mit Status `offen` erfolgt kein Deployment.
 | Logo (PNG, 765 × 190 px) | Kopfzeile | `old/ressources/2021/02/Luescher_logo.png` | offen (`D-005`): Vektorlogo beschaffen |
 | Grün `#9cb703` für Buttons, Text `#272727` | Gestaltung | Briefing, Abschnitt 3; `old/Homepage.docx` (Farbtabelle) | Farbwert belegt; Verwendung nur mit dunkler Schrift |
 | Kartenlink zu OpenStreetMap | Kontakt | ADR-0002 | offen (`D-004`) |
-| Datenschutzerklärung (Entwurf) | Datenschutz | Aufbau der Website, ADR-0002 | offen: Prüfung durch qualifizierte Fachperson; Hosting-Anbieter ergänzen (`D-007`) |
+| Datenschutzerklärung (Entwurf) | Datenschutz | Aufbau der Website, ADR-0002 | offen: Prüfung durch qualifizierte Fachperson; Betreiber des On-Prem-Servers und Aufbewahrung der Zugriffsprotokolle ergänzen (`D-007`) |
 | Referenzprojekte, Teamfotos, Firmengeschichte | noch nicht auf der Website | `old/ressources/`, `old/Homepage.docx` | offen (`D-005`, WEB-F-006) |
 | Social-Media-Links | noch nicht auf der Website | Briefing, Abschnitt 5 | offen (`D-010`) |
 

@@ -51,6 +51,11 @@ Zugangsdaten.
   Medien gelten erst nach Typprüfung als unbedenklich; diese Prüfung ist
   für den aktuellen Bestand erfolgt.
 
+Die neue Website wird auf einem eigenen On-Prem-Server betrieben (Entscheid
+vom 14.09.2026) und übernimmt nichts von der alten Installation. Der Vorfall
+betrifft weiterhin die alte Website bei Green, deren Zugangsdaten und den
+späteren Domain-Umzug.
+
 ## 4. Empfohlene Sofortmassnahmen (Auftraggeber und Hosting-Anbieter)
 
 1. Den Hosting-Anbieter (Green) informieren und um eine Prüfung der

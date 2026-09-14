@@ -13,6 +13,7 @@ des Auftraggebers (Gate G0).
 | Phase | 0 – Discovery und Freigabe |
 | Nächstes Gate | G0: `D-001` bis `D-008` beantwortet, MVP schriftlich freigegeben |
 | Website | Inkrement 1 unter `web/` (Startseite, Impressum, Datenschutz-Entwurf), auf Anweisung vom 14.09.2026 vor G0 gebaut; Inhalte gemäss `docs/content-freigabe.md` zu bestätigen |
+| Betrieb | Eigener On-Prem-Server (Entscheid 14.09.2026), Images auf Docker Hub; Reverse-Proxy und Deployment-Weg offen (`D-019`, `D-020`) |
 | Nächster Schritt | Kick-off mit dem Auftraggeber anhand der Entscheidungsvorlage; Prüfung des Website-Stands |
 | Sicherheitsbefund | Alt-Website vermutlich kompromittiert, siehe Hinweis unten |
 

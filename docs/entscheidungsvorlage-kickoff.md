@@ -92,20 +92,22 @@ entschieden hat.
   abends und am Wochenende" verwenden; keine 24-Stunden-Zusage.
 - **Entscheid:** offen
 
-### D-007 Hosting bei Green
+### D-007 Betrieb auf dem eigenen On-Prem-Server
 
-- **Frage:** Welches Green-Angebot besteht (Webhosting, Server, Container),
-  wer hat Zugang, wie werden Domain, DNS, TLS, Staging und Produktion
-  betrieben?
-- **Belege:** Briefing wünscht Green als Hosting-Anbieter; Sicherheitsbefund
-  in `docs/security/2026-09-14-altwebsite-verdacht-kompromittierung.md`
-  betrifft die dort laufende alte Website.
-- **Empfehlung:** Vertrag und Produktbezeichnung bei Green nachschlagen und dem
-  Team ohne Zugangsdaten mitteilen; Wechsel auf ein Angebot mit
-  Container- oder statischem Hosting nur, wenn das bestehende die Anforderungen
-  (Docker-Image oder statische Auslieferung, TLS, Staging) nicht erfüllt.
-  Vorfallbearbeitung (`D-018`) vor jeder Neuinstallation.
-- **Entscheid:** offen
+- **Entschieden am 14.09.2026 (Repository-Eigentümer):** Die neue Website
+  läuft auf dem eigenen On-Prem-Server, nicht bei Green. Der DNS-A-Record ist
+  ein separater, späterer Auftrag.
+- **Noch zu klären:** Betriebssystem und Docker-Version des Servers,
+  CPU-Architektur (das Image wird für `linux/amd64` gebaut), wer den Server
+  administriert, ob es eine Staging-Umgebung gibt, wie Backups (nur
+  Konfiguration, keine Daten) und Monitoring laufen.
+- **Belege:** Anweisung im Freigabeprotokoll der Anforderungsanalyse;
+  Sicherheitsbefund zur alten Website bei Green
+  (`docs/security/2026-09-14-altwebsite-verdacht-kompromittierung.md`).
+- **Empfehlung:** Antworten in `docs/betrieb-on-prem.md` festhalten; die alte
+  Website bei Green nach `D-018` behandeln und erst nach dem Domain-Umzug
+  abschalten.
+- **Entscheid:** Plattform entschieden; Betriebsdetails offen
 
 ### D-008 Docker Hub und Veröffentlichung
 
@@ -114,11 +116,16 @@ entschieden hat.
   Environments sind nötig?
 - **Belege:** `CLAUDE.md`, Abschnitt 5: Publish nur aus geschützten Branches
   oder Tags, Deployment getrennt und umgebungsgeschützt.
-- **Empfehlung:** Ein Namensraum, der dem Unternehmen gehört (nicht einem
-  Privatkonto); privates Repository, solange das Image nichts Öffentliches
-  enthält; Publish nur aus `main` per Tag; Environments `staging` und
-  `production` mit Freigabepflicht.
-- **Entscheid:** offen
+- **Stand:** Docker Hub als Registry ist bestätigt (Auftrag an Codex). Der
+  Publish-Workflow `.github/workflows/publish-image.yml` liest den Namensraum
+  aus der Repository-Variablen `DOCKERHUB_NAMESPACE` und die Zugangsdaten aus
+  den Secrets `DOCKERHUB_USERNAME` und `DOCKERHUB_TOKEN`; ohne diese Werte
+  publiziert er nichts.
+- **Empfehlung:** Namensraum des Unternehmens oder des Betreibers, private
+  Repositories `luescherwohnen-web` und `luescherwohnen-kontakt`, Zugangstoken
+  mit Schreibrecht nur für diese Repositories, Publish nur per Release-Tag
+  `vX.Y.Z` aus `main`, GitHub-Environment `docker-hub` mit Freigabepflicht.
+- **Entscheid:** Namensraum und Token-Verantwortliche offen
 
 ## Weitere Discovery-Entscheidungen
 
@@ -212,6 +219,31 @@ entschieden hat.
 - **Empfehlung:** Grössenvarianten und Archive entfernen, Originale kuratieren
   und mit Git LFS oder ausserhalb des Repositories verwalten, Historie einmalig
   bereinigen. Ausführung nur nach Auftrag.
+- **Entscheid:** offen
+
+### D-019 Reverse-Proxy und TLS auf dem On-Prem-Server
+
+- **Frage:** Gibt es auf dem Server bereits einen Reverse-Proxy mit
+  TLS-Zertifikaten (z. B. nginx, Traefik, Caddy), oder soll der Compose-Stack
+  einen mitbringen?
+- **Belege:** `deploy/compose.yml` bindet die Website nur an `127.0.0.1:8080`
+  und erwartet einen vorgelagerten Proxy; HSTS gehört an diese Stelle.
+- **Empfehlung:** Vorhandenen Proxy wiederverwenden, falls einer gepflegt
+  wird; sonst Caddy im Compose-Stack mit automatischen Let's-Encrypt-
+  Zertifikaten, sobald die Domain auf den Server zeigt.
+- **Entscheid:** offen
+
+### D-020 Deployment-Weg vom Docker Hub auf den Server
+
+- **Frage:** Wie kommt ein freigegebenes Image auf den Server?
+- **Optionen:** (A) self-hosted GitHub-Runner auf dem Server, nur ausgehende
+  Verbindung, Deployment-Job im geschützten Environment `production`; (B)
+  Pull-Skript oder Timer auf dem Server, das die freigegebene Version zieht;
+  (C) SSH aus GitHub Actions (braucht eingehenden Zugang und Schlüssel als
+  Secret).
+- **Empfehlung:** (A) mit `docker compose pull` und `up -d`, Rollback über
+  die vorherige Version in `deploy/.env`; bis dahin manuell nach
+  `docs/betrieb-on-prem.md`.
 - **Entscheid:** offen
 
 ### D-018 Sicherheitsvorfall Alt-Website

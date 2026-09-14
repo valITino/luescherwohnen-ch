@@ -98,8 +98,10 @@ Bestand, Zuständigkeiten, zusammengeführte Ursprungsrollen und bewusst nicht
   Spam, Header Injection und Missbrauch schützen; keine Secrets im Client/Repo.
 - Docker-Images reproduzierbar, rootless/read-only soweit möglich, mit gepinnten
   Basen, Healthcheck, `.dockerignore`, SBOM und Vulnerability Scan bauen.
-- Green-Hosting-Fähigkeiten, Zielplattform und Docker-Hub-Namensraum nicht raten;
-  vor dem Deployment bestätigen.
+- Zielplattform ist laut Anweisung des Repository-Eigentümers vom 14.09.2026 ein
+  eigener On-Prem-Server, nicht Green; DNS ist ein separater Auftrag. Fähigkeiten
+  dieses Servers, Reverse-Proxy/TLS, Deployment-Weg und Docker-Hub-Namensraum
+  nicht raten; vor dem Deployment bestätigen.
 - Code, Plugins, Archive und Konfiguration der alten Website werden nicht
   wiederverwendet. Die ZIP-Archive unter `old/ressources/2026/08/` enthalten
   Schadcode und dürfen weder entpackt noch ausgeführt werden

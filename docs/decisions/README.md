@@ -19,7 +19,7 @@ Umsetzung verbindlich (`CLAUDE.md`, Abschnitt 1).
 
 Siehe [`template.md`](template.md). Die erste ADR-Serie entsteht in Phase 1,
 sobald Gate G0 erreicht ist (Minimal-Stack und Bootstrap, Kontaktweg, Karte,
-Suche, Green-Deployment, Docker Hub, Umgebungen und Rollback).
+Suche, On-Prem-Deployment, Docker Hub, Umgebungen und Rollback).
 
 ## Index
 

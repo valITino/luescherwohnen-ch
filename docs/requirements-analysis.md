@@ -87,7 +87,7 @@ Die Vorlage für den Kick-off mit Belegen, Optionen und Empfehlungen steht in
 | D-004 | Standort(e), Öffnungszeiten und gewünschte Kartenlösung; Einwilligung für externe Karten oder datensparsame Alternative | Inhalt und Datenschutz |
 | D-005 | Freigegebenes Logo (Vektor fehlt), Bildmaterial, Bildrechte je Lieferant, Teamtexte, Referenzen und Kundeneinwilligungen | Design, Copyright und Datenschutz |
 | D-006 | Bedeutung von "rund um die Uhr": Erreichbarkeit, Vor-Ort-Service oder Marketingaussage | Vermeidung einer falschen Leistungszusage |
-| D-007 | Green-Angebot, technischer Zugang, unterstützte Container-Schnittstelle, Domains/DNS sowie Staging/Produktion | belastbare Betriebsarchitektur |
+| D-007 | On-Prem-Server: Betriebssystem, Docker-Version, CPU-Architektur, Zugang und Administration, Staging/Produktion, Backup und Monitoring (Hosting bei Green ist seit 14.09.2026 abgelöst, siehe Abschnitt 8) | belastbare Betriebsarchitektur |
 | D-008 | Docker-Hub-Organisation/Image-Name, private/öffentliche Registry, Freigabebranch/-tags und benötigte GitHub Environments | sichere CI/CD-Veröffentlichung |
 
 ## 5. Weitere Discovery-Fragen
@@ -103,7 +103,9 @@ Die Vorlage für den Kick-off mit Belegen, Optionen und Empfehlungen steht in
 | D-015 | Darf Bootstrap eingesetzt werden, falls semantisches HTML und kleines eigenes CSS nachweislich einfacher sind? | Die Quelle nennt Bootstrap als Wunsch, der Auftrag minimiert Frameworks. |
 | D-016 | Wie pflegt Andreas Längle Inhalte ohne CMS (Dateien im Repository, Zuruf an das Team, anderes)? | Content-Modell, Pflegeprozess und Schulung. |
 | D-017 | Welche Medien bleiben im Repository, und darf die Historie nach der Bereinigung neu geschrieben werden? | 287 MB Bestand verlangsamen Klone und CI; Bereinigung ist destruktiv. |
-| D-018 | Wie wird der Sicherheitsvorfall der alten Website behandelt, und dürfen die schädlichen Archive aus Repository und Historie entfernt werden? | Blockiert Phase 3 (Betrieb auf demselben Hosting) bis zum Abschluss. |
+| D-018 | Wie wird der Sicherheitsvorfall der alten Website behandelt, und dürfen die schädlichen Archive aus Repository und Historie entfernt werden? | Betrifft die alte Website bei Green; der Relaunch läuft on-prem, Zugangsdaten und Domain-Umzug bleiben betroffen. |
+| D-019 | Reverse-Proxy und TLS auf dem On-Prem-Server: vorhandener Proxy (welcher, wer pflegt Zertifikate) oder mitgelieferter Proxy im Compose-Stack? | HSTS, Zertifikate, Weiterleitung `/kontakt`, Erreichbarkeit von aussen. |
+| D-020 | Deployment-Weg vom Docker Hub auf den Server: self-hosted GitHub-Runner (nur ausgehende Verbindung), Pull-Skript auf dem Server oder SSH aus GitHub Actions? | Sicherheit der Zugänge, Automatisierungsgrad, Rollback. |
 
 ## 6. Risiken und Nicht-Annahmen
 
@@ -120,8 +122,9 @@ Die Vorlage für den Kick-off mit Belegen, Optionen und Empfehlungen steht in
 - Die vorhandenen HTML-Dateien unter `docs/` sind Bestandsmaterial. Ihr Status,
   ihre Inhalte und Bildrechte werden geprüft; sie sind nicht automatisch die
   Produktionsbasis.
-- Docker Hub und Green Hosting sind Wünsche, aber Zugang, Tarif, Runtime,
-  Deployment-Protokoll und Secret-Verwaltung sind noch unbekannt.
+- Docker Hub ist als Registry bestätigt, der Betrieb erfolgt auf einem eigenen
+  On-Prem-Server. Namensraum, Zugangstoken, Server-Fähigkeiten, Reverse-Proxy,
+  Deployment-Weg und Secret-Verwaltung sind noch nicht dokumentiert.
 - Die alte Website ist nach dem Befund vom 14.09.2026 vermutlich kompromittiert
   (`docs/security/2026-09-14-altwebsite-verdacht-kompromittierung.md`).
   Server-seitiges Material der alten Website wird nicht übernommen; ein Betrieb
@@ -165,4 +168,4 @@ Kontext vermutete Freigaben reichen nicht.
 
 | Datum | Entscheider | IDs | Entscheid/Wortlaut |
 |---|---|---|---|
-| - | - | - | Noch keine Freigabe dokumentiert. |
+| 14.09.2026 | Repository-Eigentümer (valITino), dem Auftraggeber zur Kenntnis | D-007, D-008 | "We want to host the website on our on-prem server, not on Green. There will just be the configuration of the DNS A record ... but this is a different story, not for here and now." Docker Hub bleibt die Registry, in die die Pipeline publiziert (Auftrag an Codex). Der Wunsch "Green als Hosting Provider" aus dem Briefing ist damit abgelöst. |

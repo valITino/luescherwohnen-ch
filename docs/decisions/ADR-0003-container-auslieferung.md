@@ -9,9 +9,11 @@
 
 `CLAUDE.md` verlangt reproduzierbare, möglichst rootless und read-only
 betriebene Docker-Images mit gepinnten Basen, Healthcheck, `.dockerignore`,
-SBOM und Schwachstellen-Scan. Das Hosting-Angebot bei Green und der
-Registry-Namensraum sind noch nicht bestätigt; der Sicherheitsvorfall der alten
-Website ist offen. Die Website ist vollständig statisch (ADR-0001).
+SBOM und Schwachstellen-Scan. Betrieb ist ein eigener On-Prem-Server
+(Entscheid vom 14.09.2026), Registry ist Docker Hub; Namensraum, Reverse-Proxy
+und Deployment-Weg sind noch offen (`D-007`, `D-008`, `D-019`, `D-020`). Der
+Sicherheitsvorfall der alten Website bei Green ist offen. Die Website ist
+vollständig statisch (ADR-0001).
 
 ## Optionen
 
@@ -43,8 +45,10 @@ Container-Betrieb ergibt).
 - HSTS wird an der TLS-terminierenden Stelle gesetzt (`D-007`).
 - CI-Modul `_container-quality.yml`: hadolint, Build ohne Push, SBOM (Syft),
   Trivy-Scan mit Abbruch bei Critical/High, Smoke-Test read-only.
-- Kein Registry-Push und kein Deployment, bis `D-008` und `D-018` entschieden
-  sind.
+- Publish nach Docker Hub nur per Release-Tag über
+  `.github/workflows/publish-image.yml` (Build, Scan, dann Push mit
+  Provenance und SBOM), gesteuert über Repository-Variable und Secrets; kein
+  Deployment, bis `D-019` und `D-020` entschieden sind.
 
 ## Folgen
 

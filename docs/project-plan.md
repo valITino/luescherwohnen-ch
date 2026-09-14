@@ -45,8 +45,8 @@ begonnen; alle ADRs bleiben `Vorgeschlagen`, bis der Auftraggeber sie annimmt.
 - [ ] Threat Model für Kontakt, Drittanbieter, Build und Betrieb erstellen
 - [x] ADR für Minimal-Stack und Bootstrap (ADR-0001) sowie Kontakt, Karte und
       Suche (ADR-0002) geschrieben; Formular-Inkrement folgt nach `D-003`
-- [ ] ADR für Green-Deployment, Docker Hub, Umgebungen und Rollback schreiben
-      (nach `D-007`, `D-008`, `D-018`)
+- [ ] ADR für On-Prem-Deployment, Reverse-Proxy, Umgebungen und Rollback
+      schreiben (nach `D-019`, `D-020`)
 - [x] Teststrategie für Accessibility, Responsive und Drittanbieter-Freiheit als
       Playwright-Tests umgesetzt; Browserabdeckung und Performance-Budget nach
       `D-012`
@@ -81,10 +81,13 @@ begonnen; alle ADRs bleiben `Vorgeschlagen`, bis der Auftraggeber sie annimmt.
       Push, SBOM, Trivy, Smoke-Test read-only)
 - [ ] Security Header gegen das Threat Model abgleichen; HSTS an der
       TLS-terminierenden Stelle (`D-007`)
-- [ ] Docker-Hub-Publish mit SBOM, Signatur/Provenance und Image-Scan
-      einrichten (nach `D-008`)
-- [ ] Geschütztes Staging mit Smoke Test, Concurrency Lock und Rollback
-      ausrollen (nach `D-007`)
+- [x] Docker-Hub-Publish per Release-Tag mit Scan vor dem Push, Provenance
+      und SBOM eingerichtet; aktiv, sobald Namensraum und Token gesetzt sind
+      (`D-008`)
+- [x] Compose-Stack und Betriebs-Runbook für den On-Prem-Server
+      (`deploy/`, `docs/betrieb-on-prem.md`)
+- [ ] Deployment-Automation auf den Server (nach `D-020`) und geschütztes
+      Staging mit Smoke Test, Concurrency Lock und Rollback
 - [ ] Restore-, Incident- und Update-Runbooks prüfen
 - Voraussetzung für Betrieb: Vorfall `D-018` abgeschlossen; keine Übernahme
   von Code, Plugins oder Konfiguration der alten Website
