@@ -8,7 +8,7 @@
 
 ## 1. Zusammenfassung
 
-Der Medienexport der alten Website enthält im Ordner `docs/ressources/2026/08/`
+Der Medienexport der alten Website enthält im Ordner `old/ressources/2026/08/`
 zwei ZIP-Archive mit PHP-Code. Eines ist ein als Akismet-Plugin getarntes Paket
 mit einer Backdoor, die beliebigen, per HTTP-Parameter übermittelten PHP-Code
 auf dem Server ausführt. Das zweite enthält eine einzelne, stark verschleierte
@@ -23,8 +23,8 @@ Nichts davon wurde ausgeführt. Die Dateien wurden nur gelistet und gelesen.
 
 | Datei im Repository | Inhalt | Merkmale |
 |---|---|---|
-| `docs/ressources/2026/08/contact_1787305442-1.zip` (133 KB) | Ordner `contact_1787305442/` mit 37 Dateien: Kopie des Akismet-Plugins 5.7 plus Fremddateien | Zufällig nummerierter Ordnername; Datei `lndex.php` (kleines L statt i) mit dem Marker `<!--tAO8m3LP-->`; Datei `abilities/page_template_1787305442.php` mit demselben Marker und der Backdoor; `.htaccess` |
-| `docs/ressources/2026/08/f88a21ec.zip` (60 KB) | `scope-router-edge/scope-router-edge.php` (190 KB, 5 281 Zeilen, Zeilen bis 23 064 Zeichen) | Plugin-Kopf "Scope Router Edge" mit nicht verifizierbarer GitHub-Adresse; eigene Zeichen-Ersetzungstabelle, `gzinflate`, Auswertung von `$_REQUEST`; Code ist unlesbar verschleiert |
+| `old/ressources/2026/08/contact_1787305442-1.zip` (133 KB) | Ordner `contact_1787305442/` mit 37 Dateien: Kopie des Akismet-Plugins 5.7 plus Fremddateien | Zufällig nummerierter Ordnername; Datei `lndex.php` (kleines L statt i) mit dem Marker `<!--tAO8m3LP-->`; Datei `abilities/page_template_1787305442.php` mit demselben Marker und der Backdoor; `.htaccess` |
+| `old/ressources/2026/08/f88a21ec.zip` (60 KB) | `scope-router-edge/scope-router-edge.php` (190 KB, 5 281 Zeilen, Zeilen bis 23 064 Zeichen) | Plugin-Kopf "Scope Router Edge" mit nicht verifizierbarer GitHub-Adresse; eigene Zeichen-Ersetzungstabelle, `gzinflate`, Auswertung von `$_REQUEST`; Code ist unlesbar verschleiert |
 
 Funktionsweise der Backdoor in `page_template_1787305442.php` (aus dem Quelltext
 gelesen): Wenn der HTTP-Parameter `entity` gesetzt ist, wird sein Wert Zeichen
@@ -82,7 +82,7 @@ den Hosting-Anbieter dienen können. Empfohlene Reihenfolge:
 2. Archive aus dem Arbeitsstand entfernen:
 
    ```bash
-   git rm docs/ressources/2026/08/contact_1787305442-1.zip docs/ressources/2026/08/f88a21ec.zip
+   git rm old/ressources/2026/08/contact_1787305442-1.zip old/ressources/2026/08/f88a21ec.zip
    git commit -m "fix: remove malicious archives from legacy website export"
    ```
 
@@ -90,7 +90,7 @@ den Hosting-Anbieter dienen können. Empfohlene Reihenfolge:
    auf einem frischen Klon, danach `--force`-Push und Neu-Klonen durch alle
    Beteiligten), idealerweise zusammen mit der Bereinigung des Medienbestands
    aus `D-017`.
-4. Bis dahin: Archive nicht entpacken, `docs/ressources/` nicht auf Server
+4. Bis dahin: Archive nicht entpacken, `old/ressources/` nicht auf Server
    kopieren, keine PHP-Umgebung mit diesem Repository verbinden.
 
 ## 6. Prüfprotokoll

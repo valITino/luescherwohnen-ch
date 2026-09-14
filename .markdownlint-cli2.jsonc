@@ -7,7 +7,7 @@
   "ignores": [
     "node_modules/**",
     ".claude/skills/**",
-    "docs/ressources/**",
+    "old/**",
     "docs/homepage-anforderungen.md"
   ],
   "config": {

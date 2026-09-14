@@ -3,7 +3,7 @@
 **Stand:** 14.09.2026 (Erstfassung 12.09.2026)
 **Status:** Entwurf für Auftraggeber-Review; keine Produktfreigabe
 **Primärquelle:** `docs/homepage-anforderungen.md`
-**Ergänzende Belege:** `docs/Homepage.docx`, `docs/index.html`, `docs/bestandsinventar.md`
+**Ergänzende Belege:** `old/Homepage.docx`, `old/index.html`, `docs/bestandsinventar.md`
 
 ## 1. Verstandener Auftrag
 
@@ -24,7 +24,7 @@ Rahmenbedingungen aus dem Briefing:
 
 - Entscheider und Freigabeinstanz ist Andreas Längle (Abschnitt 9); er pflegt
   auch die Inhalte langfristig (Abschnitt 6) und hat die alte Website
-  konzipiert und umgesetzt (Impressum in `docs/Homepage.docx`).
+  konzipiert und umgesetzt (Impressum in `old/Homepage.docx`).
 - Kein festes Launch-Datum, Wunsch "möglichst schnell" (Abschnitte 1 und 9).
   Das spricht für ein kleines MVP und den Shop als getrennte Phase.
 - Kein Redaktionssystem gewünscht (Abschnitt 6); der Pflegeprozess ohne CMS
@@ -139,18 +139,18 @@ steht in `docs/bestandsinventar.md`.
 
 | Beleg | Beobachtung | Status |
 |---|---|---|
-| `docs/index.html`, Zeile 8 und 31 | Firmenname "Lüscher Wohnen AG" | Aktualität und rechtliche Schreibweise bestätigen (`D-001`) |
-| `docs/index.html`, Zeile 34 | Verschleierte E-Mail-Adresse `info` bei der Projektdomain | Empfänger und gewünschter Kontaktweg bestätigen (`D-003`) |
-| `docs/index.html`, Zeile 35 | Telefonnummer `+41 56 222 78 52` | Aktualität und Veröffentlichungsfreigabe bestätigen (`D-001`) |
-| `docs/index.html`, Zeilen 36-49 | Montag geschlossen; Dienstag-Freitag 10:00-18:30; Samstag 10:00-16:00 | Aktualität bestätigen (`D-004`) |
-| `docs/index.html`, Zeile 3 | `lang="en"` bei deutschem Inhalt; `style.css`, `favicon.ico`, `index.js` fehlen | Bestandsmangel; nicht übernehmen |
-| `docs/index-new.html`, Zeilen 7-10 und 42-45 | Bootstrap 5.3.8 wird über jsDelivr mit SRI eingebunden | Nur Bestandsentwurf, keine Architekturfreigabe (`D-015`) |
-| `docs/Homepage.docx`, Impressum | Lüscher Wohnen AG, Weite Gasse 9, 5400 Baden; Telefon +41 56 222 78 52; Fax +41 56 222 32 75; `info@luescherwohnen.ch`; Geschäftsleiter Michael Längle; Handelsregister Kanton Aargau; MwSt-Nr. CHE 116.367.369 | Kandidatenwerte für Impressum und Kontakt (`D-001`, `D-004`) |
-| `docs/Homepage.docx`, Farbtabelle | Text `#272727`, Hintergrund `#ffffff`, Link und Akzent `#9cb703`; Kontrast Grün auf Weiss 2.29:1, Dunkelgrau auf Grün 6.54:1 | Grün belegt; nur als Fläche mit dunkler Schrift nutzbar (`D-005`, Design-Tokens Phase 1) |
-| `docs/Homepage.docx`, Seitenstruktur | HOME, Services, Virtuelle Showrooms, Über uns, Kontakt, Shop mit acht Produkten, Impressum, AGB (20.08.2023) | Grundlage für Redirect-Plan (`D-011`) und Shop-Discovery (`D-014`) |
-| `docs/Homepage.docx`, Services | "wann und wo Sie es wünschen"; Lieferung "auch an einer Randzeit oder am Wochenende" | Präzisiert die Aussage "rund um die Uhr" (`D-006`) |
-| `docs/ressources/`, Commit `dba9590` | 1 038 Dateien, 287 MB, WordPress-Upload-Struktur; Logo nur als PNG; Porträts, Referenzen, Lieferantenbilder | Rechteinventar offen (`D-005`); Bereinigung (`D-017`) |
-| `docs/ressources/2026/08/*.zip` | Zwei Archive mit PHP-Backdoor und verschleiertem PHP-Code | Sicherheitsvorfall (`D-018`) |
+| `old/index.html`, Zeile 8 und 31 | Firmenname "Lüscher Wohnen AG" | Aktualität und rechtliche Schreibweise bestätigen (`D-001`) |
+| `old/index.html`, Zeile 34 | Verschleierte E-Mail-Adresse `info` bei der Projektdomain | Empfänger und gewünschter Kontaktweg bestätigen (`D-003`) |
+| `old/index.html`, Zeile 35 | Telefonnummer `+41 56 222 78 52` | Aktualität und Veröffentlichungsfreigabe bestätigen (`D-001`) |
+| `old/index.html`, Zeilen 36-49 | Montag geschlossen; Dienstag-Freitag 10:00-18:30; Samstag 10:00-16:00 | Aktualität bestätigen (`D-004`) |
+| `old/index.html`, Zeile 3 | `lang="en"` bei deutschem Inhalt; `style.css`, `favicon.ico`, `index.js` fehlen | Bestandsmangel; nicht übernehmen |
+| `old/index-new.html`, Zeilen 7-10 und 42-45 | Bootstrap 5.3.8 wird über jsDelivr mit SRI eingebunden | Nur Bestandsentwurf, keine Architekturfreigabe (`D-015`) |
+| `old/Homepage.docx`, Impressum | Lüscher Wohnen AG, Weite Gasse 9, 5400 Baden; Telefon +41 56 222 78 52; Fax +41 56 222 32 75; `info@luescherwohnen.ch`; Geschäftsleiter Michael Längle; Handelsregister Kanton Aargau; MwSt-Nr. CHE 116.367.369 | Kandidatenwerte für Impressum und Kontakt (`D-001`, `D-004`) |
+| `old/Homepage.docx`, Farbtabelle | Text `#272727`, Hintergrund `#ffffff`, Link und Akzent `#9cb703`; Kontrast Grün auf Weiss 2.29:1, Dunkelgrau auf Grün 6.54:1 | Grün belegt; nur als Fläche mit dunkler Schrift nutzbar (`D-005`, Design-Tokens Phase 1) |
+| `old/Homepage.docx`, Seitenstruktur | HOME, Services, Virtuelle Showrooms, Über uns, Kontakt, Shop mit acht Produkten, Impressum, AGB (20.08.2023) | Grundlage für Redirect-Plan (`D-011`) und Shop-Discovery (`D-014`) |
+| `old/Homepage.docx`, Services | "wann und wo Sie es wünschen"; Lieferung "auch an einer Randzeit oder am Wochenende" | Präzisiert die Aussage "rund um die Uhr" (`D-006`) |
+| `old/ressources/`, Commit `dba9590` | 1 038 Dateien, 287 MB, WordPress-Upload-Struktur; Logo nur als PNG; Porträts, Referenzen, Lieferantenbilder | Rechteinventar offen (`D-005`); Bereinigung (`D-017`) |
+| `old/ressources/2026/08/*.zip` | Zwei Archive mit PHP-Backdoor und verschleiertem PHP-Code | Sicherheitsvorfall (`D-018`) |
 
 Ein Abruf von `https://luescherwohnen.ch/` am 12.09.2026 und am 14.09.2026
 lieferte dieser Arbeitsumgebung HTTP 403 von einer Web Application Firewall.

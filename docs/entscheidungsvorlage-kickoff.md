@@ -16,11 +16,11 @@ entschieden hat.
 ### D-001 Firmenangaben für Impressum, Kontakt und strukturierte Daten
 
 - **Frage:** Sind die folgenden Angaben aktuell und so zu veröffentlichen?
-- **Belege:** `docs/Homepage.docx` (Impressum der alten Website): Lüscher
+- **Belege:** `old/Homepage.docx` (Impressum der alten Website): Lüscher
   Wohnen AG, Weite Gasse 9, 5400 Baden; Telefon +41 56 222 78 52; Fax
   +41 56 222 32 75; `info@luescherwohnen.ch`; Geschäftsleiter Michael Längle;
   Handelsregister Kanton Aargau; MwSt-Nr. CHE 116.367.369.
-  `docs/index.html`: Telefon und E-Mail identisch.
+  `old/index.html`: Telefon und E-Mail identisch.
 - **Empfehlung:** Angaben gegen den aktuellen Handelsregisterauszug prüfen,
   Faxnummer nur behalten, wenn sie noch bedient wird; verantwortliche Person
   für die Website benennen.
@@ -55,7 +55,7 @@ entschieden hat.
 
 - **Frage:** Sind Adresse und Öffnungszeiten aktuell, und welche Kartenlösung
   ist gewünscht?
-- **Belege:** Adresse siehe `D-001`; Öffnungszeiten laut `docs/index.html`:
+- **Belege:** Adresse siehe `D-001`; Öffnungszeiten laut `old/index.html`:
   Montag geschlossen, Dienstag bis Freitag 10:00 bis 18:30 Uhr, Samstag 10:00
   bis 16:00 Uhr. Alte Website hatte "Firmenstandorte" (Mehrzahl) und
   "Kontakt und Anfahrt".
@@ -141,7 +141,7 @@ entschieden hat.
 
 ### D-011 Bestehende URLs und Weiterleitungen
 
-- **Belege:** Seitenstruktur der alten Website aus `docs/Homepage.docx`
+- **Belege:** Seitenstruktur der alten Website aus `old/Homepage.docx`
   (Inventar, Abschnitt 2); die tatsächlichen URLs sind nicht belegt, die
   Live-Website antwortet automatisierten Abrufen mit HTTP 403.
 - **Empfehlung:** Auftraggeber exportiert die URL-Liste (Sitemap oder Menü
@@ -183,7 +183,7 @@ entschieden hat.
 
 - **Belege:** Briefing wünscht Bootstrap bei Eigenentwicklung ohne CMS;
   `CLAUDE.md` verlangt belegten Bedarf für jede Laufzeitabhängigkeit;
-  `docs/index-new.html` bindet Bootstrap 5.3.8 ab CDN ein.
+  `old/index-new.html` bindet Bootstrap 5.3.8 ab CDN ein.
 - **Optionen:** (A) Bootstrap 5, selbst gehostet, auf benötigte Komponenten
   reduziert, ohne Bootstrap-JavaScript, ausser es wird nachweislich gebraucht;
   (B) eigenes, kleines CSS ohne Framework; (C) Bootstrap komplett ab CDN wie

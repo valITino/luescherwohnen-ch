@@ -18,11 +18,11 @@ gelöscht oder verändert.
 | Datei | Herkunft | Befund |
 |---|---|---|
 | `docs/homepage-anforderungen.md` | Auftraggeber, 05.09.2026 | Ausgefülltes Briefing-Formular; fachliche Primärquelle. |
-| `docs/Homepage.docx` | Auftraggeber, 04.09.2026 (Metadaten: Autor "Andreas und Iris Längle") | Beschreibung der alten Website: Farbwerte, Seitenstruktur, Seitentexte, Impressum, AGB vom 20.08.2023. Kein Duplikat des Briefings. |
-| `docs/index.html` | Auftraggeber | Platzhalterseite "Wir gestalten unsere Website neu" mit E-Mail, Telefon und Öffnungszeiten. `lang="en"` trotz deutschem Inhalt; verweist auf nicht vorhandene `style.css`, `favicon.ico` und `index.js`. |
-| `docs/index-new.html` | Auftraggeber | Gleicher Inhalt mit Bootstrap 5.3.8 ab jsDelivr-CDN (SRI vorhanden), Titel "Document", `lang="en"`. Technischer Versuch, kein Design. |
+| `old/Homepage.docx` | Auftraggeber, 04.09.2026 (Metadaten: Autor "Andreas und Iris Längle") | Beschreibung der alten Website: Farbwerte, Seitenstruktur, Seitentexte, Impressum, AGB vom 20.08.2023. Kein Duplikat des Briefings. |
+| `old/index.html` | Auftraggeber | Platzhalterseite "Wir gestalten unsere Website neu" mit E-Mail, Telefon und Öffnungszeiten. `lang="en"` trotz deutschem Inhalt; verweist auf nicht vorhandene `style.css`, `favicon.ico` und `index.js`. |
+| `old/index-new.html` | Auftraggeber | Gleicher Inhalt mit Bootstrap 5.3.8 ab jsDelivr-CDN (SRI vorhanden), Titel "Document", `lang="en"`. Technischer Versuch, kein Design. |
 
-### Inhalte aus `docs/Homepage.docx`
+### Inhalte aus `old/Homepage.docx`
 
 Farbwerte der alten Website (Kontrast nach WCAG 2.x, berechnet am 14.09.2026):
 
@@ -53,7 +53,7 @@ Kantons Aargau; MwSt-Nr. CHE 116.367.369; Seitenkonzept, Design und Umsetzung
 Andreas Längle; Fotos von Lüscher Wohnen AG oder von Lieferanten zur Verfügung
 gestellt.
 
-## 3. Medienordner `docs/ressources/`
+## 3. Medienordner `old/ressources/`
 
 Hinzugefügt mit Commit `dba9590` ("Bild Ressourcen alte Webseite hinzugefügt",
 Andreas Längle, 30.08.2026). Die Struktur `JJJJ/MM/` mit Varianten wie
@@ -103,8 +103,8 @@ ZIP-Archive enthalten PHP-Schadcode, siehe Abschnitt 5.
 
 ## 5. Sicherheitsbefund
 
-`docs/ressources/2026/08/contact_1787305442-1.zip` und
-`docs/ressources/2026/08/f88a21ec.zip` enthalten keine Medien, sondern PHP-Code
+`old/ressources/2026/08/contact_1787305442-1.zip` und
+`old/ressources/2026/08/f88a21ec.zip` enthalten keine Medien, sondern PHP-Code
 mit den Merkmalen einer WordPress-Backdoor. Details, Belege und
 Sofortmassnahmen: [`security/2026-09-14-altwebsite-verdacht-kompromittierung.md`](security/2026-09-14-altwebsite-verdacht-kompromittierung.md).
 Die Archive bleiben bis zur Entscheidung `D-018` unverändert im Repository,
