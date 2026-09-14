@@ -30,6 +30,10 @@ Container-Betrieb ergibt).
 
 - Mehrstufiges `Dockerfile`: Build mit Node.js, Laufzeit mit
   `nginxinc/nginx-unprivileged` (Alpine, slim), beide per Digest gepinnt.
+- Die Laufzeitstufe spielt die Sicherheitsupdates der Alpine-Basis ein
+  (`apk upgrade`), weil Basisimages den Paketen hinterherlaufen; der
+  Trivy-Scan bleibt die Kontrolle (erster Lauf am 14.09.2026: vier HIGH in
+  OpenSSL, durch das Update behoben).
 - nginx läuft als Benutzer 101 auf Port 8080; `/tmp` ist der einzige
   beschreibbare Pfad, das Image läuft mit `--read-only`.
 - Sicherheits-Header in `web/docker/security-headers.conf`: strikte
