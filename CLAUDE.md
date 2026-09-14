@@ -15,6 +15,10 @@ Fragen; das Team liefert belegbare Vorschläge und setzt nur Freigegebenes um.
    verbindlich.
 5. `docs/project-plan.md` beschreibt Reihenfolge, Gates und Nachweise.
 
+`docs/bestandsinventar.md` und `docs/entscheidungsvorlage-kickoff.md` sind
+Arbeitsdokumente der Discovery: Sie belegen Fakten und formulieren
+Empfehlungen, treffen aber keine Entscheidung.
+
 Niemals fehlende Angaben erfinden. Fakten im Repository belegen. Veränderliche
 externe Fakten in Primärquellen verifizieren, Quelle und Abrufdatum festhalten.
 Annahmen sind nur als `ANNAHME - ZU BESTAETIGEN` zulässig und dürfen keine
@@ -87,6 +91,10 @@ Bestand, Zuständigkeiten, zusammengeführte Ursprungsrollen und bewusst nicht
   Basen, Healthcheck, `.dockerignore`, SBOM und Vulnerability Scan bauen.
 - Green-Hosting-Fähigkeiten, Zielplattform und Docker-Hub-Namensraum nicht raten;
   vor dem Deployment bestätigen.
+- Code, Plugins, Archive und Konfiguration der alten Website werden nicht
+  wiederverwendet. Die ZIP-Archive unter `docs/ressources/2026/08/` enthalten
+  Schadcode und dürfen weder entpackt noch ausgeführt werden
+  (`docs/security/2026-09-14-altwebsite-verdacht-kompromittierung.md`).
 
 ## 5. Situationsbasierte CI/CD
 
@@ -128,6 +136,8 @@ Nur bei ausschliesslichen Änderungen an README, reiner Dokumentation oder
 Code-Kommentaren dürfen Unit-Tests, Security-Scans und Lint entfallen. Dann sind
 mindestens Diff-, Markdown- und Link-Prüfung auszuführen und die Auslassung im
 Abschluss explizit zu nennen. Ein fehlendes Werkzeug gilt nicht als bestanden.
+Die lokalen Prüfkommandos stehen in `README.md` (`make check`, `make links`)
+und laufen identisch über den Dispatcher `.github/workflows/ci.yml`.
 
 ## 7. Git, Sprache und Dokumentation
 
@@ -141,4 +151,6 @@ Abschluss explizit zu nennen. Ein fehlendes Werkzeug gilt nicht als bestanden.
 - Jede Abschlussmeldung nennt geänderte Dateien, Entscheidungen, offene Punkte
   und die exakten ausgeführten Prüfkommandos samt Ergebnis.
 - Nach Änderungen an Agenten oder Skills muss
-  `python scripts/validate_claude_config.py` erfolgreich sein.
+  `python scripts/validate_claude_config.py` erfolgreich sein. Der Validator
+  prüft auch, dass diese Datei und `.claude/README.md` jede Rolle und jeden
+  Skill referenzieren.

@@ -1,0 +1,28 @@
+# Architecture Decision Records
+
+**Zweck:** Jede Architektur-, Betriebs- und Sicherheitsentscheidung wird als
+kurzer, nummerierter Datensatz festgehalten. Angenommene ADRs sind für die
+Umsetzung verbindlich (`CLAUDE.md`, Abschnitt 1).
+
+## Regeln
+
+- Dateiname: `ADR-NNNN-kurztitel.md`, fortlaufend nummeriert, nie umnummeriert.
+- Status: `Vorgeschlagen`, `Angenommen`, `Abgelehnt` oder `Ersetzt durch ADR-NNNN`.
+- Nur der Auftraggeber oder eine von ihm benannte Person setzt den Status auf
+  `Angenommen`; Datum, Entscheider und Wortlaut werden im ADR und im
+  Freigabeprotokoll der Anforderungsanalyse festgehalten.
+- Ein ADR nennt die verglichenen Optionen, darunter immer die einfachste
+  statische oder serverseitige Lösung, und begründet jede Laufzeitabhängigkeit.
+- Ein ADR trägt keine `ANNAHME - ZU BESTAETIGEN` in den Entscheidungsteil.
+
+## Vorlage
+
+Siehe [`template.md`](template.md). Die erste ADR-Serie entsteht in Phase 1,
+sobald Gate G0 erreicht ist (Minimal-Stack und Bootstrap, Kontaktweg, Karte,
+Suche, Green-Deployment, Docker Hub, Umgebungen und Rollback).
+
+## Index
+
+| ADR | Titel | Status |
+|---|---|---|
+| – | Noch keine ADR erfasst. | – |
