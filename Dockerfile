@@ -15,7 +15,7 @@ RUN npm run build
 FROM nginxinc/nginx-unprivileged:1.29.8-alpine-slim@sha256:59678856b05324b7f6371f26eb1520be7fcd8bdc8ab380fc4913db8503e5a842
 # Sicherheitsupdates der Alpine-Basis einspielen (Trivy meldete am 14.09.2026
 # OpenSSL 3.5.6-r0 mit Korrektur in 3.5.8-r0), danach zurück zum Benutzer 101.
-USER root
+USER 0
 RUN apk upgrade --no-cache
 USER 101
 COPY web/docker/security-headers.conf /etc/nginx/snippets/security-headers.conf
