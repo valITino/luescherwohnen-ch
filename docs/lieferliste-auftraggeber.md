@@ -1,6 +1,6 @@
 # Lieferliste: Was von Menschen gebraucht wird
 
-**Stand:** 16.09.2026 (ergänzt nach unabhängiger Gegenprüfung)
+**Stand:** 16.09.2026 (zweite Gegenprüfung: Betrieb, Formular, Inhalt, Projekt)
 **Zweck:** Alle Angaben, Zugänge und Freigaben, die das Team nicht selbst
 beschaffen darf, mit Zuständigkeit und Belegstelle. Abgeleitet aus dem
 Entscheidungsregister (`docs/requirements-analysis.md`), der Inhaltsfreigabe
@@ -66,6 +66,25 @@ administriert.
       `TRUST_PROXY` und wertet `X-Forwarded-For` aus (`deploy/compose.yml`).
       Setzt der Proxy den Header nicht, sehen alle Anfragen gleich aus und die
       Ratenbegrenzung sperrt nach wenigen Anfragen die gesamte Kundschaft aus.
+- [ ] **Kapazität und Ressourcengrenzen:** Arbeitsspeicher, CPU-Kerne, freier
+      Plattenplatz, welche weiteren Dienste auf derselben Maschine laufen und ob
+      der Stack feste Grenzen bekommen soll. `deploy/compose.yml` setzt heute
+      bewusst keine, weil die Maschine unbekannt ist.
+- [ ] **Neustartverhalten bestätigen:** Startet der Docker-Dienst beim
+      Systemstart, kommt der Stack nach einem Neustart ohne Handgriff hoch, und
+      startet der Server nach Kernel-Updates selbständig neu? Der Stack trägt
+      `restart: unless-stopped`, das nützt aber nichts, wenn Docker beim Booten
+      nicht aktiviert ist.
+- [ ] **Weg für `compose.yml` und die Vorlagen** auf den Server: Lesezugang zum
+      Repository, etwa ein schreibgeschützter Deploy Key, oder Übertragung von
+      Hand. `D-020` regelt nur den Weg der Images, nicht den der Dateien.
+- [ ] **Wartungsfenster und zulässige Ausfallzeit** für Updates, Neustarts und
+      Rollback. Darf während der Ladenöffnungszeiten ausgerollt werden?
+- [ ] **Betriebsverantwortung benennen:** Wer startet, aktualisiert und rollt
+      zurück, wer vertritt diese Person, über welchen Weg ist sie im
+      Störungsfall erreichbar, und wer erhält die Fehlermeldungen aus
+      fehlgeschlagenen CI-Läufen, Healthchecks und den `mail_fehler`-Logzeilen
+      des Kontakt-Dienstes?
 - [ ] **Staging** gewünscht: ja oder nein, gleicher oder eigener Server.
 - [ ] **Monitoring, Log-Aufbewahrung, Backup.** Es gibt keine Datenbank und
       keine persistenten Daten; ein Backup umfasst nur `compose.yml`, `.env`
@@ -94,6 +113,26 @@ Pflichtprüfung steht in `kontakt/lib/config.mjs`.
       ausschliesslich im Firmenpostfach, nicht auf dem Server.
 - [ ] **Bearbeitung und Frist** (`D-013`): wer Anfragen beantwortet, in welcher
       Zeit, und ob eine Frist auf der Website genannt werden darf.
+- [ ] **Mailanbieter benennen** samt Land der Server und Angabe, ob ein
+      Auftragsbearbeitungsvertrag besteht. Der Anbieter transportiert und
+      speichert die Anfragen und ist damit datenschutzrechtlich relevant; die
+      externe Fachperson braucht diese Angabe für die Datenschutzerklärung.
+- [ ] **Pflichtfelder bestätigen** (`D-003` nennt sie ausdrücklich). Heute sind
+      Name und Nachricht Pflicht, dazu E-Mail oder Telefon. Nicht erhoben werden
+      Adresse, gewünschter Rückrufweg, Art des Anliegens und Terminwunsch.
+- [ ] **Eingangsbestätigung an die anfragende Person:** ja oder nein. Heute geht
+      nur eine Nachricht an das Firmenpostfach, die Person sieht lediglich die
+      Danke-Seite. Ein automatischer Versand an ungeprüfte Fremdadressen bringt
+      ein Missbrauchsrisiko mit sich und wird deshalb nicht ungefragt gebaut.
+- [ ] **Empfängerkategorien bestätigen:** Werden Angaben aus Anfragen an Dritte
+      weitergegeben, etwa an Lieferanten oder Montagepartner, oder findet keine
+      Weitergabe statt? Die Datenschutzerklärung muss das benennen.
+- [ ] **Umgang mit Fehlzustellungen:** An welche Adresse gehen
+      Unzustellbarkeitsmeldungen, wer liest dieses Postfach, und wem fällt es
+      auf, wenn Anfragen ausbleiben?
+- [ ] **Zustellnachweis nach dem ersten Deployment:** Wer prüft mit einer
+      Testanfrage, dass die Nachricht im Postfach ankommt und nicht im Spam
+      landet, und ob dafür eine eigene Testadresse gewünscht ist.
 - [ ] **`KONTAKT_SECRET`** erzeugt der Repository-Eigentümer selbst, zum
       Beispiel mit `openssl rand -hex 32`. Mindestens 32 Zeichen.
 
@@ -147,6 +186,23 @@ Veröffentlichung bestätigt oder korrigiert werden.
       Menüübersicht, für den Redirect-Plan. Die Live-Website beantwortet
       automatisierte Abrufe mit HTTP 403, deshalb kann das Team sie nicht
       selbst erheben.
+- [ ] **Anfahrtsbeschreibung in Text:** nächste Haltestellen und Fussweg,
+      Parkmöglichkeiten, barrierefreier Zugang, allenfalls eine Ladezone. Die
+      alte Website führte "Kontakt und Anfahrt"; die neue nennt bisher nur die
+      Adresse und einen Kartenlink.
+- [ ] **SEO-Angaben** (`D-011`, Briefing Abschnitt 7 trägt dort nur "???"):
+      mit welchen Suchbegriffen die Website gefunden werden soll, ob
+      Auswertungen oder bekannte Rankings der alten Website vorliegen, und
+      welche Firmeneinträge (Kartendienste, Verzeichnisse) bestehen.
+- [ ] **Vorschaubild und Kurztext für geteilte Links.** Wird ein Link der
+      Website verschickt, zeigt sich heute nur der Seitentitel, weil kein Bild
+      hinterlegt ist. Dafür braucht es ein freigegebenes Querformatbild.
+- [ ] **Bereich "Virtuelle Showrooms" entscheiden.** Die alte Website führte ihn
+      im Hauptmenü. Soll er wiederkommen, mit welchen Inhalten, und liegen die
+      Rechte vor? Sonst bitte ausdrücklich abwählen.
+- [ ] **Blog oder Aktuelles entscheiden.** Das Briefing widerspricht sich: in
+      der Seitenliste steht Blog/News als "Kann", bei den Funktionen ist "Blog
+      mit Kategorien/Tags" nicht angekreuzt. Wenn ja, wer schreibt wie oft?
 - [ ] **Sprache** (`D-002`): Deutsch als einzige Sprache bestätigen.
 - [ ] **Suche** (`D-009`): Empfehlung ist keine Suchfunktion im MVP.
 - [ ] **Inhaltspflege ohne CMS** (`D-016`): Empfehlung sind Dateien im
@@ -158,6 +214,10 @@ Veröffentlichung bestätigt oder korrigiert werden.
 
 ## 5. Externe Fachperson: Datenschutz und Recht
 
+- [ ] **Fachperson benennen und beauftragen.** Die beiden folgenden Aufgaben
+      liegen bei einer "qualifizierten Fachperson", aber es ist niemand benannt,
+      beauftragt oder terminiert. Ohne Namen und Termin bleibt der Datenschutzweg
+      offen, und damit Gate G1.
 - [ ] **Datenschutzerklärung prüfen und ergänzen.** Die Seite trägt sichtbar
       den Hinweis "Entwurf" und darf so nicht live gehen. Zu ergänzen sind der
       Betreiber des Servers und die Aufbewahrungsdauer der Zugriffsprotokolle.
@@ -199,11 +259,36 @@ nicht ausgeführt (`CLAUDE.md`, Abschnitt 7).
 - [ ] **ADRs annehmen:** ADR-0001 Minimal-Stack, ADR-0002 Kontakt, Karte und
       Suche, ADR-0003 Container-Auslieferung. Alle drei stehen auf
       `Vorgeschlagen`.
+- [ ] **Informationsarchitektur und Gestaltung abnehmen.** Den lauffähigen Stand
+      ansehen und die eine lange Startseite, die Reihenfolge der Abschnitte, die
+      Navigation und die Gestaltung schriftlich abnehmen oder Änderungen nennen.
+      Die Anforderungsanalyse hält ausdrücklich fest, dass dies ein Vorschlag ist
+      und keine freigegebene Architektur.
+- [ ] **Manuellen Barrierefreiheitstest organisieren.** Die automatischen
+      Prüfungen laufen, aber WEB-Q-001 verlangt zusätzlich einen Durchgang mit
+      Screenreader und ausschliesslich der Tastatur durch einen Menschen. Person
+      und Termin festlegen.
+- [ ] **Abnahmeverfahren für Staging und Produktionsfreigabe** festlegen: wer
+      prüft, nach welchen Kriterien, wer erteilt die Freigabe schriftlich, und
+      wer wird als Freigabeberechtigter im geschützten Environment eingetragen
+      (Gate G3).
 
 Jede Antwort wird mit Datum, Entscheider und Wortlaut im Freigabeprotokoll
 (`docs/requirements-analysis.md`, Abschnitt 8) festgehalten.
 
-## 8. Offen, aber nicht blockierend
+## 8. Übergabe und Betrieb nach dem Launch
+
+- [ ] **Wartung und Support vereinbaren:** wer prüft und übernimmt die
+      wöchentlichen Dependabot-Aktualisierungen, wer erneuert Basisimages und
+      Zertifikate, wer reagiert auf Scan-Befunde, wer taggt und rollt neue
+      Versionen aus, in welchem Rhythmus, mit welcher Reaktionszeit und zu
+      welchen Kosten.
+- [ ] **Host-Pflege:** wer patcht Betriebssystem und Docker-Engine des Servers.
+- [ ] **GitHub-Zugang und Einweisung** für den Auftraggeber, falls er Inhalte
+      selbst pflegt (`D-016`): Konto benennen, Zugriff einrichten, Termin für
+      die Einweisung in Änderung, Pull Request, Vorschau und Freigabe.
+
+## 9. Offen, aber nicht blockierend
 
 - [ ] **Lizenz und Rechtelage des Repositories** festlegen. `package.json` führt
       `UNLICENSED`, eine Lizenzdatei fehlt. Für ein privates Auftragsprojekt ist
