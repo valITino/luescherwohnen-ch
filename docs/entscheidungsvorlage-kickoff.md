@@ -7,6 +7,8 @@ Teams, damit der Auftraggeber sie im Kick-off beantworten kann.
 **Entscheider:** Andreas Längle (Briefing, Abschnitt 9)
 **Regel:** Empfehlungen sind Vorschläge. Eine Entscheidung gilt erst mit Datum,
 Entscheider und Wortlaut im Freigabeprotokoll der Anforderungsanalyse.
+**Zusammenfassung nach Zuständigkeit:** `docs/lieferliste-auftraggeber.md`
+bündelt alle offenen Punkte als abhakbare Liste, auch die technischen Zugänge.
 
 Für jede Entscheidung gilt: `Entscheid:` bleibt leer, bis der Auftraggeber
 entschieden hat.

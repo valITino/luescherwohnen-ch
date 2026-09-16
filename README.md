@@ -14,7 +14,7 @@ des Auftraggebers (Gate G0).
 | Nächstes Gate | G0: `D-001` bis `D-008` beantwortet, MVP schriftlich freigegeben |
 | Website | Inkrement 1 unter `web/` (Startseite, Impressum, Datenschutz-Entwurf), auf Anweisung vom 14.09.2026 vor G0 gebaut; Inhalte gemäss `docs/content-freigabe.md` zu bestätigen |
 | Betrieb | Eigener On-Prem-Server (Entscheid 14.09.2026), Images auf Docker Hub; Reverse-Proxy und Deployment-Weg offen (`D-019`, `D-020`) |
-| Nächster Schritt | Kick-off mit dem Auftraggeber anhand der Entscheidungsvorlage; Prüfung des Website-Stands |
+| Nächster Schritt | Offene Punkte aus `docs/lieferliste-auftraggeber.md` beschaffen; Kick-off mit dem Auftraggeber; Prüfung des Website-Stands |
 | Sicherheitsbefund | Alt-Website vermutlich kompromittiert, siehe Hinweis unten |
 
 ## Wichtiger Sicherheitshinweis
@@ -32,6 +32,7 @@ Sofortmassnahmen stehen in
 | [`CLAUDE.md`](CLAUDE.md) | Verbindliche Arbeitsanweisung: Phasen, Leitplanken, Definition of Done |
 | [`docs/homepage-anforderungen.md`](docs/homepage-anforderungen.md) | Briefing des Auftraggebers, fachliche Primärquelle |
 | [`docs/requirements-analysis.md`](docs/requirements-analysis.md) | Anforderungsanalyse, MVP-Vorschlag und Entscheidungsregister |
+| [`docs/lieferliste-auftraggeber.md`](docs/lieferliste-auftraggeber.md) | Checkliste: welche Angaben, Zugänge und Freigaben von Menschen gebraucht werden |
 | [`docs/entscheidungsvorlage-kickoff.md`](docs/entscheidungsvorlage-kickoff.md) | Kick-off-Vorlage: jede offene Entscheidung mit Belegen, Optionen und Empfehlung |
 | [`docs/bestandsinventar.md`](docs/bestandsinventar.md) | Inventar des Bestandsmaterials: HTML, Word-Dokument, Medien, Archive |
 | [`docs/content-freigabe.md`](docs/content-freigabe.md) | Jede Aussage auf der Website mit Quelle und Freigabestatus |

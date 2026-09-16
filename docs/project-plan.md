@@ -21,7 +21,9 @@ menschlichen Freigabe-Gates und maschinellen Qualitätsnachweisen.
       stammen allein aus `docs/homepage-anforderungen.md`
 - [ ] Sicherheitsvorfall der alten Website an Auftraggeber und Hosting-Anbieter
       übergeben; Massnahmen bestätigt (`D-018`)
-- [ ] Antworten auf `D-001` bis `D-018` im Kick-off erfassen
+- [x] Lieferliste für Auftraggeber, Eigentümer, Serveradministration und
+      Fachperson erstellen (`docs/lieferliste-auftraggeber.md`)
+- [ ] Antworten auf `D-001` bis `D-020` im Kick-off erfassen
 - [ ] URL-Liste der alten Website vom Auftraggeber erhalten (`D-011`)
 - [ ] Rechteinventar für Logo, Bilder, Porträts und Lieferantenmaterial
       abschliessen (`D-005`)
