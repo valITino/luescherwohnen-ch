@@ -1,6 +1,6 @@
 # Lieferliste: Was von Menschen gebraucht wird
 
-**Stand:** 16.09.2026
+**Stand:** 16.09.2026 (ergänzt nach unabhängiger Gegenprüfung)
 **Zweck:** Alle Angaben, Zugänge und Freigaben, die das Team nicht selbst
 beschaffen darf, mit Zuständigkeit und Belegstelle. Abgeleitet aus dem
 Entscheidungsregister (`docs/requirements-analysis.md`), der Inhaltsfreigabe
@@ -27,6 +27,12 @@ selbst, wenn die Variable leer ist.
       `docker-hub` eine Freigabepflicht (required reviewer) erhält. Das
       Environment wird von GitHub beim ersten Lauf automatisch angelegt; die
       Schutzregel muss ein Mensch setzen.
+- [ ] **Branch- und Tag-Schutz** für `main` einrichten und festlegen, wer den
+      Publish manuell auslösen darf. `CLAUDE.md`, Abschnitt 5 verlangt, dass nur
+      geschützte, freigegebene Branches oder Tags veröffentlichen.
+- [ ] **Pull-Zugang auf dem Server**, falls die Docker-Hub-Repositories privat
+      sind: ein Token mit Leserecht für `docker login` auf dem Server. Ohne das
+      schlägt `docker compose pull` fehl.
 
 Veröffentlicht wird nur auf Release-Tags `vX.Y.Z`. Zum Auslösen genügt ein Tag
 auf `main`, sobald die Werte gesetzt sind.
@@ -50,8 +56,16 @@ administriert.
       pflegt die Zertifikate) oder ein im Compose-Stack mitgelieferter Proxy.
       Die Website hört bewusst nur auf `127.0.0.1:8080`
       (`deploy/compose.yml`, Zeile 12); HSTS gehört an die TLS-Stelle.
-- [ ] **Verzeichnis und Zugang** für den Stack, zum Beispiel
-      `/opt/luescherwohnen`, und wer dort Dateien ablegen darf.
+- [ ] **Verzeichnis, Zugang und Dateirechte** für den Stack, zum Beispiel
+      `/opt/luescherwohnen`. `deploy/kontakt.env` enthält Zugangsdaten und darf
+      nur für den ausführenden Benutzer lesbar sein.
+- [ ] **Ausgehender SMTP-Zugang** des Servers zum Mailanbieter. Viele Netze
+      sperren Port 587 oder 465 nach aussen; ohne Freigabe kann der Dienst keine
+      Anfrage zustellen.
+- [ ] **Echte Client-IP durch den Reverse-Proxy.** Der Kontakt-Dienst läuft mit
+      `TRUST_PROXY` und wertet `X-Forwarded-For` aus (`deploy/compose.yml`).
+      Setzt der Proxy den Header nicht, sehen alle Anfragen gleich aus und die
+      Ratenbegrenzung sperrt nach wenigen Anfragen die gesamte Kundschaft aus.
 - [ ] **Staging** gewünscht: ja oder nein, gleicher oder eigener Server.
 - [ ] **Monitoring, Log-Aufbewahrung, Backup.** Es gibt keine Datenbank und
       keine persistenten Daten; ein Backup umfasst nur `compose.yml`, `.env`
@@ -72,9 +86,12 @@ Pflichtprüfung steht in `kontakt/lib/config.mjs`.
       Unternehmens. Eine Freemail-Adresse als Absender scheitert an DMARC.
 - [ ] **SMTP-Zugang** des Mailanbieters: `SMTP_HOST`, `SMTP_PORT`,
       `SMTP_SECURE`, `SMTP_REQUIRE_TLS`, `SMTP_USER`, `SMTP_PASS`.
-- [ ] **SPF- und DKIM-Einträge** für die Absenderdomain, damit die Anfragen
-      nicht im Spam landen. Zuständig ist der Mailanbieter oder die
+- [ ] **SPF-, DKIM- und DMARC-Einträge** für die Absenderdomain, damit die
+      Anfragen nicht im Spam landen. Zuständig ist der Mailanbieter oder die
       DNS-Verwaltung.
+- [ ] **Aufbewahrung und Löschung** der Anfragen im Postfach (`D-003`). Die
+      Datenschutzerklärung nennt heute keine Frist; die Anfragen liegen
+      ausschliesslich im Firmenpostfach, nicht auf dem Server.
 - [ ] **Bearbeitung und Frist** (`D-013`): wer Anfragen beantwortet, in welcher
       Zeit, und ob eine Frist auf der Website genannt werden darf.
 - [ ] **`KONTAKT_SECRET`** erzeugt der Repository-Eigentümer selbst, zum
@@ -89,8 +106,19 @@ Veröffentlichung bestätigt oder korrigiert werden.
 - [ ] **Impressumsblock** (`D-001`): exakte Firmenbezeichnung und Rechtsform,
       Anschrift, Telefon, Geschäftsleitung, Handelsregistereintrag sowie die
       UID/MwSt-Nummer in korrekter Schreibweise. Der Bestand nennt
-      "CHE 116.367.369"; die amtliche Schreibweise ist gegen den
-      Handelsregisterauszug zu prüfen.
+      "CHE 116.367.369".
+      Hinweis zur Arbeitsteilung: Firmenbezeichnung, Rechtsform, UID und
+      Handelsregistereintrag sind öffentlich nachprüfbar, und `CLAUDE.md`,
+      Abschnitt 1 verpflichtet das Team, solche Fakten selbst in der
+      Primärquelle zu verifizieren. Ein Abruf der öffentlichen
+      Zefix-Schnittstelle am 16.09.2026 lieferte HTTP 401; sie verlangt eine
+      Registrierung. Bis das Team einen Zugang hat, bleibt die Prüfung beim
+      Auftraggeber. Am schnellsten geht es mit einem aktuellen
+      Handelsregisterauszug als Beleg.
+- [ ] **Wortlaut der Seitentexte freigeben.** Hero, Sortiment, Beratung und
+      "Über uns" hat das Team aus der Primärquelle formuliert, nicht der
+      Auftraggeber. Die Aussagen sind belegt, aber der Ton und die Wortwahl
+      brauchen eine Freigabe.
 - [ ] **Faxnummer** +41 56 222 32 75: nur aufnehmen, wenn sie noch bedient wird.
 - [ ] **Öffnungszeiten** bestätigen (`D-004`): Montag geschlossen, Dienstag bis
       Freitag 10:00 bis 18:30, Samstag 10:00 bis 16:00.
@@ -150,6 +178,16 @@ nicht ausgeführt (`CLAUDE.md`, Abschnitt 7).
       `old/ressources/2026/08/`, nach Sicherung als Beweismaterial.
 - [ ] **Erlaubnis, die Git-Historie neu zu schreiben** (`D-017`, `D-018`). Das
       betrifft alle Forks und Klone und ist nicht umkehrbar.
+- [ ] **Sichtbarkeit des Repositories bestätigen** sowie Forks, Klone und
+      Zugriffsberechtigte auflisten. Solange die Schadcode-Archive in der
+      Historie liegen, entscheidet die Sichtbarkeit darüber, wer sie
+      herunterladen kann. Eine Repository-Suche am 16.09.2026 lieferte keinen
+      öffentlichen Treffer, was zu einem privaten Repository passt, aber kein
+      Beweis ist. Vor einem Force-Push müssen ausserdem alle Mitwirkenden
+      wissen, dass sie neu klonen müssen.
+- [ ] **System der alten Website bestätigen.** Das Inventar führt WordPress
+      bisher als `ANNAHME - ZU BESTAETIGEN`; für die Aufarbeitung des Vorfalls
+      ist die Bestätigung nützlich, auch zum Shop-System.
 - [ ] **Medienbestand entscheiden** (`D-017`): 1 038 Dateien mit 287 MB, davon
       890 reproduzierbare Grössenvarianten. Empfehlung: Varianten entfernen,
       Originale kuratieren, gegebenenfalls Git LFS.
@@ -165,8 +203,16 @@ nicht ausgeführt (`CLAUDE.md`, Abschnitt 7).
 Jede Antwort wird mit Datum, Entscheider und Wortlaut im Freigabeprotokoll
 (`docs/requirements-analysis.md`, Abschnitt 8) festgehalten.
 
-## 8. Später: Shop, Phase 2 (`D-014`)
+## 8. Offen, aber nicht blockierend
 
-Erst wenn der Shop beauftragt wird: Produktliste, Preise, Bestandsführung,
-Zahlungsarten, Liefergebiete, Retouren und AGB-Prüfung durch eine Fachperson.
-Nicht nötig, um das MVP zu starten.
+- [ ] **Lizenz und Rechtelage des Repositories** festlegen. `package.json` führt
+      `UNLICENSED`, eine Lizenzdatei fehlt. Für ein privates Auftragsprojekt ist
+      das tragbar, sollte aber bewusst entschieden sein.
+- [ ] **Betreffzeile der Benachrichtigung** bestätigen. Vorgabe ist "Anfrage
+      über luescherwohnen.ch", änderbar über `KONTAKT_BETREFF`.
+- [ ] **Spam-Schutz-Werte** fachlich bestätigen: Anfragen je Anschluss und
+      Stunde sowie die Mindestwartezeit zwischen Prüfen und Senden. Die
+      Vorgaben sind bewusst streng und lassen sich jederzeit anpassen.
+- [ ] **Shop, Phase 2** (`D-014`): Produktliste, Preise, Bestandsführung,
+      Zahlungsarten, Liefergebiete, Retouren und AGB-Prüfung durch eine
+      Fachperson. Nicht nötig, um das MVP zu starten.
