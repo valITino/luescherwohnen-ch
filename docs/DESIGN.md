@@ -119,26 +119,28 @@ acht Breiten). E-Mail-Adressen dürfen nur am «@» umbrechen (`<wbr>`).
 
 ## 6. Motion
 
-Stand nach der Überarbeitung vom 20.11.2026 und den vier Prüfungen danach (Entscheide 37 und 38).
+Stand nach der Überarbeitung vom 20.11.2026 und zwei Prüfrunden danach (Entscheide 37 bis 39).
 Bewegung soll ruhig und präzise wirken und eine Zielgruppe ab 40 nie beim Lesen aufhalten.
 
 ### Grundsätze
 
 1. **Ankommen statt vorführen.** Alles bremst weich in seine Lage: Auftritte mit Expo- oder
-   Quint-Kurve. Ausgänge sind kurz; was auf eine Eingabe antwortet (Header, Menü schliessen,
-   Seitenwechsel), bremst ebenfalls, damit schon das erste Bild reagiert. Kein Überschwingen,
-   kein Federn, keine Drehung, keine Unschärfe.
+   Quint-Kurve. Ausgänge sind kurz und antworten schon im ersten Bild: Menü und Seitenwechsel
+   bremsen, der Header blendet beim Abtauchen gleichmässig aus (`linear`) und bremst nur seine
+   kleine Bewegung. Kein Überschwingen, kein Federn, keine Drehung, keine Unschärfe.
 2. **Eine Sprache.** Text steigt aus einer Maske, Bilder öffnen sich durch einen Clip, Flächen
    falten sich auf. Bewegt werden nur `transform` (auch `translate` und `scale`), `opacity` und
    `clip-path`. Farbwechsel bis 250 ms bei Hover und Fokus sind erlaubt.
-3. **Lesen geht vor.** Nach spätestens 400 ms ist alles lesbar, der Rest (bis 1,2 s) ist nur
-   Ausklang. Fliesstext blendet nie ein.
+3. **Lesen geht vor.** Foto und Lead im Hero stehen ab dem ersten Bild, Titelzeilen und Knöpfe
+   sind nach etwa einer halben Sekunde klar, der Rest (bis 1,2 s) ist nur Ausklang. Fliesstext
+   blendet nie ein.
 4. **Zwei Signaturen, sonst Ruhe.** Der Auftakt im Hero und der Menü-Vorhang zeigen sich; alles
    andere ist Präzision: dieselben Kurven, gestaffelt und jederzeit unterbrechbar.
 5. **Im Zweifel sichtbar.** Ohne JavaScript ist alles sichtbar, verborgen ist nur, was ein Skript
    selbst gesetzt hat. Bei reduzierter Bewegung bewegt sich nichts und nichts wartet. Mit dem
-   Schalter «Bewegung pausieren» steht die Dauerbewegung, wartende Auftritte stehen sofort am
-   Ende. Ein Sprung zu einer Marke landet immer auf fertigem Inhalt.
+   Schalter «Bewegung pausieren» steht alles: Dauerbewegung hält an, Auftritte, Übergänge, der
+   Formwechsel des Headers und der Seitenübergang entfallen. Ein Sprung zu einer Marke landet
+   auf fertigem Inhalt.
 
 ### Tokens
 
@@ -157,7 +159,7 @@ CSS-Kurve (Abweichung höchstens 0,012).
 | Token             | Wert    | Verwendung                                       |
 | ----------------- | ------- | ------------------------------------------------ |
 | `--dur-1`         | 150 ms  | Mikro: Farbe; Ausgänge (Header, alte Seite)      |
-| `--dur-2`         | 250 ms  | Zustand von Bedienelementen                      |
+| `--dur-2`         | 250 ms  | Zustand; Leiste beim Seitenwechsel               |
 | `--dur-3`         | 400 ms  | Flächen: Kapsel, Menü schliessen, Header-Wechsel |
 | `--dur-4`         | 800 ms  | Auftritte: Zeilen, Kicker, Bild-Enthüllung       |
 | `--dur-5`         | 1200 ms | Signatur: Hero-Blende                            |
@@ -166,8 +168,8 @@ CSS-Kurve (Abweichung höchstens 0,012).
 
 Begründete Einzelwerte stehen mit Kommentar im Code: Zeilen im Hero 1000 ms
 (`calc(var(--dur-4) + 200ms)`), Folgeelemente im Hero 560 ms, Menü öffnen und Kontaktblock im
-Menü 560 ms, Glasfläche der Kapsel 360 ms, neue Seite beim Seitenwechsel 480 ms, Hover-Zoom der
-Fotos 700 ms.
+Menü 560 ms, Glasfläche der Kapsel 360 ms, neue Seite beim Seitenwechsel 480 ms (40 ms später),
+Hover-Zoom der Fotos 700 ms.
 
 ### Bewegte Momente
 
@@ -177,7 +179,7 @@ Die beiden Signaturen:
    Blende (`clip-path` von 30 % auf den vollen Kreis, Zoom von 1.1 auf 1, `--dur-5`,
    `--ease-out`) und ist ab dem ersten Bild sichtbar. Die Zeilen der Headline steigen dicht
    nacheinander aus ihrer Maske. Während sie noch gleiten, setzen sich Lead (ab 200 ms, nur
-   `transform`, vom ersten Bild an lesbar), Buttons (260 ms) und Anzeige (320 ms); nach 1,2 s
+   `transform` um 4 px, vom ersten Bild an lesbar), Buttons (260 ms) und Anzeige (320 ms); nach 1,2 s
    ruht alles. Auf grossen Bildschirmen bleibt der Hero beim Scrollen kurz stehen, die erste
    Zeile tritt zurück, das Bild rückt etwas näher.
 2. **Menü-Vorhang**: Das Menü rollt vom Header nach unten aus (560 ms, `--ease-expo`), die grossen
@@ -193,16 +195,20 @@ Alles andere ist leise:
    die Glasfläche faltet sich aus der Mitte auf (`clip-path` von 10 % Rand, 360 ms), der Schatten
    blendet 60 ms später als eigene Ebene ein, die Teile kommen sofort gestaffelt zurück
    (`--dur-3`). Nach gut einer halben Sekunde ruht alles. Was den Tastaturfokus trägt, taucht
-   nicht ab. Bei einem Sprung (Direktlink, wiederhergestellte Position) steht die Form sofort.
+   nicht ab; gibt es das Element in der neuen Form nicht, übernimmt ein sichtbares Gegenstück den
+   Fokus. Ist beim Umkehren nichts zu sehen, wechselt die Form sofort. Bei einem Sprung
+   (Direktlink, wiederhergestellte Position) und bei angehaltener Bewegung steht die Form sofort,
+   samt Glasfläche.
 2. **Überschriften**: Der Kicker zeichnet sich ein (`clip-path`, `--dur-4`), 60 ms später steigen
    die Zeilen aus ihrer Maske (GSAP SplitText, `--dur-4`, `expo.out`, `--stagger`). Danach ist
    das Markup wieder wie zuvor.
-3. **Bild-Enthüllung** (`.enter-unveil`: Sortiment, Aktuell, Projekte, Porträt): Der Rahmen mit
-   seiner Sandfläche steht, das Foto steigt vom unteren Rand in ihn hinein und setzt sich aus
-   einem leichten Zoom (`clip-path` und `scale` am Bild selbst, `--dur-4`, `--ease-expo`). Am
-   Bild statt am Rahmen, weil der Browser dann nur eine Ebene bewegt: Beim Wischen auf dem Handy
-   fielen so gemessen halb so viele Bilder aus. Bilder, die zusammen ankommen, folgen einander
-   im Abstand `--stagger` (höchstens drei Versätze).
+3. **Bild-Enthüllung** (`.enter-unveil`: Sortiment, Aktuell, Projekte, Porträt): Das Foto steigt
+   vom unteren Rand seines Rahmens auf und setzt sich aus einem leichten Zoom zur Mitte hin
+   (`clip-path` und `scale` am Bild selbst, `--dur-4`, `--ease-expo`). Am Bild statt am Rahmen,
+   weil der Browser dann nur eine Ebene bewegt: Beim Wischen auf dem Handy fielen so gemessen
+   halb so viele Bilder aus. Solange es wartet, ist das Bild nur durchsichtig (nicht beschnitten,
+   sonst lädt der Browser es nicht vor), und der Rahmen ist leer statt sandfarben. Bilder, die
+   zusammen ankommen, folgen einander im Abstand `--stagger` (höchstens drei Versätze).
 4. **Über uns**: Die Ecken des Suchers rücken weich an ihren Platz (`--dur-4`, `--ease-expo`),
    eine grüne Linie tastet das Bild einmal ab (nur `transform`, `--dur-4`), die Werte erscheinen
    im Abstand `--stagger`.
@@ -213,9 +219,10 @@ Alles andere ist leise:
    weil die Leiste oben als eigene Ebene `site-bar` übergeben wird. Die Kapsel trägt diesen Namen
    nie: Sonst zöge der Browser sie auf die Grösse der Leiste (verzerrt), und ihr Milchglas bliebe
    klar (ein benanntes Element begrenzt die Unschärfe seiner Kinder). Verlässt man die Seite aus
-   der Kapsel, geht sie mit der alten Seite. Die alte Seite weicht schnell (`--dur-1`,
-   `--ease-out`), die neue setzt sich 80 ms später von leicht unten (480 ms, `--ease-expo`); so
-   liegen die beiden kaum übereinander.
+   der Kapsel, zu einer Marke (`/#kontakt`) oder durch den Verlauf, geht der Header mit der alten
+   Seite (`header.ts`, `is-leaving`), und der neue blendet für sich ein (`--dur-2`). Die alte
+   Seite weicht schnell (`--dur-1`, `--ease-out`), die neue setzt sich 40 ms später von leicht
+   unten (480 ms, `--ease-expo`); so liegen die beiden kaum übereinander.
 9. **Kleinigkeiten**: Der Hover-Schein der Buttons liegt auf einer eigenen Ebene (`::after`) und
    blendet nur über; die Lichtkante des sekundären Buttons wächst aus der Mitte (`scaleX`,
    `--dur-3`). Fotos zoomen bei Hover fein (nur feiner Pointer). Der Cookie-Hinweis wächst aus
@@ -228,25 +235,33 @@ Alles andere ist leise:
   `background-position`. Ein Schatten, der sich ändern soll, liegt auf einer eigenen Ebene und
   blendet über `opacity`. Der Wächter `scripts/motion-guard.test.ts` (Teil von `pnpm test`)
   prüft alle Stylesheets und Astro-Komponenten.
-- **Kurven nur aus `tokens.css`**, keine mit einem y-Wert unter 0 oder über 1; keine
-  Keyframe-Animation dreht etwas. Auch das prüft der Wächter.
+- **Kurven nur aus `tokens.css`**, dazu `linear` für das Abtauchen im Header und das Band;
+  keine mit einem y-Wert unter 0 oder über 1; keine Keyframe-Animation dreht etwas. Auch das
+  prüft der Wächter (`linear` erkennt er noch nicht, siehe `docs/TODO.md`).
 - **Dauern und Versätze aus den Tokens.** Ein Einzelwert braucht einen Kommentar mit Grund.
 - **Alles endet**: Jeder Auftritt beim Scrollen ist spätestens nach 1200 ms plus drei Versätzen
   fertig, der Hero ruht nach 1,5 s (beides prüft `e2e/web.spec.ts`).
 - **Das grösste Element zuerst**: Foto und Lead im Hero sind ab dem ersten Bild sichtbar (LCP,
   geprüft in `e2e/web.spec.ts`).
-- **Reduzierte Bewegung**: `base.css` kürzt jede Animation auf 0.01 ms und jeden Übergang auf 0.
-  Kein Lenis, kein Anpinnen, keine Auftritte, kein Seitenübergang, das Band bricht um.
-- **Pause** (`html[data-motion="off"]`): `base.css` hält jede Animation an; `reveal.ts` löst alle
-  wartenden und erfolgten Auftritte auf (`data-enter=""`), `hero.ts` beendet den Auftakt
-  (`data-rested`), Komponenten setzen ihre laufenden Auftritte ans Ende (Rückfall in CSS). Nach
-  dem Fortsetzen spielt nichts ein zweites Mal (geprüft in `e2e/web.spec.ts`).
+- **Reduzierte Bewegung**: `base.css` schaltet jede Animation ab (`none`, auch eine winzige
+  Dauer zeigte im ersten Bild ihren Anfang) und setzt jeden Übergang auf 0. Kein Lenis, kein
+  Anpinnen, keine Auftritte, kein Seitenübergang, das Band bricht um.
+- **Pause** (`html[data-motion="off"]`): `base.css` hält jede Animation an und setzt jeden
+  Übergang auf 0 (Menü-Vorhang, Hover-Zoom); `header.ts` wechselt die Form ohne Abtauchen und
+  überspringt den Seitenübergang; `reveal.ts` löst alle wartenden und erfolgten Auftritte auf
+  (`data-enter=""`), `hero.ts` beendet den Auftakt (`data-rested`), Komponenten setzen ihre
+  laufenden Auftritte ans Ende (Rückfall in CSS). Nach dem Fortsetzen spielt nichts ein zweites
+  Mal (geprüft in `e2e/web.spec.ts`).
 - **Ohne JavaScript** gibt es keinen Wartezustand; CSS-Auftritte (Hero, 404) enden sichtbar.
 - **Sprünge** (`data-jump` am `<html>`, `home.ts`): Was unterwegs oder am Ziel ins Bild kommt,
-  steht sofort da.
+  steht sofort da. Die Marke fällt erst, wenn Lenis nicht mehr gleitet und zehn Bilder lang kein
+  Scrollen kam (gezählt in Bildern, damit eine stockende Darstellung den Sprung nicht beendet).
 - **CSP**: keine `style`-Attribute im Markup; Skripte dürfen `element.style` und eigene
   Custom Properties setzen (z. B. `--enter-i`).
-- **Keine weitere Bibliothek**: GSAP mit SplitText und Lenis (lerp 0.1) genügen.
+- **Keine weitere Bibliothek**: GSAP mit SplitText und Lenis (lerp 0.1) genügen. Lenis läuft nur
+  mit Maus oder Trackpad: Auf Geräten, die man nur mit dem Finger bedient, scrollt der Browser
+  selbst (Lenis hängte sich sonst mit blockierenden Zuhörern an jede Berührung), Sprünge zu
+  Marken sind dort sofort am Ziel. Eine Taste zum Scrollen hält ein Ausgleiten von Lenis an.
 
 Bewusst nicht: Auftritte aus der Unschärfe, Parallax, Fliesstext, der beim Scrollen einblendet,
 gescrubbte Galerien, eigener Mauszeiger, magnetische oder kippende Elemente, Zähler.

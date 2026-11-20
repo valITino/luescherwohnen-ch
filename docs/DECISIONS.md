@@ -126,8 +126,9 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
     Mit Namen zog der Browser die Kapsel beim Wechsel auf die Grösse der Leiste (Logo und Knöpfe
     verzerrt), und ein benanntes Element begrenzt die Unschärfe seiner Kinder: Das Milchglas
     blieb klar.
-  - **Header antwortet sofort.** Abtauchen in `--dur-1` mit bremsender Kurve statt `--dur-2`
-    beschleunigend, Rückkehr ohne Vorlauf, Glasfläche 360 ms aus 10 % Rand. Grund: Der Wechsel
+  - **Header antwortet sofort.** Abtauchen in `--dur-1` (Deckkraft gleichmässig, die kleine
+    Bewegung bremsend) statt `--dur-2` beschleunigend, Rückkehr ohne Vorlauf, Glasfläche 360 ms
+    aus 10 % Rand. Grund: Der Wechsel
     dauerte 2- bis 2,7-mal so lang wie vorher und stand einen Moment leer. Fokus taucht nicht
     ab; bei einem Sprung steht die Form sofort.
   - **Lead im Hero blendet nicht ein** und die Folgeelemente setzen sich ab 200 ms statt
@@ -146,3 +147,41 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
     öffneten sich fertige Bilder neu, und der Hero sprang zurück.
   - **Nicht übernommen:** stärkere Blende über 1400 ms (sprengt die 1,2 s), Positivliste im
     Bewegungswächter (offen in `docs/TODO.md`).
+- **39.** **Zweite Prüfrunde** (dieselben vier Blickwinkel, jeder Befund ab «mittel» von zwei
+  unabhängigen Gegenprüfungen bestätigt) gegen `72b5b36`:
+  - **Seitenwechsel zu einer Marke ohne aufgeblasene Kapsel.** Von Impressum oder Datenschutz zu
+    `/#kontakt` (und zurück durch den Verlauf ohne bfcache) wurde die neue Seite mitten im
+    Übergang zur Kapsel, und der Browser zog sie auf die Breite der alten Leiste (2,3- bis
+    2,8-fach). Jetzt verliert die alte Leiste in diesen Fällen ihren Namen (`pageswap` in
+    `header.ts`, Klasse `is-leaving`); der neue Header blendet für sich ein (`--dur-2`). Oben von
+    Seite zu Seite bleibt die Leiste stehen. Verworfen: Name nur bei `:target` (zur Zeit des
+    ersten Bildes oft noch nicht gesetzt) und Zustand in `pagereveal` setzen (Skript läuft nicht
+    sicher vorher).
+  - **Bilder laden wieder vor.** Ein ganz beschnittenes `<img loading="lazy">` lud Chromium beim
+    Scrollen erst rund 150 px im Bild; auf langsamen Netzen stieg die Enthüllung über einen leeren
+    Rahmen, dann sprang das Foto hinein. Wartende Bilder sind jetzt nur durchsichtig (Abruf rund
+    1200 px vorher, gemessen), der Rahmen bleibt so lange leer statt sandfarben, der Zoom setzt
+    sich zur Mitte (kein 8-px-Sprung mehr mit dem Hover-Zoom).
+  - **Der Schalter «Bewegung pausieren» gilt überall** (Regel in `CLAUDE.md`): auch für den
+    Formwechsel des Headers, den Menü-Vorhang, Übergänge und den Seitenübergang.
+  - **Tastaturfokus fällt nicht mehr auf `<body>`**, wenn das fokussierte Bedienelement in der
+    neuen Form fehlt (Menü-Knopf oben am Desktop, «Beratung anfragen» oben am Handy); ein
+    sichtbares Gegenstück übernimmt. War schon vor der Bewegungsarbeit so.
+  - **Sprünge enden nach Bildern, nicht nach Millisekunden**: Stockte die Darstellung länger als
+    160 ms, endete die Marke mitten im Sprung, und das Ziel trat doch auf (e2e-Test unter Last
+    gelegentlich rot). Jetzt zählt `home.ts` zehn ruhige Bilder und wartet, bis Lenis steht.
+  - **Kein Lenis auf Geräten, die man nur mit dem Finger bedient.** Lenis scrollt dort ohnehin
+    nicht selbst, hängte sich aber mit `passive: false` an jede Berührung; jedes Wischen wartete
+    auf den Hauptthread (gemessen 4-fach gedrosselt: 33 statt 14–17 ausgefallene Bilder, nur zwei
+    Läufe, ohne Grafikchip). Folge: Sprünge zu Marken sind auf dem Handy sofort am Ziel statt
+    1,7 s durch die ganze Seite zu rauschen. Mit Maus und Trackpad bleibt Lenis; eine Taste zum
+    Scrollen hält ein Ausgleiten an (vorher zog Lenis die Seite nach «Pos1» zurück).
+  - **Kleinere:** Umkehr direkt nach dem Wechsel wartet nicht mehr 200 ms auf die Notbremse;
+    nach einem Sprung steht das Glas der Kapsel sofort; reduzierte Bewegung zeigt kein erstes
+    Bild mit leerem Menü oder Hero mehr (`animation: none`); neue Seite 40 statt 80 ms später;
+    Lead im Hero rückt 4 statt 8 px; Druck zeigt halb enthüllte Bilder ganz.
+  - **Bewusst nicht geändert:** Der Header-Wechsel bleibt mit gut einer halben Sekunde etwa
+    doppelt so lang wie vor der Bewegungsarbeit (die gestaffelte Rückkehr ist die gewollte Geste;
+    beide Gegenprüfungen stuften das als gering ein). Offen und auf echte Geräte angewiesen:
+    Rastern des Menü-Vorhangs am Desktop, gelegentliche 83-ms-Stockung beim Wischen,
+    Seitenfehler «Transition was aborted» bei manchen Seitenwechseln (`docs/TODO.md`).

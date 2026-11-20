@@ -68,10 +68,12 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
       «GitHub Actions»; Environment `github-pages` nur für `main` (`docs/DEPLOY.md`, Abschnitt 1).
 - [ ] Freigabe des Designs durch den Auftraggeber.
 - [ ] Bewegung auf einem echten Mittelklasse-Android messen (Chrome DevTools, Leistung): Menü-
-      Vorhang und Bild-Enthüllung beim Wischen. In der Cloud-Umgebung ohne Grafikchip lief der
-      Vorhang mit halber Bildrate; das sagt über echte Geräte wenig aus.
-- [ ] Kontrast des Knopfs «Beratung anfragen» in der Kapsel von Hand prüfen: axe kann ihn wegen
-      der Ebene für den Hover-Schein (`::after`) nicht mehr berechnen. Die Farben sind unverändert.
+      Vorhang und Bild-Enthüllung beim Wischen, Wischen ohne Lenis (Entscheid 39), gelegentliche
+      Stockung von 83 ms beim Wischen. In der Cloud-Umgebung ohne Grafikchip lief der Vorhang am
+      Desktop mit halber Bildrate; das sagt über echte Geräte wenig aus.
+- [ ] Kontrast des Knopfs «Beratung anfragen» in der Kapsel von Hand bestätigen: axe kann ihn wegen
+      der Ebene für den Hover-Schein (`::after`) nicht mehr berechnen. Gemessen 7,2:1 (berechnet)
+      und 7,3:1 (Pixel), Hover 9,2:1; erfüllt AA. Die Farben sind unverändert.
 
 ## Später
 
@@ -84,3 +86,11 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
       tut nichts (Bestand). Knopf erst mit Skript zeigen oder auf eine Linkliste verweisen.
 - [ ] Bewegungswächter (`scripts/motion-guard.test.ts`) als Positivliste statt Sperrliste.
 - [ ] Der Bewegungsschalter verschiebt sich bei jedem Header-Wechsel minimal (CLS 0,0009, Bestand).
+- [ ] Seitenwechsel melden in Chromium ohne Fenster gelegentlich «Transition was aborted because of
+      invalid state» als Seitenfehler (in allen Ständen, auch vor der Bewegungsarbeit). Ursache
+      klären; im sichtbaren Browser nicht geprüft.
+- [ ] Menüpunkt am Desktop: Lenis gleitet 1,7 s durch die ganze Seite, ein Teil davon nach dem
+      Vorhang. Auf dem Handy ist der Sprung sofort am Ziel (Entscheid 39). Prüfen, ob der Sprung
+      am Desktop unter dem Vorhang ebenfalls sofort landen soll.
+- [ ] Mit Tastaturfokus im Header ist der Knopf beim Formwechsel zwei Bilder lang verborgen
+      (`is-swapping`, gegen Layoutverschiebung); bewusst so belassen.

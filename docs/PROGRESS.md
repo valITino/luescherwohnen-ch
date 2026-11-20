@@ -25,6 +25,15 @@ beim Wischen, Auftritte nach dem Fortsetzen doppelt. Behoben in zwei Schritten
 - Drei neue und ein erweiterter e2e-Test (Desktop und Handy); alle schlagen auf `db2ca8b` fehl
   und laufen auf dem neuen Stand.
 
+Zweite Prüfrunde gegen `72b5b36` (vier Blickwinkel, sechs Befunde ab «mittel» je zweimal
+gegengeprüft, `docs/DECISIONS.md` 39). Behoben: aufgeblasene Kapsel beim Seitenwechsel zu einer
+Marke (hoch), Bilder, die wegen des Clips nicht vorluden (mittel), Bewegungsschalter ohne Wirkung
+auf Header und Menü, Fokus fiel beim Formwechsel auf `<body>`, Sprünge endeten bei stockender
+Darstellung zu früh, Lenis blockierte jede Berührung auf dem Handy; dazu neun kleinere Punkte.
+Fünf neue e2e-Tests (Seitenwechsel zu einer Marke, Vorladen beim allmählichen Scrollen, Fokus,
+Schalter, Sprung aus dem Hero); die ersten vier schlagen auf `72b5b36` fehl. Gemessen beim
+allmählichen Scrollen: Abruf der Bilder rund 1200 px vor dem Bild statt 150 px darin.
+
 ## 20.11.2026: Demo nach dem PSYber-System
 
 Auftrag des Repository-Inhabers: Stil, Design, Format und Logik von `valITino/PsySec`
