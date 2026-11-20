@@ -23,12 +23,14 @@ const name = flag('--name', 'luescher-web');
 const port = flag('--port', '8080');
 
 /**
- * Führt docker aus und zeigt den Aufruf. `shown` ersetzt Werte aus der Umgebung durch Platzhalter:
- * Eine Proxy-Adresse kann Zugangsdaten enthalten und gehört nicht ins Protokoll.
+ * Führt docker aus und zeigt dabei `shown`. Die Anzeige wird getrennt von den echten Argumenten
+ * gebaut und enthält keine Werte aus der Umgebung: Eine Proxy-Adresse kann Zugangsdaten enthalten
+ * und gehört nicht ins Protokoll (CodeQL js/clear-text-logging).
  * @param {string[]} dockerArgs
- * @param {{ shown?: string[], env?: NodeJS.ProcessEnv }} [options]
+ * @param {string[]} shown
+ * @param {NodeJS.ProcessEnv} [env]
  */
-const docker = (dockerArgs, { shown = dockerArgs, env = process.env } = {}) => {
+const docker = (dockerArgs, shown, env = process.env) => {
   console.log(`$ docker ${shown.join(' ')}`);
   execFileSync('docker', dockerArgs, { cwd: root, stdio: 'inherit', env });
 };
@@ -40,43 +42,36 @@ if (command === 'build') {
     (file) => file && existsSync(file),
   );
   const preview = args.includes('--preview');
-  const buildArgs = ['build', '--tag', tag, '--progress', 'plain'];
-  const shown = [...buildArgs];
+  /** Argumente ohne Werte aus der Umgebung: gehen an docker und in die Anzeige */
+  const common = ['build', '--tag', tag, '--progress', 'plain'];
   const env = { ...process.env };
   if (proxy) {
     // Der Proxy lauscht auf 127.0.0.1 des Hosts: nur im Host-Netz erreichbar. `--build-arg NAME`
     // ohne Wert übernimmt docker aus seiner Umgebung: So steht die Adresse weder im Protokoll
     // noch in der Prozessliste.
     env.HTTPS_PROXY = proxy;
-    buildArgs.push('--network', 'host', '--build-arg', 'HTTPS_PROXY');
-    shown.push('--network', 'host', '--build-arg', 'HTTPS_PROXY');
+    common.push('--network', 'host', '--build-arg', 'HTTPS_PROXY');
     if (noProxy) {
       env.NO_PROXY = noProxy;
-      buildArgs.push('--build-arg', 'NO_PROXY');
-      shown.push('--build-arg', 'NO_PROXY');
+      common.push('--build-arg', 'NO_PROXY');
     }
   }
-  if (ca) {
-    buildArgs.push('--secret', `id=ca,src=${ca}`);
-    shown.push('--secret', 'id=ca,src=<CA-Zertifikat>');
-  }
   if (preview) {
-    const previewArgs = [
+    common.push(
       '--build-arg',
       `PUBLIC_WEB_URL=http://localhost:${port}`,
       '--build-arg',
       'PUBLIC_CONTACT_ENDPOINT=mock',
       '--build-arg',
       'PUBLIC_PREVIEW=true',
-    ];
-    buildArgs.push(...previewArgs);
-    shown.push(...previewArgs);
+    );
   }
-  buildArgs.push('.');
-  shown.push('.');
-  docker(buildArgs, { shown, env });
+  // Der Pfad zum CA-Zertifikat kommt aus der Umgebung: nur an docker, in der Anzeige ein Platzhalter.
+  const secret = ca ? ['--secret', `id=ca,src=${ca}`] : [];
+  const shownSecret = ca ? ['--secret', 'id=ca,src=<CA-Zertifikat>'] : [];
+  docker([...common, ...secret, '.'], [...common, ...shownSecret, '.'], env);
 } else if (command === 'run') {
-  docker([
+  const runArgs = [
     'run',
     '--detach',
     '--rm',
@@ -92,10 +87,12 @@ if (command === 'build') {
     '--security-opt',
     'no-new-privileges:true',
     tag,
-  ]);
+  ];
+  docker(runArgs, runArgs);
   console.log(`Läuft: http://localhost:${port}/  (stoppen: node scripts/docker.mjs stop)`);
 } else if (command === 'stop') {
-  docker(['rm', '--force', name]);
+  const stopArgs = ['rm', '--force', name];
+  docker(stopArgs, stopArgs);
 } else {
   console.error('Aufruf: node scripts/docker.mjs build|run|stop [Optionen]');
   process.exit(1);
