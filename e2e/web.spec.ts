@@ -313,6 +313,18 @@ test.describe('Bewegung und Chrome', () => {
     const context = await browser.newContext({ reducedMotion: 'reduce' });
     const page = await context.newPage();
     await page.goto(`${PROD}/`);
+    // Der Auftakt im Hero steht sofort: höchstens Animationen ohne Dauer (base.css), keine läuft.
+    const heroMotion = await page.locator('[data-hero]').evaluate((hero) =>
+      hero
+        .getAnimations({ subtree: true })
+        .filter(
+          (animation) =>
+            animation.playState !== 'finished' &&
+            Number(animation.effect?.getComputedTiming().endTime) >= 1,
+        )
+        .map((animation) => (animation as CSSAnimation).animationName),
+    );
+    expect(heroMotion).toEqual([]);
     await layOutAll(page);
     await page.mouse.wheel(0, 3000);
     await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready');
@@ -324,6 +336,35 @@ test.describe('Bewegung und Chrome', () => {
       .evaluate((row) => getComputedStyle(row).animationName);
     expect(animation).toBe('none');
     await context.close();
+  });
+
+  test('Hero: nach 1,5 s ruht alles', async ({ page }) => {
+    await page.goto(`${PROD}/`);
+    const hero = page.locator('[data-hero]');
+    // Jeder Auftritt im Hero ist endlich und endet spätestens 1,5 s nach seinem Start.
+    const timings = await hero.evaluate((root) =>
+      root.getAnimations({ subtree: true }).map((animation) => ({
+        name: (animation as CSSAnimation).animationName,
+        end: Number(animation.effect?.getComputedTiming().endTime),
+      })),
+    );
+    expect(timings.length).toBeGreaterThan(0);
+    for (const { name, end } of timings) expect(end, name).toBeLessThanOrEqual(1500);
+    // Gemessen ab dem Start des Auftakts auf der Zeitachse des Dokuments, nicht ab dem Laden:
+    // So prüft der Test die Choreografie und hängt nicht davon ab, wie schnell die Seite lädt.
+    const start = await hero.evaluate(async (root) => {
+      const animations = root.getAnimations({ subtree: true });
+      await Promise.all(animations.map((animation) => animation.ready));
+      return Math.min(...animations.map((animation) => Number(animation.startTime)));
+    });
+    await page.waitForFunction((at) => Number(document.timeline.currentTime) >= at, start + 1500);
+    const running = await hero.evaluate((root) =>
+      root
+        .getAnimations({ subtree: true })
+        .filter((animation) => animation.playState === 'running')
+        .map((animation) => (animation as CSSAnimation).animationName),
+    );
+    expect(running).toEqual([]);
   });
 
   test('Auftritte beim Hereinscrollen: am Ende wartet nichts mehr', async ({ page }) => {
