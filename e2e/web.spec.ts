@@ -623,6 +623,12 @@ test.describe('Unterseiten', () => {
     ]) {
       expect(text, fact).toContain(fact);
     }
+    // Beim Seitenwechsel steht der Header still: Seine Leiste wird als eigene Ebene übergeben
+    // (View Transition, global.css) statt mit der Seite überblendet.
+    const transitionName = await page
+      .locator('[data-header] .bar')
+      .evaluate((bar) => getComputedStyle(bar).viewTransitionName);
+    expect(transitionName).toBe('site-bar');
   });
 
   test('Impressum und Datenschutz sind ohne JavaScript erreichbar (WEB-F-005)', async ({

@@ -6,7 +6,8 @@ riesige Überschriften in Versalien, Pillen, Bühnen und Bogen mit grossen Radie
 Header, schwebende Bedienelemente am Rand. Die Farben sind auf Entscheid vom 20.11.2026 **hell und
 warm** statt fast schwarz (Briefing: «hell und freundlich», «seriös, minimalistisch,
 warm/persönlich», Grün für Buttons). Die Cyber-Motive von PSYber (Hex-Nummern, Terminal, Eule,
-Globus) sind durch wohnliche Pendants ersetzt.
+Globus) sind durch wohnliche Pendants ersetzt. Die Bewegung ist seit dem 20.11.2026 ein eigenes,
+ruhigeres System (Abschnitt 6).
 
 Quelle der Wahrheit sind die Tokens in `packages/ui/src/styles/tokens.css`. Die Seite
 `/styleguide` zeigt alle Bausteine.
@@ -118,24 +119,122 @@ acht Breiten). E-Mail-Adressen dürfen nur am «@» umbrechen (`<wbr>`).
 
 ## 6. Motion
 
-Tokens und Regeln wie bei PSYber (150 / 250 / 400 / 800 ms, `cubic-bezier(.2,.7,.2,1)`, GSAP
-`power3.out`, Lenis mit lerp 0.1). Bewegte Momente:
+Stand nach der Überarbeitung vom 20.11.2026 (Entscheid 37). Bewegung soll ruhig und präzise
+wirken und eine Zielgruppe ab 40 nie beim Lesen aufhalten.
 
-1. Hero: Headline fährt zeilenweise hinter einer Maske ein; die runde Bühne blendet auf. Auf
-   grossen Bildschirmen bleibt der Hero kurz stehen, die erste Zeile tritt zurück, das Bild rückt
-   etwas näher.
-2. Header: Wechsel zwischen Leiste und Kapsel.
-3. Überschriften der Sektionen fahren einmal zeilenweise ein; Kicker gleiten von links herein.
-4. Band mit Sortiment und Service als Endlosband (pausiert bei Hover, Fokus und über den Knopf).
-5. «Haltung»: Wörter werden beim Scrollen dunkel.
-6. «Service»: Überschrift bleibt am Desktop stehen, die Schritte ziehen vorbei.
-7. «Über uns»: Der Sucher stellt das Porträt scharf, eine grüne Linie tastet es einmal ab, die
-   Werte erscheinen nacheinander.
-8. Karten und Bilder: feiner Zoom bei Hover (nur feiner Pointer).
-9. Cookie-Hinweis wächst aus seinem Knopf. Seitenwechsel blenden kurz über (View Transitions).
+### Grundsätze
 
-Bei `prefers-reduced-motion` steht alles sofort im Endzustand: kein Lenis, kein Pinning, keine
-Auftritte, das Band bricht um. Der Schalter «Bewegung pausieren» hält Dauerbewegung an.
+1. **Ankommen statt vorführen.** Alles bremst weich in seine Lage: Auftritte mit Expo- oder
+   Quint-Kurve, Ausgänge kurz und beschleunigend. Kein Überschwingen, kein Federn, keine Drehung,
+   keine Unschärfe.
+2. **Eine Sprache.** Text steigt aus einer Maske, Bilder öffnen sich durch einen Clip, Flächen
+   falten sich auf. Bewegt werden nur `transform` (auch `translate` und `scale`), `opacity` und
+   `clip-path`. Farbwechsel bis 250 ms bei Hover und Fokus sind erlaubt.
+3. **Lesen geht vor.** Nach spätestens 400 ms ist alles lesbar, der Rest (bis 1,2 s) ist nur
+   Ausklang. Fliesstext blendet nie ein.
+4. **Zwei Signaturen, sonst Ruhe.** Der Auftakt im Hero und der Menü-Vorhang zeigen sich; alles
+   andere ist Präzision: dieselben Kurven, gestaffelt und jederzeit unterbrechbar.
+5. **Im Zweifel sichtbar.** Ohne JavaScript ist alles sichtbar, verborgen ist nur, was ein Skript
+   selbst gesetzt hat. Bei reduzierter Bewegung bewegt sich nichts und nichts wartet. Mit dem
+   Schalter «Bewegung pausieren» steht die Dauerbewegung, wartende Auftritte stehen sofort am
+   Ende. Ein Sprung zu einer Marke landet immer auf fertigem Inhalt.
+
+### Tokens
+
+Eine Quelle je Laufzeit: `packages/ui/src/styles/tokens.css` für CSS,
+`packages/ui/src/motion/tokens.ts` (`EASE`, `DUR`, `STAGGER`) für GSAP und Timer.
+`packages/ui/test/motion-tokens.test.ts` hält beide gleich und misst jede GSAP-Kurve an ihrer
+CSS-Kurve (Abweichung höchstens 0,012).
+
+| Token                         | Wert                             | GSAP           | Verwendung                                  |
+| ----------------------------- | -------------------------------- | -------------- | ------------------------------------------- |
+| `--ease-out` (Alias `--ease`) | `cubic-bezier(0.22, 1, 0.36, 1)` | `power4.out`   | Standard: Bedienelemente, Folgeelemente     |
+| `--ease-expo`                 | `cubic-bezier(0.16, 1, 0.3, 1)`  | `expo.out`     | lange Landungen: Zeilen, Bilder, Signaturen |
+| `--ease-in-out`               | `cubic-bezier(0.65, 0, 0.35, 1)` | `power2.inOut` | Flächen, die auf- und wieder zufahren       |
+| `--ease-in`                   | `cubic-bezier(0.32, 0, 0.67, 0)` | `power2.in`    | kurze Ausgänge                              |
+
+| Token             | Wert    | Verwendung                                       |
+| ----------------- | ------- | ------------------------------------------------ |
+| `--dur-1`         | 150 ms  | Mikro: Farbe, Unterstrich                        |
+| `--dur-2`         | 250 ms  | Zustand von Bedienelementen, Ausgänge            |
+| `--dur-3`         | 400 ms  | Flächen: Kapsel, Menü schliessen, Header-Wechsel |
+| `--dur-4`         | 800 ms  | Auftritte: Zeilen, Kicker, Folgeelemente         |
+| `--dur-5`         | 1200 ms | Signatur: Hero-Blende, Bild-Enthüllung           |
+| `--stagger`       | 70 ms   | Versatz in einer Folge                           |
+| `--stagger-tight` | 45 ms   | dichte Folge, z. B. Menüpunkte                   |
+
+Begründete Einzelwerte stehen mit Kommentar im Code: Zeilen im Hero 1000 ms
+(`calc(var(--dur-4) + 200ms)`), Menü öffnen 560 ms, Glasfläche der Kapsel 520 ms, neue Seite
+beim Seitenwechsel 520 ms, Hover-Zoom der Fotos 700 ms.
+
+### Bewegte Momente
+
+Die beiden Signaturen:
+
+1. **Auftakt im Hero** (reines CSS, spielt auch ohne Skript): Das runde Foto öffnet sich wie eine
+   Blende (`clip-path` von 34 % auf den vollen Kreis, Zoom von 1.12 auf 1, `--dur-5`) und ist ab
+   dem ersten Bild sichtbar. Die Zeilen der Headline steigen dicht nacheinander aus ihrer Maske,
+   Lead, Buttons und Anzeige folgen bei 380, 450 und 520 ms; nach 1,32 s ruht alles. Auf grossen
+   Bildschirmen bleibt der Hero beim Scrollen kurz stehen, die erste Zeile tritt zurück, das Bild
+   rückt etwas näher.
+2. **Menü-Vorhang**: Das Menü rollt vom Header nach unten aus (560 ms, `--ease-expo`), die grossen
+   Wörter steigen ab 140 ms im Abstand `--stagger-tight` aus ihrer Maske, die Pfeile folgen je
+   60 ms später, der Kontaktblock setzt sich zuletzt. Beim Schliessen fährt der Vorhang in
+   `--dur-3` zurück und trägt alles allein.
+
+Alles andere ist leise:
+
+1. **Leiste und Kapsel**: Die Teile tauchen kurz ab (`--dur-2`, `--ease-in`), die Form wechselt,
+   die Glasfläche faltet sich aus der Mitte auf (`clip-path`), der Schatten blendet als eigene
+   Ebene ein, die Teile kommen gestaffelt zurück (`--dur-3`).
+2. **Überschriften**: Der Kicker zeichnet sich ein (`clip-path`, `--dur-4`), 60 ms später steigen
+   die Zeilen aus ihrer Maske (GSAP SplitText, `--dur-4`, `expo.out`, `--stagger`). Danach ist
+   das Markup wieder wie zuvor.
+3. **Bild-Enthüllung** (`.enter-unveil`: Sortiment, Aktuell, Projekte, Porträt): Das Foto öffnet
+   sich vom unteren Rand (`clip-path`, `--dur-5`, `--ease-expo`) und setzt sich aus einem leichten
+   Zoom. Bilder, die zusammen ankommen, folgen einander im Abstand `--stagger` (höchstens drei
+   Versätze).
+4. **Über uns**: Die Ecken des Suchers rücken weich an ihren Platz (`--dur-4`, `--ease-expo`),
+   eine grüne Linie tastet das Bild einmal ab (nur `transform`, `--dur-4`), die Werte erscheinen
+   im Abstand `--stagger`.
+5. **Haltung**: Die Wörter werden beim Scrollen dunkel, jedes mit weichem Ein- und Auslauf.
+6. **Service**: Die Überschrift bleibt am Desktop stehen, die Schritte ziehen vorbei.
+7. **Band**: Sortiment und Service als Endlosband (pausiert bei Hover, Fokus und über den Knopf).
+8. **Seitenwechsel** (View Transitions zwischen Dokumenten, reines CSS): Der Header steht still,
+   weil seine Leiste als eigene Ebene `site-bar` übergeben wird. Verlässt man die Seite aus der
+   Kapsel, gleitet sie in die Leiste (`--dur-3`, `--ease-in-out`). Darunter blendet die alte Seite
+   aus (`--dur-2`, `--ease-in`), die neue setzt sich 60 ms später von leicht unten (520 ms,
+   `--ease-expo`).
+9. **Kleinigkeiten**: Der Hover-Schein der Buttons liegt auf einer eigenen Ebene (`::after`) und
+   blendet nur über; die Lichtkante des sekundären Buttons wächst aus der Mitte (`scaleX`,
+   `--dur-3`). Fotos zoomen bei Hover fein (nur feiner Pointer). Der Cookie-Hinweis wächst aus
+   seinem Knopf ohne Überschwingen, die «404» rückt einmal von leicht unten an ihren Platz.
+
+### Regeln
+
+- **Nur `transform`, `opacity` und `clip-path` animieren.** Nie Lage, Grösse oder Abstände
+  (`top`, `left`, `width`, `height`, `margin`, `padding`), nie `box-shadow`, `filter` oder
+  `background-position`. Ein Schatten, der sich ändern soll, liegt auf einer eigenen Ebene und
+  blendet über `opacity`. Der Wächter `scripts/motion-guard.test.ts` (Teil von `pnpm test`)
+  prüft alle Stylesheets und Astro-Komponenten.
+- **Kurven nur aus `tokens.css`**, keine mit einem y-Wert unter 0 oder über 1; keine
+  Keyframe-Animation dreht etwas. Auch das prüft der Wächter.
+- **Dauern und Versätze aus den Tokens.** Ein Einzelwert braucht einen Kommentar mit Grund.
+- **Alles endet**: Jeder Auftritt beim Scrollen ist spätestens nach 1200 ms plus drei Versätzen
+  fertig, der Hero ruht nach 1,5 s (beides prüft `e2e/web.spec.ts`).
+- **Reduzierte Bewegung**: `base.css` kürzt jede Animation auf 0.01 ms und jeden Übergang auf 0.
+  Kein Lenis, kein Anpinnen, keine Auftritte, kein Seitenübergang, das Band bricht um.
+- **Pause** (`html[data-motion="off"]`): `base.css` hält jede Animation an; `reveal.ts` löst alle
+  wartenden Auftritte auf, Komponenten setzen ihre laufenden Auftritte ans Ende (Rückfall in CSS).
+- **Ohne JavaScript** gibt es keinen Wartezustand; CSS-Auftritte (Hero, 404) enden sichtbar.
+- **Sprünge** (`data-jump` am `<html>`, `home.ts`): Was unterwegs oder am Ziel ins Bild kommt,
+  steht sofort da.
+- **CSP**: keine `style`-Attribute im Markup; Skripte dürfen `element.style` und eigene
+  Custom Properties setzen (z. B. `--enter-i`).
+- **Keine weitere Bibliothek**: GSAP mit SplitText und Lenis (lerp 0.1) genügen.
+
+Bewusst nicht: Auftritte aus der Unschärfe, Parallax, Fliesstext, der beim Scrollen einblendet,
+gescrubbte Galerien, eigener Mauszeiger, magnetische oder kippende Elemente, Zähler.
 
 ## 7. Technische Regeln fürs Markup
 

@@ -173,6 +173,17 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
   }
 
   /*
+   * Beim Seitenwechsel (View Transition, global.css) steht die Leiste still, statt mit der Seite
+   * überzublenden. Der Name ist pro Seite einmalig; bei reduzierter Bewegung gibt es keinen
+   * Übergang und darum auch keinen Namen.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    .bar {
+      view-transition-name: site-bar;
+    }
+  }
+
+  /*
    * Formwechsel Leiste ↔ Kapsel in zwei Phasen (header.ts): Erst tauchen die Teile kurz nach oben
    * ab (--dur-2, beschleunigend), dann wechselt die Form, und die Teile kommen gestaffelt wieder
    * (--dur-3, bremsend). In der Kapsel faltet sich zuerst die Fläche auf, der Inhalt folgt einen

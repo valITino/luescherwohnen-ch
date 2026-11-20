@@ -61,8 +61,15 @@ picture > source {
 }
 
 /*
- * Seitenwechsel innerhalb der Website: kurzes Überblenden statt eines harten Schnitts, wo
- * der Browser das kann (View Transitions zwischen Dokumenten). Sonst ändert sich nichts.
+ * Seitenwechsel innerhalb der Website: Überblenden statt eines harten Schnitts, wo der Browser
+ * das kann (View Transitions zwischen Dokumenten, reines CSS, auch ohne Skript). Sonst ändert
+ * sich nichts.
+ * Der Header bleibt dabei stehen: Seine Leiste trägt einen eigenen Namen (site-bar, siehe
+ * Header.astro) und wird darum nicht mit der Seite überblendet. Stehen beide Seiten oben, hat
+ * sie in jedem Bild dieselben Pixel; verlässt man die Seite aus der Kapsel, gleitet die Kapsel
+ * in die Leiste. Darunter blendet die alte Seite kurz aus (--dur-2, beschleunigend, nur
+ * Deckkraft), die neue setzt sich 60 ms später weich bremsend von leicht unten.
+ * Bei reduzierter Bewegung fällt der ganze Block weg: harter Schnitt wie bisher.
  */
 @media (prefers-reduced-motion: no-preference) {
   @view-transition {
@@ -70,11 +77,22 @@ picture > source {
   }
 
   ::view-transition-old(root) {
-    animation: 160ms var(--ease) both page-out;
+    animation: var(--dur-2) var(--ease-in) both page-out;
   }
 
   ::view-transition-new(root) {
-    animation: 280ms var(--ease) both page-in;
+    animation: 520ms var(--ease-expo) 60ms both page-in;
+  }
+
+  /* Der Browser bewegt nur die Momentaufnahme der Leiste, nie das echte Layout. */
+  ::view-transition-group(site-bar) {
+    animation-duration: var(--dur-3);
+    animation-timing-function: var(--ease-in-out);
+  }
+
+  ::view-transition-old(site-bar),
+  ::view-transition-new(site-bar) {
+    animation-duration: var(--dur-3);
   }
 }
 
@@ -87,6 +105,6 @@ picture > source {
 @keyframes page-in {
   from {
     opacity: 0;
-    transform: translateY(0.5rem);
+    transform: translateY(0.75rem);
   }
 }

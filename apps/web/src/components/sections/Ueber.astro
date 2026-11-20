@@ -296,8 +296,12 @@ const locations = [
   /*
    * Auftritt, sobald die Sektion ins Bild kommt (reveal.ts setzt data-enter): Das Bild öffnet sich
    * wie alle Bilder der Seite von unten (enter-unveil, components.css), der Sucher stellt scharf
-   * (die Ecken rücken an ihren Platz), eine feine grüne Linie tastet das Bild einmal ab; die Werte
-   * erscheinen nacheinander.
+   * (die Ecken rücken weich bremsend an ihren Platz, ohne Überschwingen), eine feine grüne Linie
+   * tastet das Bild einmal ab; die Werte erscheinen im Abstand --stagger nacheinander.
+   *
+   * Die Linie ist ein 0.375rem hohes Band am unteren Rand einer Ebene, die so hoch ist wie der
+   * Rahmen. Die Ebene fährt von ganz oben (-100 %, Band knapp über dem Bild) nach unten; bewegt
+   * wird nur transform, der Rahmen schneidet ab, was darüber liegt.
    */
   .portrait-frame::after {
     position: absolute;
@@ -305,12 +309,10 @@ const locations = [
     z-index: 1;
     background-image: linear-gradient(
       to bottom,
-      rgb(var(--leaf-rgb) / 0) 0,
-      rgb(var(--leaf-rgb) / 0.85) 50%,
+      rgb(var(--leaf-rgb) / 0) calc(100% - 0.375rem),
+      rgb(var(--leaf-rgb) / 0.85) calc(100% - 0.1875rem),
       rgb(var(--leaf-rgb) / 0) 100%
     );
-    background-repeat: no-repeat;
-    background-size: 100% 0.375rem;
     content: '';
     opacity: 0;
     pointer-events: none;
@@ -327,7 +329,7 @@ const locations = [
   }
 
   .portrait[data-enter='in'] .portrait-corner {
-    animation: about-focus 560ms cubic-bezier(0.2, 1.5, 0.4, 1) 140ms backwards;
+    animation: about-focus var(--dur-4) var(--ease-expo) 140ms backwards;
   }
 
   .portrait[data-enter='in'] .portrait-corner-tl {
@@ -346,28 +348,32 @@ const locations = [
     --from: 0.875rem 0.875rem;
   }
 
+  /*
+   * --dur-4 statt --dur-5: Mit 320 ms Vorlauf endet die Linie nach 1120 ms und damit wie jeder
+   * Auftritt spätestens mit der längsten Bild-Enthüllung (1200 ms plus Versatz).
+   */
   .portrait[data-enter='in'] .portrait-frame::after {
-    animation: about-scan 950ms cubic-bezier(0.3, 0, 0.3, 1) 320ms;
+    animation: about-scan var(--dur-4) var(--ease-in-out) 320ms;
   }
 
   .values[data-enter='in'] .values-list li {
-    animation: about-line 320ms var(--ease) backwards;
+    animation: about-line var(--dur-3) var(--ease) backwards;
   }
 
   .values[data-enter='in'] .values-list li:nth-child(2) {
-    animation-delay: 120ms;
+    animation-delay: var(--stagger);
   }
 
   .values[data-enter='in'] .values-list li:nth-child(3) {
-    animation-delay: 240ms;
+    animation-delay: calc(2 * var(--stagger));
   }
 
   .values[data-enter='in'] .values-list li:nth-child(4) {
-    animation-delay: 360ms;
+    animation-delay: calc(3 * var(--stagger));
   }
 
   .values[data-enter='in'] .values-list li:nth-child(5) {
-    animation-delay: 480ms;
+    animation-delay: calc(4 * var(--stagger));
   }
 
   @keyframes about-rise {
@@ -384,10 +390,11 @@ const locations = [
     }
   }
 
+  /* Die Linie läuft einmal von oben nach unten und verblasst auf den letzten 15 %. */
   @keyframes about-scan {
     0% {
-      background-position: 0 0;
       opacity: 1;
+      transform: translateY(-100%);
     }
 
     85% {
@@ -395,8 +402,8 @@ const locations = [
     }
 
     100% {
-      background-position: 0 100%;
       opacity: 0;
+      transform: translateY(0);
     }
   }
 
@@ -418,6 +425,11 @@ const locations = [
   :global(html[data-motion='off']) .portrait[data-enter] *,
   :global(html[data-motion='off']) .values[data-enter] * {
     opacity: 1;
+    animation: none;
+  }
+
+  /* Die Linie ist ein Pseudo-Element (der Stern oben trifft sie nicht): angehalten bleibt sie weg. */
+  :global(html[data-motion='off']) .portrait-frame::after {
     animation: none;
   }
 

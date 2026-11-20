@@ -323,8 +323,8 @@ const { progress = false } = Astro.props;
   }
 
   /*
-   * Der Hinweis wächst aus seinem Knopf heraus und zieht sich dorthin zurück. Browser ohne
-   * @starting-style zeigen ihn einfach sofort.
+   * Der Hinweis wächst aus seinem Knopf heraus und zieht sich dorthin zurück, weich bremsend und
+   * ohne Überschwingen. Browser ohne @starting-style zeigen ihn einfach sofort.
    */
   .cookie-note {
     opacity: 0;
@@ -332,7 +332,7 @@ const { progress = false } = Astro.props;
     transform-origin: left bottom;
     transition:
       opacity var(--dur-2) var(--ease),
-      transform var(--dur-2) cubic-bezier(0.2, 1.3, 0.4, 1),
+      transform var(--dur-2) var(--ease-expo),
       display var(--dur-2) allow-discrete,
       overlay var(--dur-2) allow-discrete;
   }

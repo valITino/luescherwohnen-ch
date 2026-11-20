@@ -1,5 +1,17 @@
 # Stand je Phase
 
+## 20.11.2026: Bewegungssystem
+
+Auftrag des Repository-Inhabers: Bewegung der Demo vereinheitlichen und verfeinern
+(`docs/DECISIONS.md` 37, `docs/DESIGN.md` Abschnitt 6). Umgesetzt in neun Schritten:
+gemeinsame Tokens für CSS und GSAP, Hero-Blende, Menü-Vorhang, Kapsel, die sich auffaltet,
+Bild-Enthüllung, Überschriften mit Kicker, Auftritte, die Sprünge überstehen, Seitenwechsel mit
+stillstehendem Header und ein Durchgang nach den Regeln (nur `transform`, `opacity`,
+`clip-path`, kein Überschwingen). Neue Wächter: `packages/ui/test/motion-tokens.test.ts` und
+`scripts/motion-guard.test.ts`; neue und verschärfte e2e-Tests für Hero, Menü, Kapsel,
+Auftritte, Pause, Sprünge und Seitenwechsel. Kein zusätzliches Paket, JavaScript 59,3 KB von
+120 KB.
+
 ## 20.11.2026: Demo nach dem PSYber-System
 
 Auftrag des Repository-Inhabers: Stil, Design, Format und Logik von `valITino/PsySec`

@@ -94,3 +94,29 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
   Build-Zeit), Override für KaTeX. `pnpm audit` ohne Befund.
 - **36.** **CodeQL (SAST)** für JavaScript/TypeScript und Actions sowie eine Sperre für PHP-,
   Archiv- und Binärdateien in der CI.
+
+## Bewegung (20.11.2026)
+
+- **37.** **Ein Bewegungssystem statt einzelner Effekte** (Auftrag des Repository-Inhabers,
+  Spezifikation aus einer Design-Runde, gegen den Code geprüft; Einzelheiten in
+  `docs/DESIGN.md`, Abschnitt 6):
+  - **Eine Quelle je Laufzeit:** Kurven, Dauern und Versätze stehen in `tokens.css` und
+    gespiegelt in `packages/ui/src/motion/tokens.ts`; ein Unit-Test hält beide gleich. Grund:
+    CSS-Kurve und GSAP-Kurve wichen vorher um 0,048 voneinander ab, die Seite bewegte sich mit
+    drei verschiedenen Kurven.
+  - **Nur `transform`, `opacity` und `clip-path`.** Grund: Layout, Schatten, Filter und
+    Hintergrundlage kosten auf schwachen Handys in jedem Bild neues Layout oder Zeichnen.
+    Behoben: Lichtkante (`left`/`width`, jetzt `scaleX`), Hover-Schein (`box-shadow`, jetzt eine
+    eigene Ebene mit `opacity`), Abtastlinie in «Über uns» (`background-position`, jetzt
+    `transform`). Der Wächter `scripts/motion-guard.test.ts` verhindert Rückfälle.
+  - **Kein Überschwingen, keine Drehung**: Ecken im Sucher, Cookie-Hinweis und «404» landen weich.
+  - **Zwei Signaturen** (Hero-Blende, Menü-Vorhang), alles andere leise; der Header bleibt beim
+    Seitenwechsel stehen (View Transition mit eigenem Namen `site-bar`).
+  - **Nichts wartet**: bei reduzierter Bewegung, angehaltener Bewegung, ohne JavaScript und nach
+    einem Sprung zu einer Marke steht der Inhalt sofort fertig da.
+  - **Abweichungen von der Spezifikation:** Die Abtastlinie läuft `--dur-4` statt `--dur-5`, weil
+    jeder Auftritt nach spätestens 1200 ms plus drei Versätzen enden soll (e2e-Test); mit 320 ms
+    Vorlauf wären es 1520 ms. Die Ebene des Hover-Scheins liegt auf `inset: -1px` statt `0`, damit
+    der Schatten nicht über den 1 px breiten Rand des Buttons fällt.
+  - **Bewusst nicht:** Auftritte aus der Unschärfe, Parallax, einblendender Fliesstext,
+    gescrubbte Galerien, eigener Mauszeiger, magnetische Buttons, neue Bibliotheken.
