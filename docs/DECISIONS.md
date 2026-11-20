@@ -133,9 +133,11 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
   - **Lead im Hero blendet nicht ein** und die Folgeelemente setzen sich ab 200 ms statt
     380 ms. Grund: Grundsatz «Fliesstext blendet nie ein», und auf dem Handy wurde der Lead zum
     grössten Element: LCP 1004 → 1268 ms.
-  - **Bild-Enthüllung kürzer** (`--dur-4`) und **ohne Zoom auf Touch-Geräten.** Grund: Beim
-    Wischen auf dem Handy fielen 3,6-mal so viele Bilder aus; die Annahme «nach 400 ms frei»
-    hielt mit `--dur-5` nicht.
+  - **Bild-Enthüllung kürzer** (`--dur-4`), **Clip und Zoom am Bild statt am Rahmen.** Grund:
+    Beim Wischen auf dem Handy (4-fach gedrosselt, je zwei Läufe) fielen 55–63 Bilder aus, ohne
+    Enthüllung 19–26. Gemessene Varianten: Clip am Rahmen ohne Zoom 122–126 (schlechter, darum
+    verworfen), mit eigener Ebene für das Bild 130–132, mit Zoom 54–63, Clip und Zoom am Bild
+    26–40, nur Aufsteigen ohne Clip 32–42. Gewählt: Clip und Zoom am Bild, die Geste bleibt.
   - **Menü schliesst bremsend** (`--ease-out`) statt `--ease-in-out`, Wörter ab 70 ms. Grund:
     150–200 ms ohne sichtbare Antwort auf einen Fingertipp.
   - **Seitenwechsel ohne Doppelbelichtung:** alte Seite `--dur-1` bremsend, neue 80 ms später.

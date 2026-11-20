@@ -495,54 +495,43 @@
   /* ---------- Bild-Auftritt ---------- */
 
   /*
-   * Ein Bild öffnet sich beim Hereinscrollen vom unteren Rand nach oben (reveal.ts setzt
-   * data-enter). Kommen mehrere zusammen ins Bild, folgen sie einander im Abstand von --stagger:
-   * reveal.ts nummeriert sie mit --enter-i.
-   * Mit Maus setzt sich das Bild dabei zusätzlich aus einem leichten Zoom. Auf Touch-Geräten
-   * nicht: Dort scrollt der Finger die Seite, und jede weitere Ebene kostete gemessen Bilder.
+   * Ein Bild öffnet sich beim Hereinscrollen vom unteren Rand nach oben und setzt sich dabei aus
+   * einem leichten Zoom (reveal.ts setzt data-enter). Der Rahmen mit seiner Sandfläche steht
+   * schon, das Foto steigt in ihn hinein. Kommen mehrere zusammen ins Bild, folgen sie einander im
+   * Abstand von --stagger: reveal.ts nummeriert sie mit --enter-i.
+   * Clip und Zoom sitzen beide auf dem Bild selbst, nicht auf dem Rahmen: So bewegt der Browser
+   * eine einzige Ebene. Mit dem Clip am Rahmen fielen beim Wischen auf dem Handy gemessen doppelt
+   * so viele Bilder aus (Entscheid 38).
    * Ohne Skript, bei reduzierter Bewegung und im Druck steht das Bild einfach da.
    */
-  .enter-unveil[data-enter='wait'] {
+  .enter-unveil[data-enter='wait'] img {
     clip-path: inset(100% 0 0 0);
   }
 
-  .enter-unveil[data-enter='in'] {
+  .enter-unveil[data-enter='in'] img {
     animation: unveil var(--dur-4) var(--ease-expo) calc(var(--enter-i, 0) * var(--stagger))
       backwards;
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    .enter-unveil[data-enter='in'] img {
-      animation: unveil-settle var(--dur-4) var(--ease-expo)
-        calc(var(--enter-i, 0) * var(--stagger)) backwards;
-    }
-  }
-
-  /* Mit Ziel: Von einer Form zu «none» springt clip-path, statt zu gleiten. */
+  /*
+   * Mit Ziel: Von einer Form zu «none» springt clip-path, statt zu gleiten. Der Ursprung unten
+   * gilt nur während des Auftritts; der Hover-Zoom danach bleibt mittig.
+   */
   @keyframes unveil {
     from {
       clip-path: inset(100% 0 0 0);
-    }
-
-    to {
-      clip-path: inset(0);
-    }
-  }
-
-  /* Der Ursprung unten gilt nur während des Auftritts; der Hover-Zoom danach bleibt mittig. */
-  @keyframes unveil-settle {
-    from {
       transform: scale(1.1);
       transform-origin: 50% 100%;
     }
 
     to {
+      clip-path: inset(0);
       transform-origin: 50% 100%;
     }
   }
 
   @media print {
-    .enter-unveil[data-enter] {
+    .enter-unveil[data-enter] img {
       clip-path: none;
     }
   }

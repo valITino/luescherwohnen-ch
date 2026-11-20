@@ -693,7 +693,7 @@ test.describe('Bewegung und Chrome', () => {
       running: element
         .getAnimations({ subtree: true })
         .filter((animation) => animation.playState === 'running').length,
-      clip: getComputedStyle(element).clipPath,
+      clip: getComputedStyle(element.querySelector('img')!).clipPath,
     }));
     expect(after.running).toBe(0);
     expect(after.clip).toBe('none');

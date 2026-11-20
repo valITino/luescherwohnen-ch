@@ -165,14 +165,14 @@ function initEntrances(): { resolveAll(): void } {
 /**
  * Platz in einer Folge gemeinsam hereinkommender Bilder: `--enter-i` verzögert den Auftritt um
  * je `--stagger` (components.css). Danach wird der Wert wieder entfernt. Gezählt wird nur das
- * Ende des eigenen Auftritts, nicht das von Kindern (etwa den Ecken im Sucher).
+ * Ende der Enthüllung selbst (am Bild darin), nicht das anderer Auftritte (etwa der Ecken oder
+ * der Linie im Sucher).
  */
 function placeInRow(element: HTMLElement, index: number): void {
   if (index === 0) return;
   element.style.setProperty('--enter-i', String(index));
   const clear = (event: AnimationEvent) => {
-    // Auch Animationen der eigenen Pseudo-Elemente (etwa die Linie im Sucher) melden sich hier.
-    if (event.target !== element || event.pseudoElement !== '') return;
+    if (event.animationName !== 'unveil') return;
     element.style.removeProperty('--enter-i');
     if (element.style.length === 0) element.removeAttribute('style');
     element.removeEventListener('animationend', clear);

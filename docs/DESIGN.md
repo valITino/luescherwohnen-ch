@@ -188,7 +188,8 @@ Die beiden Signaturen:
 
 Alles andere ist leise:
 
-1. **Leiste und Kapsel**: Die Teile tauchen kurz ab (`--dur-1`, `--ease-out`), die Form wechselt,
+1. **Leiste und Kapsel**: Die Teile tauchen kurz ab (`--dur-1`; Deckkraft gleichmässig, damit der
+   Header erst im letzten Moment leer ist, Bewegung `--ease-out`), die Form wechselt,
    die Glasfläche faltet sich aus der Mitte auf (`clip-path` von 10 % Rand, 360 ms), der Schatten
    blendet 60 ms später als eigene Ebene ein, die Teile kommen sofort gestaffelt zurück
    (`--dur-3`). Nach gut einer halben Sekunde ruht alles. Was den Tastaturfokus trägt, taucht
@@ -196,11 +197,12 @@ Alles andere ist leise:
 2. **Überschriften**: Der Kicker zeichnet sich ein (`clip-path`, `--dur-4`), 60 ms später steigen
    die Zeilen aus ihrer Maske (GSAP SplitText, `--dur-4`, `expo.out`, `--stagger`). Danach ist
    das Markup wieder wie zuvor.
-3. **Bild-Enthüllung** (`.enter-unveil`: Sortiment, Aktuell, Projekte, Porträt): Das Foto öffnet
-   sich vom unteren Rand (`clip-path`, `--dur-4`, `--ease-expo`); mit Maus setzt es sich dabei
-   aus einem leichten Zoom, auf Touch-Geräten nicht (dort kostete der Zoom beim Wischen gemessen
-   Bilder). Bilder, die zusammen ankommen, folgen einander im Abstand `--stagger` (höchstens drei
-   Versätze).
+3. **Bild-Enthüllung** (`.enter-unveil`: Sortiment, Aktuell, Projekte, Porträt): Der Rahmen mit
+   seiner Sandfläche steht, das Foto steigt vom unteren Rand in ihn hinein und setzt sich aus
+   einem leichten Zoom (`clip-path` und `scale` am Bild selbst, `--dur-4`, `--ease-expo`). Am
+   Bild statt am Rahmen, weil der Browser dann nur eine Ebene bewegt: Beim Wischen auf dem Handy
+   fielen so gemessen halb so viele Bilder aus. Bilder, die zusammen ankommen, folgen einander
+   im Abstand `--stagger` (höchstens drei Versätze).
 4. **Über uns**: Die Ecken des Suchers rücken weich an ihren Platz (`--dur-4`, `--ease-expo`),
    eine grüne Linie tastet das Bild einmal ab (nur `transform`, `--dur-4`), die Werte erscheinen
    im Abstand `--stagger`.

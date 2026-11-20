@@ -188,10 +188,10 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
 
   /*
    * Formwechsel Leiste ↔ Kapsel in zwei Phasen (header.ts): Erst tauchen die Teile kurz nach oben
-   * ab (--dur-1, weich bremsend: Die Antwort ist schon im ersten Bild zu sehen), dann wechselt die
-   * Form, und die Teile kommen sofort gestaffelt wieder (--dur-3, bremsend): das Logo zuerst, die
-   * Navigation 20 ms, die Knöpfe ab 20 ms im Abstand --stagger-tight. In der Kapsel faltet sich
-   * gleichzeitig die Fläche auf. Nach gut einer halben Sekunde ruht alles.
+   * ab (--dur-1), dann wechselt die Form, und die Teile kommen sofort gestaffelt wieder (--dur-3,
+   * bremsend): das Logo zuerst, die Navigation 20 ms, die Knöpfe ab 20 ms im Abstand
+   * --stagger-tight. In der Kapsel faltet sich gleichzeitig die Fläche auf. Nach gut einer halben
+   * Sekunde ruht alles.
    * Die Leiste selbst bleibt sichtbar; Breite und Abstände springen nur, solange alles abgetaucht
    * ist. Telefon und Menü-Knopf führen dieselben Übergänge neben ihren Farben (siehe unten).
    */
@@ -219,13 +219,21 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     --bar-i: 2;
   }
 
+  /*
+   * Beim Abtauchen blendet die Deckkraft gleichmässig (linear) aus, die kleine Bewegung nach oben
+   * bremst (--ease-out): Schon im ersten Bild ist eine Antwort zu sehen, und leer ist der Header
+   * erst in den letzten Bildern vor dem Wechsel. Mit einer bremsenden Deckkraft wäre er nach der
+   * halben Zeit leer und bliebe es bis zum Ende des Übergangs (gemessen sieben Bilder).
+   * Die Liste folgt der Reihenfolge der Übergänge: opacity, transform (bei Telefon und Menü-Knopf
+   * zuerst die beiden Farben, sie erhalten dieselbe Folge).
+   */
   .site-header:global(.is-morphing) :global(.bar-logo),
   .site-header:global(.is-morphing) .bar-nav,
   .site-header:global(.is-morphing) .bar-actions > * {
     opacity: 0;
     transform: translateY(-0.25rem);
     transition-duration: var(--dur-1);
-    transition-timing-function: var(--ease-out);
+    transition-timing-function: linear, var(--ease-out);
     transition-delay: 0s;
   }
 
@@ -451,16 +459,17 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
   }
 
   /* Zurück zur Leiste: Die Kapsel faltet sich zusammen, während ihr Inhalt abtaucht. */
+  /* Wie der Inhalt: Der Clip bremst, die Deckkraft geht gleichmässig (Reihenfolge wie oben). */
   .site-header:global(.is-scrolled.is-morphing) .bar::before {
     clip-path: inset(0 10% round var(--r-pill));
     opacity: 0;
     transition-duration: var(--dur-1);
-    transition-timing-function: var(--ease-out);
+    transition-timing-function: var(--ease-out), linear;
   }
 
   .site-header:global(.is-scrolled.is-morphing) .bar::after {
     opacity: 0;
-    transition: opacity var(--dur-1) var(--ease-out);
+    transition: opacity var(--dur-1) linear;
   }
 
   .site-header:global(.is-scrolled) .bar-nav {
