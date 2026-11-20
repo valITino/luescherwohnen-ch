@@ -13,6 +13,9 @@ menschlichen Freigabe-Gates und maschinellen Qualitätsnachweisen.
 - [ ] Inhalte und Rechteinventar erstellen
 - [ ] Bestehende Website/HTML-Artefakte sowie URLs inventarisieren
 - [ ] MVP und messbare Abnahmekriterien durch Auftraggeber freigeben
+- [x] Demo-Inkrement nach dem PSYber-Designsystem (Auftrag des
+      Repository-Inhabers vom 20.11.2026): Website, Tests, Container, CI und
+      Vorschau auf GitHub Pages; keine Produktionsfreigabe (`docs/PROGRESS.md`)
 
 **Gate G0:** `D-001` bis `D-008` beantwortet; MVP schriftlich freigegeben.
 

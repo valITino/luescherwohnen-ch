@@ -117,6 +117,33 @@ Ein Abruf von `https://luescherwohnen.ch/` am 12.09.2026 lieferte dieser
 Arbeitsumgebung HTTP 403 von einer Web Application Firewall. Daraus wird weder
 der Produktionsinhalt noch die Hosting-Konfiguration abgeleitet.
 
+## 7a. Inventur der bisherigen Website (20.11.2026)
+
+Quelle: Bildschirmfotos und Text in `docs/Homepage.docx` sowie 148 Originalbilder in
+`docs/ressources/`. Belegt, aber noch nicht als aktuell bestätigt:
+
+| Beleg | Beobachtung | Status |
+|---|---|---|
+| Impressum (`docs/Homepage.docx`) | Lüscher Wohnen AG, Weite Gasse 9, 5400 Baden; Fax +41 56 222 32 75; Geschäftsleiter Michael Längle; Handelsregister Kanton Aargau; MwSt-Nr. CHE 116.367.369 | `D-001` |
+| Firmenstandorte | Ausstellung Weite Gasse 9, Baden; Lager Ringstrasse 13, 5432 Neuenhof | `D-001` |
+| Unternehmen, Firmengeschichte | Gründung 1946 (Hans und Arthur Lüscher), Weite Gasse 9 seit 1959, 6 Etagen und rund 1200 m², Bruno Längle ab 1983, Lüscher Wohnen AG seit 2010 | `D-005` (Texte), W19 |
+| Öffnungszeiten (Unterseite) | «Sonntag geschlossen»; «Sehr gerne beraten oder besuchen wir Sie auch ausserhalb der Laden-Öffnungszeiten» | `D-004`, `D-006` |
+
+Widersprüche im Bestand (Auswahl, vollständige Liste in `docs/TODO.md`):
+
+| ID | Widerspruch | Frage an den Auftraggeber |
+|---|---|---|
+| W1 | Samstag 9:00 (frühere Website) gegenüber 10:00 Uhr (`docs/index.html`) | Welche Zeit gilt? (`D-004`) |
+| W2 | «in 3. Generation» gegenüber «in zweiter Generation» | Welche Zählung gilt? |
+| W3 | Michael Längle als Geschäftsführer, Geschäftsleiter oder Inhaber | Welche Bezeichnung? (`D-001`) |
+| W9 | Mobilnummer 079 303 76 83 nur auf einer Unterseite; Fax noch aktiv? | Welche Nummern veröffentlichen? |
+| W14 | Logo nur als PNG; Vektor mit Claim «Leben und wohnen Sie schön» in einer Einladung | Offizielle Logodatei und Claim (`D-005`) |
+| W16 | Referenzen ohne Titel und Texte | Projekttitel und Freigabe (`D-005`) |
+
+**Sicherheitsbefund:** `docs/ressources/2026/08/` enthält zwei ZIP-Archive mit
+WordPress-Hintertüren aus dem Upload-Ordner der alten Website. Empfehlung und Stand in
+`docs/TODO.md`; die Dateien gelangen in kein Build-Artefakt.
+
 ## 8. Freigabeprotokoll
 
 Eine Entscheidung gilt erst als freigegeben, wenn Datum, Entscheider, Wortlaut
@@ -126,3 +153,9 @@ Kontext vermutete Freigaben reichen nicht.
 | Datum | Entscheider | IDs | Entscheid/Wortlaut |
 |---|---|---|---|
 | - | - | - | Noch keine Freigabe dokumentiert. |
+
+### Aufträge des Repository-Inhabers (keine Freigaben des Auftraggebers)
+
+| Datum | Auftraggeber im Repository | Inhalt | Wirkung |
+|---|---|---|---|
+| 20.11.2026 | Repository-Inhaber (Fork) | Demo-Website nach dem Designsystem von `valITino/PsySec` übernehmen, als Vorschau auf GitHub Pages; Docker zum Testen. Auf Rückfrage: helles Farbschema mit Lüscher-Grün. | Demo mit `noindex` und Vorschau-Hinweis (`docs/DECISIONS.md`, ADR-0001 bis 0003). Gate G0 bleibt offen. |
