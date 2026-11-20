@@ -179,9 +179,11 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
    * Nur die Leiste oben trägt ihn, nie die Kapsel: Der Browser würde die Kapsel sonst beim Wechsel
    * auf die Grösse der Leiste ziehen (Logo und Knöpfe verzerrt). Und ein Element mit Namen grenzt
    * die Unschärfe seiner Kinder ab: Das Milchglas der Kapsel (::before) bliebe klar.
+   * Aus demselben Grund verliert die Leiste den Namen, wenn die neue Seite nicht sicher oben
+   * beginnt (Marke oder Verlauf, is-leaving aus header.ts).
    */
   @media (prefers-reduced-motion: no-preference) {
-    .site-header:not(:global(.is-scrolled)) .bar {
+    .site-header:not(:global(.is-scrolled), :global(.is-leaving)) .bar {
       view-transition-name: site-bar;
     }
   }
@@ -243,8 +245,10 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
   }
 
   /*
-   * Was den Tastaturfokus trägt, taucht nicht ab: Fokusring und Ziel bleiben während des ganzen
-   * Wechsels sichtbar (WCAG 2.4.7). Die Navigation fehlt hier, sie gibt es in der Kapsel nicht.
+   * Was den Tastaturfokus trägt, taucht nicht ab: Fokusring und Ziel bleiben während des Abtauchens
+   * sichtbar (WCAG 2.4.7). Gibt es das Element in der neuen Form nicht, übernimmt beim Wechsel ein
+   * sichtbares Gegenstück den Fokus (header.ts). Die Navigation fehlt hier, sie gibt es in der
+   * Kapsel nicht.
    */
   .site-header:global(.is-morphing) :global(.bar-logo):focus-visible,
   .site-header:global(.is-morphing) .bar-actions > :is(:focus-visible, :has(:focus-visible)) {
@@ -458,6 +462,15 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     }
   }
 
+  /*
+   * Ohne Formwechsel (Sprung, angehaltene Bewegung, header.ts): Die Kapsel steht sofort samt
+   * Fläche und Schatten da, statt sich hinter den schon sichtbaren Knöpfen erst aufzufalten.
+   */
+  .site-header:global(.is-instant) .bar::before,
+  .site-header:global(.is-instant) .bar::after {
+    transition: none;
+  }
+
   /* Zurück zur Leiste: Die Kapsel faltet sich zusammen, während ihr Inhalt abtaucht. */
   /* Wie der Inhalt: Der Clip bremst, die Deckkraft geht gleichmässig (Reihenfolge wie oben). */
   .site-header:global(.is-scrolled.is-morphing) .bar::before {
@@ -667,7 +680,8 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
   /*
    * Hält jemand die Bewegung an (Schalter), stehen die Auftritte im Menü sofort am Ende, statt am
    * Anfang angehalten zu warten (base.css hält jede Animation an; ohne Dauer und Verzögerung liegt
-   * sie dann hinter ihrem Ende). Der Vorhang ist ein Übergang und bleibt.
+   * sie dann hinter ihrem Ende). Der Vorhang ist ein Übergang: base.css setzt ihn auf 0 s, das
+   * Menü ist sofort offen und zu.
    */
   :global(html[data-motion='off']) .menu:not([hidden]) .menu-link-label,
   :global(html[data-motion='off']) .menu:not([hidden]) .orb,

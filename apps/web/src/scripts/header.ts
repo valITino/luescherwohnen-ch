@@ -2,7 +2,7 @@
  * Header: oben volle Leiste, nach dem Scrollen eine schwebende Kapsel; dazu das Vollbild-Menü
  * mit Fokusfalle.
  */
-import { DUR, motionAllowed } from '@luescher/ui/motion';
+import { DUR, motionAllowed, motionPaused } from '@luescher/ui/motion';
 
 export interface ScrollLock {
   stop(): void;
@@ -27,11 +27,41 @@ export function initHeader(lock: () => ScrollLock | null): void {
   let scrolled = false;
   let ticking = false;
   let morph = 0;
+  const twoFrames = (callback: () => void) =>
+    requestAnimationFrame(() => requestAnimationFrame(callback));
+
+  // Die Teile der Leiste, die beim Wechsel abtauchen und wieder auftauchen.
+  const parts = () =>
+    bar.querySelectorAll<HTMLElement>(':scope > .bar-logo, :scope > .bar-nav, .bar-actions > *');
+  // Ist davon gerade etwas zu sehen? Liest den laufenden Wert der Übergänge.
+  const anyVisible = () =>
+    [...parts()].some(
+      (part) => part.checkVisibility() && Number(getComputedStyle(part).opacity) > 0.05,
+    );
+
+  /*
+   * Der Tastaturfokus bleibt in der Leiste. Gibt es das fokussierte Bedienelement in der neuen Form
+   * nicht (etwa den Menü-Knopf oben am Desktop oder die Navigation in der Kapsel), wandert der
+   * Fokus zum ersten sichtbaren Gegenstück, statt auf <body> zu fallen (WCAG 2.4.3, 2.4.7).
+   */
+  const counterparts = [
+    header.querySelector<HTMLElement>('[data-menu-toggle]'),
+    header.querySelector<HTMLElement>('.bar-nav a'),
+    header.querySelector<HTMLElement>('.bar-logo'),
+  ];
+  const reshape = () => {
+    const active = document.activeElement;
+    const focused = active instanceof HTMLElement && bar.contains(active) ? active : null;
+    header.classList.toggle('is-scrolled', scrolled);
+    if (!focused || focused.checkVisibility()) return;
+    counterparts.find((element) => element?.checkVisibility())?.focus({ preventScroll: true });
+  };
+
   // Zweite Phase: Form wechseln, solange noch alles abgetaucht ist, dann wieder auftauchen.
   const swap = () => {
     window.clearTimeout(morph);
     if (!header.classList.contains('is-morphing')) return;
-    header.classList.toggle('is-scrolled', scrolled);
+    reshape();
     // Stil jetzt berechnen: Was erst in der neuen Form erscheint (z. B. Telefon und Menü-Knopf in
     // der Kapsel), startet so unsichtbar und blendet mit den anderen ein, statt aufzuspringen.
     // Kostet kein zusätzliches Layout: Danach ändern sich nur noch Deckkraft und transform.
@@ -41,10 +71,18 @@ export function initHeader(lock: () => ScrollLock | null): void {
     // von Breite und Lage nicht als Layoutverschiebung. Zwei rAF, weil der erste unter Umständen
     // noch vor diesem Bild läuft.
     header.classList.add('is-swapping');
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => header.classList.remove('is-swapping')),
-    );
+    twoFrames(() => header.classList.remove('is-swapping'));
   };
+
+  /*
+   * Ohne Formwechsel in zwei Phasen: bei reduzierter Bewegung, angehaltener Bewegung (Schalter)
+   * und bei einem Sprung (Direktlink, wiederhergestellte Position, home.ts), denn dann kommt man
+   * an, statt zu scrollen. Die Form steht sofort, und auch die Fläche der Kapsel faltet sich nicht
+   * erst nach den Knöpfen auf (is-instant, Header.astro).
+   */
+  const instant = () =>
+    !motionAllowed() || motionPaused() || 'jump' in document.documentElement.dataset;
+
   const update = (animate = true) => {
     ticking = false;
     const y = window.scrollY;
@@ -52,15 +90,23 @@ export function initHeader(lock: () => ScrollLock | null): void {
     if (next === scrolled) return;
     scrolled = next;
     window.clearTimeout(morph);
-    // Bei einem Sprung (Direktlink, wiederhergestellte Position, home.ts) kommt man an, statt zu
-    // scrollen: Die Form steht dann sofort, statt sich über dem neuen Inhalt umzubauen.
-    if (!animate || !motionAllowed() || 'jump' in document.documentElement.dataset) {
+    if (!animate || instant()) {
       header.classList.remove('is-morphing');
-      header.classList.toggle('is-scrolled', scrolled);
+      header.classList.add('is-instant');
+      reshape();
+      twoFrames(() => header.classList.remove('is-instant'));
       return;
     }
+    // Ist gerade nichts zu sehen (etwa bei einer Umkehr direkt nach dem Wechsel, wenn alle Teile
+    // noch auf ihr Auftauchen warten), kann nichts abtauchen und kein transitionend kommen:
+    // Dann wechselt die Form sofort, statt auf die Notbremse zu warten.
+    const visible = anyVisible();
     // Erste Phase: Die Teile der Leiste tauchen ab (Header.astro).
     header.classList.add('is-morphing');
+    if (!visible) {
+      swap();
+      return;
+    }
     morph = window.setTimeout(swap, MORPH_FALLBACK_MS);
   };
   // Das Ende des Abtauchens meldet der erste Teil, dessen Deckkraft fertig übergeblendet ist.
@@ -84,6 +130,31 @@ export function initHeader(lock: () => ScrollLock | null): void {
     { passive: true },
   );
   update(false);
+
+  /*
+   * Seitenwechsel (View Transition, global.css): Die Leiste bleibt nur stehen, wenn die neue Seite
+   * sicher oben beginnt. Führt der Link zu einer Marke (/#kontakt) oder geht es durch den Verlauf
+   * zurück oder vor, kann die neue Seite noch während des Übergangs zur Kapsel werden; der Browser
+   * zöge die Kapsel dann auf die Breite der alten Leiste (Logo und Knöpfe riesig). In diesen
+   * Fällen verliert die alte Leiste ihren Namen (is-leaving) und geht mit der alten Seite, die neue
+   * blendet für sich ein. Bei angehaltener Bewegung gibt es keinen Übergang.
+   */
+  window.addEventListener('pageswap', (event) => {
+    const transition = event.viewTransition;
+    if (!transition) return;
+    if (motionPaused()) {
+      transition.skipTransition();
+      return;
+    }
+    const activation = event.activation;
+    if (!activation) return;
+    const target = new URL(activation.entry.url ?? '', window.location.href);
+    if (activation.navigationType === 'traverse' || target.hash) {
+      header.classList.add('is-leaving');
+    }
+  });
+  // Aus dem Verlauf zurück (bfcache): wieder wie neu geladen.
+  window.addEventListener('pageshow', () => header.classList.remove('is-leaving'));
 
   // --- Vollbild-Menü ---
   const toggle = header.querySelector<HTMLButtonElement>('[data-menu-toggle]');

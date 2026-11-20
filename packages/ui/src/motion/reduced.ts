@@ -1,7 +1,8 @@
 /**
  * Bewegungs-Präferenzen.
  * - `prefers-reduced-motion`: keine Autoplay- oder Scrub-Animationen, kein Lenis.
- * - `data-motion="off"` am <html>: vom Menschen pausierte Dauerbewegung (Band, Equalizer).
+ * - `data-motion="off"` am <html>: vom Menschen angehaltene Bewegung. Dauerbewegung (Band,
+ *   Equalizer) steht, Auftritte, Übergänge und der Formwechsel des Headers entfallen.
  */
 
 const QUERY = '(prefers-reduced-motion: reduce)';

@@ -283,8 +283,9 @@ const cta = primaryCta(true);
   /*
    * Folgeelemente: setzen sich, während die Zeilen noch gleiten (Statuszeilen siehe Desktop).
    * Der Lead ist Fliesstext und blendet darum nie ein: Er ist vom ersten Bild an lesbar und rückt
-   * nur ein wenig nach. So bleibt er auch das, was der Browser als grösstes Element zuerst sieht
-   * (LCP), wenn die Blende das Foto anfangs kleiner zeigt. Die Knöpfe sind ab etwa 0,5 s klar.
+   * nur um 4 px nach, so wenig, dass es beim Lesen nicht stört. So bleibt er auch das, was der
+   * Browser als grösstes Element zuerst sieht (LCP), wenn die Blende das Foto anfangs kleiner
+   * zeigt. Die Knöpfe sind ab etwa 0,5 s klar.
    */
   .hero-lead {
     max-width: 24em;
@@ -301,7 +302,7 @@ const cta = primaryCta(true);
 
   @keyframes hero-settle {
     from {
-      transform: translateY(0.5rem);
+      transform: translateY(0.25rem);
     }
   }
 

@@ -1,4 +1,6 @@
+import type { AddressInfo } from 'node:net';
 import { expect, test, type Page } from '@playwright/test';
+import { serve } from '../scripts/serve.mjs';
 import {
   PAGES,
   PREVIEW,
@@ -46,9 +48,12 @@ async function expectLanded(page: Page, target: string) {
         .filter(inView)
         .map((element) => element.className),
       kicker: getComputedStyle(section.querySelector('.section-head .kicker')!).clipPath,
+      // Nur Auftritte (CSS-Animationen): Ein Hover-Übergang unter dem ruhenden Zeiger zählt nicht.
       running: section
         .getAnimations({ subtree: true })
-        .filter((animation) => animation.playState === 'running')
+        .filter(
+          (animation) => animation instanceof CSSAnimation && animation.playState === 'running',
+        )
         .map((animation) => (animation as CSSAnimation).animationName),
     };
   });
@@ -275,6 +280,83 @@ test.describe('Navigation', () => {
     await page.goto(`${PROD}/#ueber`);
     await expect(page.locator('#ueber-title')).toBeInViewport({ timeout: 10_000 });
     await expectLanded(page, '#ueber');
+  });
+
+  test('Sprung aus dem Hero: Der Header wird ohne Umbau zur Kapsel', async ({ page }) => {
+    await page.goto(`${PROD}/`);
+    await page.evaluate(() => document.fonts.ready);
+    const header = page.locator('[data-header]');
+    // Festhalten, ob der Header unterwegs abtaucht: Ein Sprung kommt an, statt zu scrollen.
+    await header.evaluate((element) => {
+      new MutationObserver(() => {
+        if (element.classList.contains('is-morphing')) element.dataset.testMorphed = '';
+      }).observe(element, { attributes: true, attributeFilter: ['class'] });
+    });
+    await page.locator('[data-hero] a[href="#sortiment"]').click();
+    await expect(page).toHaveURL(/#sortiment$/);
+    await expect(page.locator('#sortiment-title')).toBeInViewport({ timeout: 15_000 });
+    await expectLanded(page, '#sortiment');
+    await expect(header).toHaveClass(/is-scrolled/);
+    await expect(header).not.toHaveAttribute('data-test-morphed');
+  });
+
+  test('Seitenwechsel zu einer Marke: Der Header wird nicht verzerrt', async ({
+    browser,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'Die Navigation in der Leiste gibt es nur am Desktop');
+    // Mit den Cache-Regeln der Produktion: Bei no-store überspringt Chromium den Übergang oft.
+    const server = await serve({ dir: 'apps/web/dist', port: 0, quiet: true, production: true });
+    const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await context.newPage();
+    // Auf jeder neuen Seite festhalten, welche Teile der Übergang für die Leiste hat.
+    await page.addInitScript(() => {
+      window.addEventListener('pagereveal', (event) => {
+        const transition = (event as PageRevealEvent).viewTransition;
+        if (!transition) return;
+        transition.ready.then(
+          () => {
+            const parts = document
+              .getAnimations()
+              .map((animation) => (animation.effect as KeyframeEffect | null)?.pseudoElement)
+              .filter((pseudo) => pseudo?.includes('site-bar'));
+            document.documentElement.dataset.testBar = parts.join(' ') || 'none';
+          },
+          // Übersprungen: Dann gibt es nichts festzuhalten.
+          () => undefined,
+        );
+      });
+    });
+    // Ein Wechsel mit Übergang; Chromium lässt ihn gelegentlich aus, dann noch einmal.
+    const change = async (from: string, link: string, url: RegExp) => {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        await page.goto(`${origin}${from}`);
+        await page.evaluate(() => document.fonts.ready);
+        await page.locator(link).first().click();
+        await expect(page).toHaveURL(url);
+        await page.waitForLoadState('load');
+        await page.waitForTimeout(600);
+        const parts = await page.locator('html').getAttribute('data-test-bar');
+        if (parts !== null) return parts;
+      }
+      return null;
+    };
+    try {
+      // Oben von Seite zu Seite: Die Leiste steht still (alte und neue Leiste als ein Paar).
+      const still = await change('/impressum', '[data-header] .bar-logo', /\/$/);
+      expect(still, 'Übergang hat stattgefunden').not.toBeNull();
+      expect(still).toContain('::view-transition-old(site-bar)');
+      // Zu einer Marke: Die neue Seite steht weiter unten (Kapsel). Die alte Leiste geht mit der
+      // alten Seite; nichts zieht die Kapsel auf die Breite der Leiste.
+      const toMark = await change('/impressum', '.bar-nav a[href="/#kontakt"]', /#kontakt$/);
+      expect(toMark, 'Übergang hat stattgefunden').not.toBeNull();
+      expect(toMark).not.toContain('::view-transition-old(site-bar)');
+      expect(toMark).not.toContain('::view-transition-group(site-bar)');
+    } finally {
+      await context.close();
+      server.close();
+    }
   });
 
   test('Interne Links der Vorschau führen nie ins Leere (Basis-Pfad)', async ({
@@ -546,6 +628,68 @@ test.describe('Bewegung und Chrome', () => {
     expect(glass.blur).toContain('blur');
   });
 
+  test('Tastatur: Der Fokus bleibt beim Formwechsel im Header', async ({ page, isMobile }) => {
+    await page.goto(`${PROD}/`);
+    await page.mouse.wheel(0, 600);
+    const header = page.locator('[data-header]');
+    await expect(header).toHaveClass(/is-scrolled/);
+    const settled = () =>
+      page.waitForFunction(
+        () => {
+          const element = document.querySelector('[data-header]')!;
+          return (
+            !element.matches('.is-morphing, .is-swapping') &&
+            element.querySelector('.bar')!.getAnimations({ subtree: true }).length === 0
+          );
+        },
+        null,
+        { timeout: 3000 },
+      );
+    await settled();
+    // Ein Knopf, den es nur in der Kapsel gibt: am Desktop das Menü, am Handy «Beratung anfragen».
+    const start = header.locator(isMobile ? '.bar-cta' : '[data-menu-toggle]');
+    await start.focus();
+    await expect(start).toBeFocused();
+    expect(await start.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
+    // Solange der Header abtaucht, bleibt der fokussierte Knopf ganz sichtbar.
+    await page.evaluate(() => {
+      const header = document.querySelector<HTMLElement>('[data-header]')!;
+      const focused = document.activeElement!;
+      let lowest = 1;
+      const sample = () => {
+        if (header.classList.contains('is-morphing')) {
+          let value = 1;
+          for (
+            let node: Element | null = focused;
+            node && node !== header;
+            node = node.parentElement
+          ) {
+            value *= Number(getComputedStyle(node).opacity);
+          }
+          lowest = Math.min(lowest, value);
+          header.dataset.testLowest = String(lowest);
+        }
+        if (header.classList.contains('is-scrolled')) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    await page.keyboard.press('Home');
+    await expect(header).not.toHaveClass(/is-scrolled/);
+    await settled();
+    expect(Number(await header.getAttribute('data-test-lowest'))).toBeGreaterThan(0.99);
+    // Oben gibt es den Knopf nicht: Der Fokus ist auf ein sichtbares Gegenstück im Header
+    // gewandert, statt auf <body> zu fallen, und der Fokusring bleibt.
+    const state = await page.evaluate(() => {
+      const active = document.activeElement;
+      return {
+        inHeader: Boolean(active?.closest('[data-header]')),
+        visible: Boolean(active?.checkVisibility()),
+        ring: Boolean(active?.matches(':focus-visible')),
+      };
+    });
+    expect(state).toEqual({ inHeader: true, visible: true, ring: true });
+  });
+
   test('Auftritte beim Hereinscrollen: am Ende wartet nichts mehr', async ({ page }) => {
     await page.goto(`${PROD}/`);
     await layOutAll(page);
@@ -595,6 +739,43 @@ test.describe('Bewegung und Chrome', () => {
     for (const { name, end } of seen) expect(end, name).toBeLessThanOrEqual(1200 + 3 * 70);
   });
 
+  test('Bilder laden vor ihrem Auftritt (loading="lazy")', async ({ page }) => {
+    await page.goto(`${PROD}/`);
+    await layOutAll(page);
+    await page.mouse.wheel(0, 200);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    await nextFrames(page);
+    // Ein Bild weit unten (Aktuell), das auf seinen Auftritt wartet. Allmählich hinscrollen wie
+    // beim Lesen, bis es gut 600 px unter dem unteren Rand steht: Dort lädt der Browser Bilder mit
+    // loading="lazy" schon vor. Ein ganz beschnittenes Bild lüde er erst im Bild (ein Sprung
+    // dagegen lädt es auch so).
+    const media = await page
+      .locator('.story-media.enter-unveil[data-enter="wait"]')
+      .first()
+      .elementHandle();
+    expect(media).not.toBeNull();
+    const below = () =>
+      media!.evaluate((element) => element.getBoundingClientRect().top - window.innerHeight);
+    for (let step = 0; step < 300; step++) {
+      const distance = await below();
+      if (distance < 640) break;
+      await page.mouse.wheel(0, Math.min(150, Math.max(20, (distance - 600) / 2)));
+      await page.waitForTimeout(30);
+    }
+    await page.waitForFunction(
+      (element) => {
+        const image = element.querySelector('img')!;
+        return image.complete && image.naturalWidth > 0;
+      },
+      media!,
+      { timeout: 5_000 },
+    );
+    expect(await below()).toBeGreaterThan(0);
+    expect(await media!.evaluate((element) => (element as HTMLElement).dataset.enter)).toBe('wait');
+  });
+
   test('Bewegung pausiert: nichts wartet', async ({ page }) => {
     await page.goto(`${PROD}/`);
     await layOutAll(page);
@@ -622,6 +803,37 @@ test.describe('Bewegung und Chrome', () => {
       expect(await page.locator('[data-enter="wait"]').count(), `bei ${y} px`).toBe(0);
       expect(await page.locator('.ln-mask').count(), `bei ${y} px`).toBe(0);
     }
+  });
+
+  test('Bewegung pausiert: Header und Menü wechseln ohne Übergang', async ({ page }) => {
+    await page.goto(`${PROD}/`);
+    const toggle = page.locator('[data-motion-toggle]');
+    await expect(toggle).toBeVisible();
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
+    const header = page.locator('[data-header]');
+    await header.evaluate((element) => {
+      new MutationObserver(() => {
+        if (element.classList.contains('is-morphing')) element.dataset.testMorphed = '';
+      }).observe(element, { attributes: true, attributeFilter: ['class'] });
+    });
+    await page.mouse.wheel(0, 600);
+    await expect(header).toHaveClass(/is-scrolled/);
+    await expect(header).not.toHaveAttribute('data-test-morphed');
+    // Fläche und Schatten der Kapsel stehen sofort, statt sich aufzufalten.
+    const glass = await header
+      .locator('.bar')
+      .evaluate((bar) => [
+        bar.getAnimations({ subtree: true }).length,
+        getComputedStyle(bar, '::before').opacity,
+      ]);
+    expect(glass).toEqual([0, '1']);
+    // Das Menü ist sofort offen, ohne Vorhang.
+    await page.locator('[data-menu-toggle]').click();
+    const menu = await page
+      .locator('[data-menu]')
+      .evaluate((element) => [element.getAnimations().length, getComputedStyle(element).clipPath]);
+    expect(menu).toEqual([0, 'inset(0px)']);
   });
 
   test('Anhalten und Fortsetzen: Der Auftakt spielt nicht weiter', async ({ page }) => {

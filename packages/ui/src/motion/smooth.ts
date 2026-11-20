@@ -11,7 +11,7 @@ export { gsap, ScrollTrigger };
 export { DUR, EASE, STAGGER } from './tokens.ts';
 
 export interface SmoothScroll {
-  /** Lenis-Instanz; `null` bei reduzierter Bewegung (dann scrollt der Browser nativ) */
+  /** Lenis-Instanz; `null` bei reduzierter Bewegung und auf Touch-Geräten (natives Scrollen) */
   readonly lenis: Lenis | null;
   /** Scrollen sperren, z. B. solange ein Vollbild-Overlay offen ist */
   stop(): void;
@@ -21,9 +21,23 @@ export interface SmoothScroll {
 /** Klasse am <html>, solange ein Vollbild-Overlay (Menü) die Seite sperrt */
 const LOCKED = 'scroll-locked';
 
+/** Geräte, die man nur mit dem Finger bedient (Handy, Tablet) */
+const TOUCH_ONLY = '(hover: none) and (pointer: coarse)';
+
+/** Tasten, mit denen der Browser selbst scrollt */
+const SCROLL_KEYS = new Set(['Home', 'End', 'PageUp', 'PageDown', ' ', 'ArrowUp', 'ArrowDown']);
+
+const editable = (target: EventTarget | null) =>
+  target instanceof HTMLElement &&
+  (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
+
 /**
  * Lenis-Smooth-Scroll (lerp 0.1), synchron zu ScrollTrigger.
- * Bei `prefers-reduced-motion` wird Lenis gar nicht erst gestartet.
+ * Bei `prefers-reduced-motion` wird Lenis gar nicht erst gestartet, ebenso auf Geräten, die man
+ * nur mit dem Finger bedient: Dort scrollt Lenis ohnehin nicht selbst (syncTouch aus), hängt sich
+ * aber mit blockierenden Zuhörern (passive: false) an jede Berührung. Jedes Wischen müsste dann
+ * auf den Hauptthread warten. Ohne Lenis scrollt der Browser frei; Sprünge zu Marken sind dort
+ * sofort am Ziel (unter dem Menü-Vorhang ohnehin unsichtbar).
  *
  * Der Abstand für den festen Header kommt aus CSS (`scroll-padding-top` am <html>);
  * Lenis und der Browser werten denselben Wert aus.
@@ -34,7 +48,7 @@ const LOCKED = 'scroll-locked';
 export function initSmoothScroll(): SmoothScroll {
   const root = document.documentElement;
 
-  if (!motionAllowed()) {
+  if (!motionAllowed() || window.matchMedia(TOUCH_ONLY).matches) {
     return {
       lenis: null,
       stop: () => root.classList.add(LOCKED),
@@ -50,6 +64,19 @@ export function initSmoothScroll(): SmoothScroll {
   });
   // Ist schon ein Overlay offen (jemand war schneller als das Nachladen), bleibt die Seite stehen.
   if (root.classList.contains(LOCKED)) lenis.stop();
+
+  /*
+   * Scrollt jemand mit der Tastatur (Pos1, Ende, Bild auf/ab, Leertaste, Pfeile), während Lenis
+   * noch vom Mausrad ausgleitet, hält Lenis an: Sonst zöge es die Seite nach der Taste zurück an
+   * sein altes Ziel. Kurz anhalten und wieder starten setzt das Ziel auf die aktuelle Lage.
+   * Ein offenes Menü (gestopptes Lenis) bleibt gesperrt.
+   */
+  window.addEventListener('keydown', (event) => {
+    if (!SCROLL_KEYS.has(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (lenis.isStopped || lenis.isScrolling !== 'smooth' || editable(event.target)) return;
+    lenis.stop();
+    lenis.start();
+  });
 
   lenis.on('scroll', ScrollTrigger.update);
   const tick = (time: number) => lenis.raf(time * 1000);

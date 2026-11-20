@@ -155,29 +155,47 @@ const layOutSoon = () => {
  * Sprung zu einer Marke (Link, Adresse mit #, wiederhergestellte Position): Solange die Seite
  * dorthin unterwegs ist, trägt <html> `data-jump`. reveal.ts spielt dann keine Auftritte und
  * teilt keine Überschriften, so landet der Sprung auf fertigem Inhalt. Die Marke fällt, sobald
- * das Scrollen 160 ms ruht, spätestens nach vier Sekunden.
+ * Lenis nicht mehr gleitet und zehn Bilder lang kein Scrollen kam, spätestens nach vier Sekunden.
+ * Gezählt wird in Bildern, nicht in Millisekunden: Stockt die Darstellung kurz (schwaches Gerät,
+ * Speicherbereinigung), lief ein Zeitgeber mitten im Sprung ab, und das Ziel trat doch noch auf.
  */
-const JUMP_IDLE_MS = 160;
+const JUMP_REST_FRAMES = 10;
 const JUMP_MAX_MS = 4000;
-let jumpIdle = 0;
 let jumpMax = 0;
+let restFrames = 0;
+let watchingRest = false;
+const jumping = () => 'jump' in document.documentElement.dataset;
 const endJump = () => {
-  window.clearTimeout(jumpIdle);
   window.clearTimeout(jumpMax);
-  window.removeEventListener('scroll', waitForRest);
+  window.removeEventListener('scroll', resetRest);
   delete document.documentElement.dataset.jump;
 };
-function waitForRest() {
-  window.clearTimeout(jumpIdle);
-  jumpIdle = window.setTimeout(endJump, JUMP_IDLE_MS);
+function resetRest() {
+  restFrames = 0;
 }
+const watchRest = () => {
+  if (!jumping()) {
+    watchingRest = false;
+    return;
+  }
+  restFrames = smooth?.lenis?.isScrolling === 'smooth' ? 0 : restFrames + 1;
+  if (restFrames >= JUMP_REST_FRAMES) {
+    watchingRest = false;
+    endJump();
+    return;
+  }
+  requestAnimationFrame(watchRest);
+};
 const markJump = () => {
   document.documentElement.dataset.jump = '';
+  restFrames = 0;
   // Derselbe Zuhörer zählt nur einmal, auch wenn ein Sprung den anderen ablöst.
-  window.addEventListener('scroll', waitForRest, { passive: true });
+  window.addEventListener('scroll', resetRest, { passive: true });
   window.clearTimeout(jumpMax);
   jumpMax = window.setTimeout(endJump, JUMP_MAX_MS);
-  waitForRest();
+  if (watchingRest) return;
+  watchingRest = true;
+  requestAnimationFrame(watchRest);
 };
 
 /*

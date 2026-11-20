@@ -157,6 +157,9 @@ function initEntrances(): { resolveAll(): void } {
         'main [data-enter="wait"], main [data-enter="in"]',
       )) {
         element.dataset.enter = '';
+        // Ein Platz in einer Folge (placeInRow), dessen Auftritt nie begann, gilt nicht mehr.
+        element.style.removeProperty('--enter-i');
+        if (element.style.length === 0) element.removeAttribute('style');
       }
     },
   };

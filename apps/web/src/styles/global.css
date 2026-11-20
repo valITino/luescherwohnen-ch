@@ -66,12 +66,14 @@ picture > source {
  * sich nichts.
  * Der Header bleibt dabei stehen: Die Leiste oben trägt einen eigenen Namen (site-bar, siehe
  * Header.astro) und wird darum nicht mit der Seite überblendet. Stehen beide Seiten oben, hat
- * sie in jedem Bild dieselben Pixel. Die Kapsel trägt den Namen nicht: Verlässt man eine Seite
- * aus der Kapsel, geht sie mit der alten Seite, und die Leiste der neuen blendet ein.
+ * sie in jedem Bild dieselben Pixel. Die Kapsel trägt den Namen nicht, ebenso wenig die Leiste
+ * einer Seite, die zu einer Marke oder durch den Verlauf verlassen wird (header.ts): Dann geht
+ * der Header mit der alten Seite, und der neue blendet für sich ein (--dur-2, bremsend).
  * Darunter weicht die alte Seite schnell (--dur-1, bremsend, nur Deckkraft), die neue setzt sich
- * 80 ms später weich bremsend von leicht unten. Die beiden liegen so kaum übereinander, der
- * Wechsel geht kurz durch das Papier statt durch eine Doppelbelichtung.
- * Bei reduzierter Bewegung fällt der ganze Block weg: harter Schnitt wie bisher.
+ * 40 ms später weich bremsend von leicht unten. Die beiden liegen so kaum übereinander, und der
+ * Wechsel geht nur einen Augenblick durch das Papier statt durch eine Doppelbelichtung.
+ * Bei reduzierter Bewegung fällt der ganze Block weg: harter Schnitt wie bisher. Bei angehaltener
+ * Bewegung (Schalter) überspringt header.ts den Übergang.
  */
 @media (prefers-reduced-motion: no-preference) {
   @view-transition {
@@ -83,7 +85,7 @@ picture > source {
   }
 
   ::view-transition-new(root) {
-    animation: 480ms var(--ease-expo) 80ms both page-in;
+    animation: 480ms var(--ease-expo) 40ms both page-in;
   }
 
   /* Der Browser bewegt nur die Momentaufnahme der Leiste, nie das echte Layout. */
@@ -94,7 +96,8 @@ picture > source {
 
   ::view-transition-old(site-bar),
   ::view-transition-new(site-bar) {
-    animation-duration: var(--dur-3);
+    animation-duration: var(--dur-2);
+    animation-timing-function: var(--ease-out);
   }
 }
 

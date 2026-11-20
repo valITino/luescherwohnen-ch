@@ -495,17 +495,29 @@
   /* ---------- Bild-Auftritt ---------- */
 
   /*
-   * Ein Bild öffnet sich beim Hereinscrollen vom unteren Rand nach oben und setzt sich dabei aus
-   * einem leichten Zoom (reveal.ts setzt data-enter). Der Rahmen mit seiner Sandfläche steht
-   * schon, das Foto steigt in ihn hinein. Kommen mehrere zusammen ins Bild, folgen sie einander im
-   * Abstand von --stagger: reveal.ts nummeriert sie mit --enter-i.
+   * Ein Bild steigt beim Hereinscrollen vom unteren Rand seines Rahmens nach oben ins Bild und
+   * setzt sich dabei aus einem leichten Zoom (reveal.ts setzt data-enter). Kommen mehrere zusammen
+   * ins Bild, folgen sie einander im Abstand von --stagger: reveal.ts nummeriert sie mit --enter-i.
    * Clip und Zoom sitzen beide auf dem Bild selbst, nicht auf dem Rahmen: So bewegt der Browser
    * eine einzige Ebene. Mit dem Clip am Rahmen fielen beim Wischen auf dem Handy gemessen doppelt
    * so viele Bilder aus (Entscheid 38).
-   * Ohne Skript, bei reduzierter Bewegung und im Druck steht das Bild einfach da.
+   * Solange das Bild wartet, ist es nur durchsichtig, nicht weggeschnitten: Ein ganz beschnittenes
+   * Bild lädt der Browser nicht vor (loading="lazy"), es käme sonst erst beim Auftritt und spränge
+   * dann mitten hinein (Entscheid 39). Der Rahmen ist so lange leer statt sandfarben: Das Foto
+   * steigt aus dem Papier auf, statt in einen Platzhalter zu fallen.
+   * Ohne Skript, bei reduzierter Bewegung und im Druck steht das Bild einfach da; die Sandfläche
+   * füllt dann den Rahmen, bis das Bild geladen ist.
    */
+  .enter-unveil {
+    background-color: var(--sand);
+  }
+
+  .enter-unveil:is([data-enter='wait'], [data-enter='in']) {
+    background-color: transparent;
+  }
+
   .enter-unveil[data-enter='wait'] img {
-    clip-path: inset(100% 0 0 0);
+    opacity: 0;
   }
 
   .enter-unveil[data-enter='in'] img {
@@ -514,31 +526,31 @@
   }
 
   /*
-   * Mit Ziel: Von einer Form zu «none» springt clip-path, statt zu gleiten. Der Ursprung unten
-   * gilt nur während des Auftritts; der Hover-Zoom danach bleibt mittig.
+   * Mit Ziel: Von einer Form zu «none» springt clip-path, statt zu gleiten. Der Zoom setzt sich zur
+   * Mitte hin wie der Hover-Zoom danach, so springt nichts, wenn beides zusammenfällt.
    */
   @keyframes unveil {
     from {
       clip-path: inset(100% 0 0 0);
       transform: scale(1.1);
-      transform-origin: 50% 100%;
     }
 
     to {
       clip-path: inset(0);
-      transform-origin: 50% 100%;
     }
   }
 
+  /* Im Druck und bei angehaltener Bewegung wartet nichts, ein laufender Auftritt steht am Ziel. */
   @media print {
     .enter-unveil[data-enter] img {
+      opacity: 1;
       clip-path: none;
+      animation: none;
     }
   }
 
-  /* Bewegung angehalten: Nichts wartet, ein laufender Auftritt steht sofort am Ziel. */
-  html[data-motion='off'] .enter-unveil[data-enter],
   html[data-motion='off'] .enter-unveil[data-enter] img {
+    opacity: 1;
     clip-path: none;
     animation: none;
   }

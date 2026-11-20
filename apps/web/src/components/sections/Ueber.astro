@@ -349,8 +349,8 @@ const locations = [
   }
 
   /*
-   * --dur-4 statt --dur-5: Mit 320 ms Vorlauf endet die Linie nach 1120 ms und damit wie jeder
-   * Auftritt spätestens mit der längsten Bild-Enthüllung (1200 ms plus Versatz).
+   * --dur-4 statt --dur-5: Mit 320 ms Vorlauf endet die Linie nach 1120 ms, innerhalb der Grenze,
+   * die für jeden Auftritt gilt (1200 ms plus drei Versätze, e2e/web.spec.ts).
    */
   .portrait[data-enter='in'] .portrait-frame::after {
     animation: about-scan var(--dur-4) var(--ease-in-out) 320ms;
