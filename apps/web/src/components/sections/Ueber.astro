@@ -69,7 +69,7 @@ const locations = [
   <div class="wrap">
     <div class="about">
       <div class="portrait" data-enter>
-        <figure class="portrait-frame">
+        <figure class="portrait-frame enter-unveil" data-enter>
           <span class="portrait-corner portrait-corner-tl" aria-hidden="true"></span>
           <span class="portrait-corner portrait-corner-tr" aria-hidden="true"></span>
           <span class="portrait-corner portrait-corner-bl" aria-hidden="true"></span>
@@ -294,9 +294,10 @@ const locations = [
   }
 
   /*
-   * Auftritt, sobald die Sektion ins Bild kommt (reveal.ts setzt data-enter): Der Sucher stellt
-   * scharf (die Ecken rücken an ihren Platz), eine feine grüne Linie tastet das Bild einmal ab;
-   * die Werte erscheinen nacheinander.
+   * Auftritt, sobald die Sektion ins Bild kommt (reveal.ts setzt data-enter): Das Bild öffnet sich
+   * wie alle Bilder der Seite von unten (enter-unveil, components.css), der Sucher stellt scharf
+   * (die Ecken rücken an ihren Platz), eine feine grüne Linie tastet das Bild einmal ab; die Werte
+   * erscheinen nacheinander.
    */
   .portrait-frame::after {
     position: absolute;
@@ -315,15 +316,10 @@ const locations = [
     pointer-events: none;
   }
 
-  .portrait[data-enter='wait'] .portrait-frame :global(.portrait-photo),
   .portrait[data-enter='wait'] .portrait-corner,
   .portrait[data-enter='wait'] .portrait-caption,
   .values[data-enter='wait'] .values-list li {
     opacity: 0;
-  }
-
-  .portrait[data-enter='in'] .portrait-frame :global(.portrait-photo) {
-    animation: about-rise 700ms var(--ease) backwards;
   }
 
   .portrait[data-enter='in'] .portrait-caption {

@@ -18,6 +18,43 @@ async function openHome(page: Page, origin = PROD, hash = '') {
   await layOutAll(page);
 }
 
+/** Zwei Bilder abwarten: Bis dahin hat jeder IntersectionObserver gemeldet, was er sieht. */
+async function nextFrames(page: Page) {
+  await page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+  );
+}
+
+/**
+ * Nach einem Sprung zu einer Marke: Das Ziel steht fertig da. Nichts ist in Zeilen geteilt, der
+ * Kicker ist offen, kein Auftritt läuft noch an, und nichts im Bild wartet auf seinen Auftritt.
+ * (Was im Ziel weiter unten ausserhalb des Bildes liegt, darf seinen Auftritt noch haben.)
+ */
+async function expectLanded(page: Page, target: string) {
+  // Smooth Scroll und Auftritte sind eingerichtet, der Sprung ist zu Ende.
+  await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', { timeout: 15_000 });
+  await page.waitForSelector('html:not([data-jump])', { state: 'attached', timeout: 5_000 });
+  await nextFrames(page);
+  const state = await page.locator(target).evaluate((section) => {
+    const inView = (element: Element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.bottom > 0 && rect.top < window.innerHeight;
+    };
+    return {
+      masks: section.querySelectorAll('.ln-mask').length,
+      waiting: [...section.querySelectorAll('[data-enter="wait"]')]
+        .filter(inView)
+        .map((element) => element.className),
+      kicker: getComputedStyle(section.querySelector('.section-head .kicker')!).clipPath,
+      running: section
+        .getAnimations({ subtree: true })
+        .filter((animation) => animation.playState === 'running')
+        .map((animation) => (animation as CSSAnimation).animationName),
+    };
+  });
+  expect(state).toEqual({ masks: 0, waiting: [], kicker: 'none', running: [] });
+}
+
 test.describe('Startseite', () => {
   for (const [label, origin] of [
     ['Produktion', PROD],
@@ -202,16 +239,42 @@ test.describe('Navigation', () => {
     await page.goto(`${PROD}/`);
     await page.mouse.wheel(0, 600);
     await page.locator('[data-menu-toggle]').click();
+    // Festhalten, ob unterwegs eine Überschrift geteilt wird oder ein Auftritt beginnt: Beides
+    // soll ein Sprung überspringen (auch an Stellen, deren Auftritt bei der Ankunft schon vorbei
+    // wäre).
+    await page.locator('main').evaluate((main) => {
+      new MutationObserver((records) => {
+        for (const record of records) {
+          const target = record.target as HTMLElement;
+          if (record.type === 'attributes' && target.dataset.enter === 'in') {
+            document.documentElement.dataset.testEntered = target.className;
+          }
+          for (const node of record.addedNodes) {
+            if (node instanceof Element && node.matches('.ln-mask')) {
+              document.documentElement.dataset.testEntered = 'ln-mask';
+            }
+          }
+        }
+      }).observe(main, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ['data-enter'],
+      });
+    });
     await page.locator('.menu-links a[href="#kontakt"]').click();
     await expect(page.locator('#mobile-menu')).toBeHidden();
     await expect(page).toHaveURL(/#kontakt$/);
     // Sanftes Scrollen über die ganze Seite: unter Last (parallele Browser) braucht das länger.
     await expect(page.locator('#kontakt-title')).toBeInViewport({ timeout: 15_000 });
+    await expectLanded(page, '#kontakt');
+    await expect(page.locator('html')).not.toHaveAttribute('data-test-entered');
   });
 
   test('Direktlink auf eine Marke landet auf dem Ziel', async ({ page }) => {
     await page.goto(`${PROD}/#ueber`);
     await expect(page.locator('#ueber-title')).toBeInViewport({ timeout: 10_000 });
+    await expectLanded(page, '#ueber');
   });
 
   test('Interne Links der Vorschau führen nie ins Leere (Basis-Pfad)', async ({
@@ -454,13 +517,75 @@ test.describe('Bewegung und Chrome', () => {
     await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
       timeout: 15_000,
     });
+    const main = page.locator('main');
+    // Endliche Animationen in main: Name und Ende samt Verzögerung (ms ab ihrem Start)
+    const finite = () =>
+      main.evaluate((root) =>
+        root
+          .getAnimations({ subtree: true })
+          .map((animation) => ({
+            name: (animation as CSSAnimation).animationName,
+            end: Number(animation.effect?.getComputedTiming().endTime),
+          }))
+          .filter(({ end }) => Number.isFinite(end)),
+      );
+    const seen: { name: string; end: number }[] = [];
     const height = await page.evaluate(() => document.documentElement.scrollHeight);
     for (let y = 0; y < height; y += 500) {
       await page.evaluate((top) => window.scrollTo(0, top), y);
       await page.waitForTimeout(60);
+      seen.push(...(await finite()));
     }
-    await page.waitForTimeout(1200);
+    // Gewartet wird auf den echten Zustand: Kein endlicher Auftritt läuft mehr (nur das Band
+    // läuft endlos weiter), und keine Überschrift ist mehr in Zeilen geteilt.
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll('main .ln-mask').length === 0 &&
+        document
+          .querySelector('main')!
+          .getAnimations({ subtree: true })
+          .every(
+            (animation) =>
+              animation.playState !== 'running' ||
+              !Number.isFinite(Number(animation.effect?.getComputedTiming().endTime)),
+          ),
+      null,
+      { timeout: 5_000 },
+    );
     expect(await page.locator('[data-enter="wait"]').count()).toBe(0);
+    // Auftritte gab es wirklich (auch die Bilder), und jeder endet spätestens nach dem längsten
+    // Plan: Bild-Enthüllung 1200 ms plus höchstens drei Versätze von 70 ms.
+    expect(seen.map(({ name }) => name)).toContain('unveil');
+    for (const { name, end } of seen) expect(end, name).toBeLessThanOrEqual(1200 + 3 * 70);
+  });
+
+  test('Bewegung pausiert: nichts wartet', async ({ page }) => {
+    await page.goto(`${PROD}/`);
+    await layOutAll(page);
+    // Erst die Auftritte scharf machen: Smooth Scroll und Scroll-Animationen sind geladen, und
+    // was unter dem Bild liegt, wartet auf seinen Auftritt.
+    await page.mouse.wheel(0, 200);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    await nextFrames(page);
+    expect(await page.locator('[data-enter="wait"]').count()).toBeGreaterThan(0);
+
+    const toggle = page.locator('[data-motion-toggle]');
+    await expect(toggle).toBeVisible();
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
+    // Sofort: Nichts wartet mehr, keine Überschrift ist geteilt.
+    expect(await page.locator('[data-enter="wait"]').count()).toBe(0);
+    expect(await page.locator('.ln-mask').count()).toBe(0);
+
+    const height = await page.evaluate(() => document.documentElement.scrollHeight);
+    for (let y = 0; y < height; y += 500) {
+      await page.evaluate((top) => window.scrollTo(0, top), y);
+      await nextFrames(page);
+      expect(await page.locator('[data-enter="wait"]').count(), `bei ${y} px`).toBe(0);
+      expect(await page.locator('.ln-mask').count(), `bei ${y} px`).toBe(0);
+    }
   });
 
   test('Cookie-Hinweis öffnet und schliesst sich', async ({ page }) => {

@@ -93,7 +93,7 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     <ul class="areas">
       {areas.map((area, index) => (
         <li class:list={['card card-hover area', { 'area-wide': area.wide }]}>
-          <div class="area-media">
+          <div class="area-media enter-unveil" data-enter>
             <Picture
               src={area.image}
               formats={['avif', 'webp']}
@@ -147,7 +147,8 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform var(--dur-3) var(--ease);
+    /* Langsamer Zoom: ruhiger als ein kurzer Ruck */
+    transition: transform 700ms var(--ease-out);
   }
 
   @media (hover: hover) and (pointer: fine) {

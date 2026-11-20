@@ -56,7 +56,10 @@ export function initHaltung(root: HTMLElement): void {
           word.style.opacity = '';
           return;
         }
-        const local = Math.min(1, Math.max(0, (time - STAGGER * index) / WORD));
+        const linear = Math.min(1, Math.max(0, (time - STAGGER * index) / WORD));
+        // Smoothstep: Jedes Wort läuft weich an und gleitet in die volle Deckkraft, statt
+        // gleichmässig hochzuzählen und abrupt anzuhalten.
+        const local = linear * linear * (3 - 2 * linear);
         word.style.opacity = String(DIM + (1 - DIM) * local);
       });
     }

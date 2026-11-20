@@ -62,7 +62,8 @@ const {
 
   /*
    * Der Kicker gleitet einmal von links herein, sobald die Sektion ins Bild kommt (reveal.ts setzt
-   * data-enter). Er ist so breit wie sein Text, damit die Maske stimmt.
+   * data-enter). Er ist so breit wie sein Text, damit die Maske stimmt. Er führt: Die Zeilen der
+   * Überschrift steigen 60 ms später auf (reveal.ts), mit derselben Kurve.
    */
   .section-head-main :global(.kicker) {
     justify-self: start;
@@ -73,7 +74,7 @@ const {
   }
 
   .section-head[data-enter='in'] :global(.kicker) {
-    animation: kicker-in 520ms var(--ease) backwards;
+    animation: kicker-in var(--dur-4) var(--ease-expo) backwards;
   }
 
   @keyframes kicker-in {

@@ -54,7 +54,7 @@ const projects = [
       {projects.map((project) => (
         <li class="project">
           <figure>
-            <div class="project-media">
+            <div class="project-media enter-unveil" data-enter>
               <Picture
                 src={project.image}
                 formats={['avif', 'webp']}
@@ -101,7 +101,8 @@ const projects = [
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform var(--dur-3) var(--ease);
+    /* Langsamer Zoom: ruhiger als ein kurzer Ruck */
+    transition: transform 700ms var(--ease-out);
   }
 
   @media (hover: hover) and (pointer: fine) {

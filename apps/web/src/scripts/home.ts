@@ -152,6 +152,35 @@ const layOutSoon = () => {
 };
 
 /*
+ * Sprung zu einer Marke (Link, Adresse mit #, wiederhergestellte Position): Solange die Seite
+ * dorthin unterwegs ist, trägt <html> `data-jump`. reveal.ts spielt dann keine Auftritte und
+ * teilt keine Überschriften, so landet der Sprung auf fertigem Inhalt. Die Marke fällt, sobald
+ * das Scrollen 160 ms ruht, spätestens nach vier Sekunden.
+ */
+const JUMP_IDLE_MS = 160;
+const JUMP_MAX_MS = 4000;
+let jumpIdle = 0;
+let jumpMax = 0;
+const endJump = () => {
+  window.clearTimeout(jumpIdle);
+  window.clearTimeout(jumpMax);
+  window.removeEventListener('scroll', waitForRest);
+  delete document.documentElement.dataset.jump;
+};
+function waitForRest() {
+  window.clearTimeout(jumpIdle);
+  jumpIdle = window.setTimeout(endJump, JUMP_IDLE_MS);
+}
+const markJump = () => {
+  document.documentElement.dataset.jump = '';
+  // Derselbe Zuhörer zählt nur einmal, auch wenn ein Sprung den anderen ablöst.
+  window.addEventListener('scroll', waitForRest, { passive: true });
+  window.clearTimeout(jumpMax);
+  jumpMax = window.setTimeout(endJump, JUMP_MAX_MS);
+  waitForRest();
+};
+
+/*
  * Neu geladen oder über den Verlauf geöffnet: die gemerkte Ansicht wiederherstellen (position.ts).
  * Angesteuert wird sie mehrmals, denn dazwischen kann der Browser seine eigene, ungenaue
  * Wiederherstellung einschieben, und die Seite wächst noch (Anpinnen im Hero). Sobald jemand
@@ -163,6 +192,7 @@ const restoreView = () => {
   if (!restoring || !view) return;
   const top = scrollTopFor(view);
   if (top === null || Math.abs(top - window.scrollY) < 1) return;
+  markJump();
   if (smooth?.lenis) {
     smooth.lenis.resize();
     smooth.lenis.scrollTo(top, { immediate: true, force: true });
@@ -183,6 +213,7 @@ if (view) {
 }
 
 if (window.location.hash || window.scrollY > 0 || view) {
+  if (window.location.hash || view) markJump();
   layOutNow();
   restoreView();
   if (view) {
@@ -211,6 +242,7 @@ document.addEventListener(
     if (!(event.target instanceof Element)) return;
     const link = event.target.closest<HTMLAnchorElement>('a[href*="#"]');
     if (!link || link.pathname !== window.location.pathname || link.hash.length < 2) return;
+    markJump();
     layOutNow();
     // Lenis erfährt eine neue Seitenlänge nur verzögert (entprellter ResizeObserver). Wurden
     // Teile gerade erst ausgelegt, endete der Sprung sonst an der alten, zu kurzen Grenze.
@@ -218,7 +250,10 @@ document.addEventListener(
   },
   true,
 );
-window.addEventListener('hashchange', layOutNow);
+window.addEventListener('hashchange', () => {
+  markJump();
+  layOutNow();
+});
 
 // ---------------------------------------------------------------- Zuletzt: Smooth Scroll und Scroll-Animationen
 
