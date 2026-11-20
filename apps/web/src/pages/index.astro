@@ -1,0 +1,33 @@
+---
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import Aktuell from '../components/sections/Aktuell.astro';
+import Band from '../components/sections/Band.astro';
+import Haltung from '../components/sections/Haltung.astro';
+import Hero from '../components/sections/Hero.astro';
+import Kontakt from '../components/sections/Kontakt.astro';
+import Projekte from '../components/sections/Projekte.astro';
+import Service from '../components/sections/Service.astro';
+import Sortiment from '../components/sections/Sortiment.astro';
+import Ueber from '../components/sections/Ueber.astro';
+import { meta, showProjects } from '../config/site.ts';
+import Base from '../layouts/Base.astro';
+---
+
+<Base title={meta.homeTitle} path="/" progress>
+  <Header slot="header" home />
+  <Hero />
+  <Sortiment />
+  <Band />
+  <Haltung />
+  <Service />
+  {showProjects && <Projekte />}
+  <Aktuell />
+  <Ueber />
+  <Kontakt />
+  <Footer slot="footer" home />
+</Base>
+
+<script>
+  import '../scripts/home.ts';
+</script>

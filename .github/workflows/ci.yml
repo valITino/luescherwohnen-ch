@@ -1,0 +1,160 @@
+name: CI
+
+# Situationsbasierte Pipeline (CLAUDE.md, Abschnitt 5): Ein Dispatcher ordnet die geänderten
+# Pfade Modulen zu (scripts/ci-changes.mjs); nur betroffene Module laufen. Die Basis-Scans
+# (Secrets, Konfiguration, Claude-Team) laufen immer. Pull Requests bauen und prüfen ohne Push in
+# eine Registry; Veröffentlichung und Deployment sind getrennt und noch nicht eingerichtet (D-008).
+#
+# Actions per voller Commit-SHA gepinnt (Kommentar: Version). Scanner laufen als per Digest
+# gepinnte Container. Keine Secrets, keine Eingaben aus dem Ereignis in Shell-Code.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Nur Pull Requests brechen laufende Läufe ab. Auf main läuft ein gestarteter Lauf zu Ende; einen
+# wartenden ersetzt GitHub durch den neuesten. Das ist unbedenklich, weil die CI auf main immer den
+# ganzen Stand prüft (siehe Dispatcher).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    name: Dispatcher
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      docs: ${{ steps.classify.outputs.docs }}
+      web: ${{ steps.classify.outputs.web }}
+      container: ${{ steps.classify.outputs.container }}
+      workflows: ${{ steps.classify.outputs.workflows }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Geänderte Pfade klassifizieren
+        id: classify
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          # Nur Pull Requests prüfen gezielt die betroffenen Module. Ein Push auf main, ein manueller
+          # Start oder eine unbekannte Basis prüft alles: Pages veröffentlicht den ganzen Stand von
+          # main. Sonst würde nach einem roten Website-Push ein reiner Doku-Push grün, und Pages
+          # veröffentlichte ungeprüften Code.
+          base=""
+          if [ "$EVENT" = "pull_request" ]; then base="$PR_BASE"; fi
+          if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            node scripts/ci-changes.mjs --all
+          else
+            git diff --name-only "$base" "$HEAD_SHA" | node scripts/ci-changes.mjs
+          fi
+
+  baseline:
+    name: Basis-Scans (immer)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      # Keine PHP-Dateien, Archive oder Binärdateien (Schadcode im Altbestand, docs/TODO.md).
+      - name: Verbotene Dateien
+        run: node scripts/check-forbidden-files.mjs
+
+      # Secrets und Fehlkonfigurationen im ganzen Repository (Dockerfile, Workflows, Compose).
+      - name: Trivy (Secrets, Konfiguration)
+        run: >-
+          docker run --rm -v "$PWD":/repo:ro
+          aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
+          fs /repo --scanners secret,misconfig --exit-code 1 --no-progress
+          --skip-dirs /repo/node_modules
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
+      - name: Claude-Team und Skills validieren
+        run: |
+          python scripts/validate_claude_config.py
+          python -m unittest discover -s tests -p 'test_*.py'
+
+  docs:
+    name: Doku (Markdown, Links)
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: pnpm über corepack aktivieren
+        run: corepack enable
+
+      - name: Abhängigkeiten installieren (gefrorenes Lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Markdown-Lint
+        run: pnpm lint:md
+
+      # Offline: prüft interne Links und Anker, ohne fremde Server anzufragen.
+      - name: Links (offline)
+        run: >-
+          docker run --rm -v "$PWD":/input:ro -w /input
+          lycheeverse/lychee:0.24.2@sha256:e2d19e57cf6ab037026f20b8e449a1f30d9d7f81eef4194763aab2eab20bd28d
+          --offline --no-progress --include-fragments
+          README.md CLAUDE.md 'docs/*.md' 'docs/adr/*.md' '.claude/README.md'
+
+  web:
+    name: Website
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    uses: ./.github/workflows/_web.yml
+
+  container:
+    name: Container
+    needs: changes
+    if: needs.changes.outputs.container == 'true'
+    uses: ./.github/workflows/_container.yml
+
+  workflows:
+    name: Workflows (actionlint)
+    needs: changes
+    if: needs.changes.outputs.workflows == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: actionlint
+        run: >-
+          docker run --rm -v "$PWD":/repo:ro -w /repo
+          rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
+          -color

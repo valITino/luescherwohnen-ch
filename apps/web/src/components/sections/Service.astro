@@ -1,0 +1,271 @@
+---
+/**
+ * 03 Service: vier nummerierte Schritte als riesige Wörter und die Karte «Lieferung nach Ihrem
+ * Zeitplan». Grünlicher Bogen; die Überschrift bleibt auf Desktop links stehen.
+ * Texte nach «Services – Unsere Kompetenzen» und «Services – Lieferung und Montage» der
+ * bisherigen Website (docs/Homepage.docx).
+ */
+import Icon from '@luescher/ui/components/Icon.astro';
+import SectionHead from '../SectionHead.astro';
+
+const steps = [
+  {
+    title: 'Beratung',
+    text: 'Bei uns im Geschäft in Baden oder bei Ihnen zu Hause. Wir hören zu und nehmen uns Zeit für Ihre Anliegen.',
+  },
+  {
+    title: 'Planung',
+    text: 'Unsere Innenarchitekten und Einrichtungsplaner entwickeln mit Ihnen die passende Lösung, auf Wunsch inklusive Visualisierung Ihrer Ideen.',
+  },
+  {
+    title: 'Lieferung',
+    text: 'Unsere eigenen Mitarbeiter liefern und montieren Möbel, Polstermöbel, Betten, Bodenbeläge und Textilien.',
+  },
+  {
+    title: 'Danach',
+    text: 'Wir bleiben Ihr Ansprechpartner: für Ergänzungen, Ersatzteile, Pflege und alle Fragen rund ums Einrichten.',
+  },
+];
+
+const delivery = [
+  'Sie bestimmen den exakten Lieferzeitpunkt.',
+  'Auch an einer Randzeit oder am Wochenende.',
+  'Eigene Mitarbeiter liefern und montieren.',
+  'Pünktlich, sauber und sorgfältig.',
+];
+---
+
+<section data-lazy class="sheet sheet-sage on-sage" id="service" aria-labelledby="service-title">
+  <div class="wrap">
+    <div class="ablauf">
+      <div class="ablauf-head">
+        <SectionHead
+          num="03"
+          kicker="Service"
+          title="Von der Idee bis zur Montage."
+          id="service-title"
+          lead="Wir unterstützen Sie in allen Phasen des Einrichtens."
+        />
+      </div>
+
+      <ol class="process">
+        {steps.map((step, index) => (
+          <li class="process-step">
+            <span class="process-num mono" aria-hidden="true">
+              0{index + 1}
+            </span>
+            <div class="process-body">
+              <h3 class="display process-title" data-reveal>
+                {step.title}
+              </h3>
+              <p class="process-text">{step.text}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+
+    <div class="delivery card">
+      <div class="delivery-intro">
+        <p class="kicker">Lieferung und Montage</p>
+        <h3 class="display h2 delivery-title">Nach Ihrem Zeitplan.</h3>
+        <p class="delivery-text">
+          Anstatt Ihr Wochenprogramm auf den Kopf zu stellen oder den ganzen Tag auf die Lieferung
+          zu warten, bestimmen Sie den exakten Lieferzeitpunkt.
+        </p>
+      </div>
+
+      <div class="delivery-side">
+        <ul class="delivery-points">
+          {delivery.map((point) => (
+            <li>
+              <span>{point}</span>
+              <i class="dot" aria-hidden="true" />
+            </li>
+          ))}
+        </ul>
+        <p class="delivery-foot">
+          <Icon name="sparkles" size={20} />
+          <span>
+            Nebst Ersteinrichtungen sind vor allem Neueinrichtungen unsere Stärke. Unsere Erfahrung
+            erspart Ihnen unnötige Überraschungen und Aufwand.
+          </span>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* ---------- Vier Schritte ---------- */
+
+  .ablauf {
+    display: grid;
+    gap: clamp(2.5rem, 6vw, 4rem);
+  }
+
+  .process {
+    position: relative;
+    display: grid;
+    gap: clamp(2rem, 4vw, 3.5rem);
+    padding-left: 1.75rem;
+    border-left: 1px solid var(--border-strong);
+  }
+
+  .process-step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+    align-items: start;
+    gap: 0.25rem;
+  }
+
+  /* Punkt auf der Linie */
+  .process-step::before {
+    position: absolute;
+    top: clamp(0.75rem, 2.2vw, 2rem);
+    left: calc(-1.75rem - 6px);
+    width: 11px;
+    height: 11px;
+    border: 2px solid var(--leaf-edge);
+    border-radius: 50%;
+    background-color: var(--leaf);
+    content: '';
+  }
+
+  .process-num {
+    padding-top: clamp(0.5rem, 2vw, 1.75rem);
+    color: var(--fg-muted);
+    font-size: var(--fs-micro);
+    letter-spacing: 0.04em;
+  }
+
+  /* minmax(0, 1fr): Ein langes Wort darf die Spalte nicht breiter machen als den Bildschirm. */
+  .process-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.875rem;
+  }
+
+  .process-title {
+    font-size: clamp(1.875rem, 0.9rem + 4.6vw, 5.5rem);
+  }
+
+  .process-text {
+    max-width: 26em;
+    color: var(--fg-muted);
+    font-size: var(--fs-lead);
+    letter-spacing: -0.015em;
+    line-height: 1.36;
+  }
+
+  /* ---------- Lieferung ---------- */
+
+  .delivery {
+    display: grid;
+    gap: 2.5rem;
+    margin-top: clamp(4rem, 9vw, 8rem);
+    padding: clamp(1.5rem, 0.6rem + 3.6vw, 4.5rem);
+    border-radius: var(--r-stage);
+    background-image: radial-gradient(
+      36rem 24rem at 100% 0%,
+      rgb(var(--leaf-rgb) / 0.12),
+      transparent 70%
+    );
+  }
+
+  .delivery-intro {
+    display: grid;
+    align-content: start;
+    gap: 1.25rem;
+  }
+
+  .delivery-title {
+    max-width: 8em;
+  }
+
+  .delivery-text {
+    max-width: 30em;
+    color: var(--fg-muted);
+    font-size: var(--fs-lead);
+    letter-spacing: -0.015em;
+    line-height: 1.36;
+  }
+
+  .delivery-side {
+    display: grid;
+    align-content: start;
+    gap: 1.5rem;
+  }
+
+  .delivery-points {
+    display: grid;
+    border-top: 1px solid var(--border);
+  }
+
+  .delivery-points li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--fg-strong);
+    font-size: var(--fs-h4);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+  }
+
+  .delivery-foot {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--leaf-edge);
+    border-radius: var(--r-input);
+    background-color: rgb(var(--sage-rgb) / 0.6);
+    color: var(--charcoal);
+    font-size: var(--fs-small);
+    font-weight: 600;
+    line-height: 1.45;
+  }
+
+  .delivery-foot :global(.icon) {
+    flex: none;
+    margin-top: 0.1em;
+    color: var(--leaf-deep);
+  }
+
+  @media (min-width: 64rem) {
+    .ablauf {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      align-items: start;
+      gap: clamp(2rem, 5vw, 5rem);
+    }
+
+    /* Die Überschrift bleibt stehen, während die Schritte vorbeiziehen */
+    .ablauf-head {
+      position: sticky;
+      top: calc(var(--header-h) + 1.5rem);
+    }
+
+    .process {
+      padding-left: clamp(2rem, 4vw, 3.75rem);
+    }
+
+    .process-step::before {
+      left: calc(-1 * clamp(2rem, 4vw, 3.75rem) - 6px);
+    }
+
+    .process-step {
+      grid-template-columns: 3.25rem minmax(0, 1fr);
+    }
+
+    .delivery {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      gap: clamp(2rem, 5vw, 5rem);
+      align-items: center;
+    }
+  }
+</style>

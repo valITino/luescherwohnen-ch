@@ -1,0 +1,125 @@
+---
+/**
+ * 02 Haltung: drei grosse Aussagen. Beim Scrollen werden die Wörter von 25 % auf 100 %
+ * Deckkraft dunkel (SplitText, siehe src/scripts/haltung.ts). Ohne JS stehen sie einfach da.
+ * Zentriert auf Papierweiss mit grünem Schein; die Punkte darunter zählen die Aussagen mit.
+ *
+ * Texte: sinngemäss und grösstenteils wörtlich von der bisherigen Website («Services – Unsere
+ * Kompetenzen», «Services – Lieferung und Montage», docs/Homepage.docx).
+ */
+
+const statements = [
+  {
+    text: 'Wir nehmen uns Zeit für all Ihre Anliegen.',
+    note: 'Wann und wo Sie es wünschen: bei uns im Geschäft oder bei Ihnen zu Hause.',
+  },
+  {
+    text: 'Egal, wie gross Ihr Anliegen ist.',
+    note: 'Unser Ziel ist es, die für Sie richtige Lösung zu finden.',
+  },
+  {
+    text: 'Pünktlich, sauber und sorgfältig.',
+    note: 'Bei Lieferung und Montage stehen Pünktlichkeit, Sauberkeit, Sorgfalt und Ihre Zufriedenheit an oberster Stelle.',
+  },
+];
+---
+
+<section data-lazy class="sheet sheet-paper haltung" aria-labelledby="haltung-title" data-haltung>
+  <div class="wrap">
+    <header class="haltung-head">
+      <h2 id="haltung-title" class="kicker">
+        <span class="secnum" aria-hidden="true">
+          02
+        </span>
+        <span class="kicker-sep" aria-hidden="true">
+          {' / '}
+        </span>
+        Unsere Haltung
+      </h2>
+    </header>
+
+    <ol class="statements">
+      {statements.map((statement, index) => (
+        <li class="statement">
+          <p class="statement-text" data-reveal-words>
+            {statement.text}
+          </p>
+          <span class="statement-dots" aria-hidden="true">
+            {statements.map((_, dot) => (
+              <i class:list={['dot', { 'dot-off': dot > index }]} />
+            ))}
+          </span>
+          <p class="statement-note">{statement.note}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<style>
+  .haltung {
+    text-align: center;
+  }
+
+  .haltung-head {
+    display: grid;
+    justify-items: center;
+  }
+
+  .statements {
+    display: grid;
+  }
+
+  .statement {
+    position: relative;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: clamp(1.25rem, 3vw, 2rem);
+    min-height: min(64svh, 46rem);
+    padding-block: clamp(2.5rem, 8vw, 6rem);
+  }
+
+  /* Grüner Schein hinter jeder Aussage */
+  .statement::before {
+    position: absolute;
+    inset: 4% -10%;
+    z-index: 0;
+    background: radial-gradient(
+      closest-side,
+      rgb(var(--sage-rgb) / 0.95) 0%,
+      rgb(var(--sage-rgb) / 0.4) 55%,
+      rgb(var(--sage-rgb) / 0) 100%
+    );
+    content: '';
+    pointer-events: none;
+  }
+
+  .statement > * {
+    position: relative;
+  }
+
+  .statement-text {
+    max-width: 13em;
+    color: var(--charcoal);
+    font-size: var(--fs-statement);
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 1.04;
+    text-wrap: balance;
+  }
+
+  .statement-dots {
+    display: inline-flex;
+    gap: 0.75rem;
+  }
+
+  .statement-note {
+    max-width: 26em;
+    color: var(--ash);
+    font-size: var(--fs-lead);
+    letter-spacing: -0.015em;
+    line-height: 1.36;
+    text-wrap: balance;
+  }
+</style>

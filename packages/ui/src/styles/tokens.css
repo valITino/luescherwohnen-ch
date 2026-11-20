@@ -1,0 +1,176 @@
+/*
+ * Lüscher Wohnen Design-Tokens
+ * Quelle der Wahrheit für Farben, Typografie, Abstände und Motion.
+ * Aufbau und Rollen wie im PSYber-Designsystem, Farben hell und warm (Briefing: «hell und
+ * freundlich», Grün für Buttons). Kontraste siehe docs/DESIGN.md.
+ */
+
+:root {
+  /*
+   * Kanäle der Farben, die auch durchscheinend vorkommen (Glas, Schein, Verläufe). Geschrieben
+   * wird dann `rgb(var(--charcoal-rgb) / 0.4)`: So folgt auch jede durchscheinende Fläche dem Token.
+   */
+  --linen-rgb: 246 243 236;
+  --paper-rgb: 255 255 255;
+  --charcoal-rgb: 39 39 39;
+  --sage-rgb: 233 238 217;
+  --leaf-rgb: 156 183 3;
+  --night-rgb: 35 35 31;
+
+  /* Flächen: warmes Leinen statt Weiss, Karten in Papierweiss */
+  --linen: rgb(var(--linen-rgb)); /* Seitenhintergrund, #f6f3ec */
+  --paper: rgb(var(--paper-rgb)); /* Karten und Panels, #ffffff */
+  --sand: #efeae0; /* erhöhte Fläche innerhalb von Karten */
+  --well: #ffffff; /* Eingabefelder (immer mit Rahmen) */
+  --hairline: #e2dccf; /* Linien (nie für Text) */
+  --steel: #857e70; /* Rahmen von Bedienelementen, mindestens 3:1 */
+  --ash: #5c574d; /* Sekundärtext, 6,5:1 auf Leinen */
+  --charcoal: rgb(var(--charcoal-rgb)); /* Text und Überschriften, #272727 (bisherige Website) */
+  --white: #ffffff;
+
+  /* Sage: die grünlich hellen Bogen (Rolle wie «Space» bei PSYber) */
+  --sage: rgb(var(--sage-rgb)); /* #e9eed9 */
+  --sage-deep: #dfe6c8;
+  --moss: #4f5640; /* Sekundärtext auf Sage, 6,5:1 */
+
+  /*
+   * Aktion: das Grün der bisherigen Website (#9cb703). Als Fläche mit dunkler Schrift (7,2:1).
+   * Auf hellem Grund reicht es als Schrift- oder Fokusfarbe nicht (2,1:1): dafür `--leaf-deep`.
+   */
+  --leaf: rgb(var(--leaf-rgb));
+  --leaf-hi: #b0cc12;
+  --leaf-edge: #6e8200; /* Rahmen grüner Flächen, 3,9:1 auf Leinen */
+  --leaf-deep: #4e5d00; /* grüne Schrift, Links, Fokus-Ring, 6,6:1 auf Leinen */
+  --ink: #1d2100; /* Text auf Leaf und Amber */
+
+  /* Night: die eine dunkle Bühne (Footer) */
+  --night: rgb(var(--night-rgb)); /* #23231f */
+  --night-line: #3a3a34;
+  --night-muted: #bdb8ac; /* Sekundärtext auf Night, 8:1 */
+
+  /* Hinweise und Entwürfe: nur dort, wo wirklich gewarnt wird */
+  --amber: #f9ad26; /* Fläche mit dunkler Schrift */
+  --amber-deep: #8a5300; /* Icon und Rahmen auf hellem Grund, 5,7:1 */
+
+  /* Statusfarben: nie ohne Icon und Text */
+  --ok: #2f7d1a;
+  --warn: #8a5300;
+  --crit: #c0362f;
+
+  /* Semantische Rollen: Standard ist die helle Fläche */
+  --bg: var(--linen);
+  --fg: var(--charcoal);
+  --fg-strong: var(--charcoal);
+  --fg-muted: var(--ash);
+  --accent: var(--leaf-deep);
+  --action: var(--leaf);
+  --border: var(--hairline);
+  --border-strong: var(--steel);
+  --surface: var(--paper);
+  --surface-raised: var(--sand);
+  --surface-deep: var(--well);
+  --focus: var(--leaf-deep);
+
+  /* Schrift */
+  --ff-sans:
+    'Manrope Variable', 'Manrope Fallback', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ff-mono:
+    'Geist Mono Variable', ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+
+  /*
+   * Etwas grösser als bei PSYber: Die Zielgruppe ist älter als 40 und liest auch auf dem Handy.
+   * Fliesstext 17–19 px, nichts unter 13 px.
+   */
+  --fs-micro: 0.8125rem; /* 13 px: Tags, kleine Labels, Nummern */
+  --fs-meta: 0.875rem; /* 14 px */
+  --fs-small: 1rem; /* 16 px */
+  --fs-body: clamp(1.0625rem, 1rem + 0.2vw, 1.1875rem);
+  --fs-lead: clamp(1.25rem, 1.08rem + 0.62vw, 1.625rem);
+  --fs-h4: clamp(1.1875rem, 1.1rem + 0.3vw, 1.375rem);
+  --fs-h3: clamp(1.375rem, 1.05rem + 1.1vw, 2.125rem);
+  --fs-h2: clamp(1.9375rem, 0.9rem + 3.6vw, 4.5rem);
+  --fs-h1: clamp(2.375rem, 0.6rem + 5.8vw, 6.25rem);
+  --fs-statement: clamp(1.75rem, 0.95rem + 3.3vw, 4rem);
+  --fs-number: clamp(3.75rem, 1.8rem + 7vw, 8rem);
+
+  /* Schnitte und Laufweiten */
+  --fw-display: 650;
+  --ls-display: -0.045em;
+  --ls-heading: -0.035em;
+  --ls-body: -0.005em;
+  --ls-label: 0.08em;
+
+  /* Layout */
+  --container: 90rem; /* 1440 px */
+  --gutter: clamp(1.25rem, 0.35rem + 3.1vw, 3.25rem);
+  --section-y: clamp(4.5rem, 2.4rem + 7vw, 9.5rem);
+  --header-h: 5.5rem;
+  --r-xs: 6px;
+  --r-input: 14px;
+  --r-card: 22px;
+  --r-panel: 30px;
+  --r-stage: clamp(28px, 3.2vw, 44px);
+  --r-sheet: clamp(24px, 3vw, 40px);
+  --r-btn: 999px;
+  --r-pill: 999px;
+
+  /* Licht: auf hellem Grund ein weicher grüner Schein statt Leuchten */
+  --glow-leaf: 0 0.5rem 1.5rem rgb(var(--leaf-rgb) / 0.32);
+  --glow-leaf-hi: 0 0.75rem 2rem rgb(var(--leaf-rgb) / 0.45);
+
+  /* Motion */
+  --dur-1: 150ms;
+  --dur-2: 250ms;
+  --dur-3: 400ms;
+  --dur-4: 800ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  color-scheme: light;
+}
+
+/*
+ * Sage-Fläche: grünlicher Bogen. Karten darauf bleiben papierweiss und setzen die Rollen über
+ * .card (bzw. .on-linen) wieder zurück.
+ */
+.on-sage {
+  --bg: var(--sage);
+  --fg: var(--charcoal);
+  --fg-strong: var(--charcoal);
+  --fg-muted: var(--moss);
+  --border: rgb(var(--charcoal-rgb) / 0.14);
+  --border-strong: rgb(var(--charcoal-rgb) / 0.62);
+  --surface: var(--paper);
+  --surface-raised: var(--sand);
+  --surface-deep: var(--well);
+  color: var(--fg);
+}
+
+.on-linen {
+  --bg: var(--linen);
+  --fg: var(--charcoal);
+  --fg-strong: var(--charcoal);
+  --fg-muted: var(--ash);
+  --border: var(--hairline);
+  --border-strong: var(--steel);
+  --surface: var(--paper);
+  --surface-raised: var(--sand);
+  --surface-deep: var(--well);
+  color: var(--fg);
+}
+
+/* Night-Fläche: die dunkle Bühne im Footer. Grün ist hier auch als Schrift lesbar (6,9:1). */
+.on-night {
+  --bg: var(--night);
+  --fg: var(--linen);
+  --fg-strong: var(--linen);
+  --fg-muted: var(--night-muted);
+  --accent: var(--leaf);
+  --border: var(--night-line);
+  --border-strong: rgb(var(--linen-rgb) / 0.5);
+  --surface: var(--night);
+  --surface-raised: #2d2d28;
+  --surface-deep: #1b1b18;
+  --focus: var(--leaf);
+  color: var(--fg);
+}

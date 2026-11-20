@@ -1,0 +1,28 @@
+---
+/**
+ * Kicker in gesperrten Versalien mit Abschnittsnummer: «01 / SORTIMENT».
+ * Nummer und Schrägstrich sind Dekoration (für Screenreader stumm).
+ */
+interface Props {
+  class?: string;
+  as?: 'p' | 'span' | 'div';
+  /** Abschnittsnummer, z. B. '01' */
+  num?: string;
+}
+
+const { class: className, as: Tag = 'p', num } = Astro.props;
+---
+
+<Tag class:list={['kicker', className]}>
+  {num && (
+    <>
+      <span class="secnum" aria-hidden="true">
+        {num}
+      </span>
+      <span class="kicker-sep" aria-hidden="true">
+        {' / '}
+      </span>
+    </>
+  )}
+  <slot />
+</Tag>

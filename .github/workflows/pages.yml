@@ -1,0 +1,95 @@
+name: Vorschau auf GitHub Pages
+
+# Veröffentlicht die Website als Demo unter https://<user>.github.io/<repo>/, sobald die CI auf
+# main erfolgreich war (oder von Hand). Das Formular antwortet dort simuliert, gespeichert wird
+# nichts; alle Seiten sind noindex. Der produktive Betrieb ist noch nicht entschieden (D-007).
+# Einmalig nötig: Repository → Settings → Pages → Source: «GitHub Actions».
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Nur Läufe, die wirklich veröffentlichen, teilen sich die Gruppe (gleiche Bedingung wie
+# build.if). Sonst könnte ein Lauf, der danach übersprungen wird, einen wartenden, gültigen
+# Deploy verdrängen. Wartende gültige Läufe ersetzt GitHub durch den neuesten: gewollt.
+concurrency:
+  group: >-
+    ${{ ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+    (github.event_name == 'workflow_run' &&
+    github.event.workflow_run.conclusion == 'success' &&
+    github.event.workflow_run.event == 'push' &&
+    github.event.workflow_run.head_sha == github.sha)) && 'pages' ||
+    format('pages-skip-{0}', github.run_id) }}
+  cancel-in-progress: false
+
+env:
+  ASTRO_TELEMETRY_DISABLED: 1
+
+jobs:
+  build:
+    # Gebaut wird nur der aktuelle Stand von main, nie ein Commit aus dem Ereignis (CodeQL:
+    # untrusted checkout, cache poisoning). Bei workflow_run ist github.sha der neueste Commit auf
+    # main; er muss genau der Commit sein, den die CI eben erfolgreich für einen Push geprüft hat.
+    # Ist main inzwischen weiter, übernimmt der Lauf nach der nächsten CI. Von Hand nur auf main.
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_sha == github.sha)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Ohne ref: Checkout von github.sha auf main, also genau des geprüften Commits (siehe oben)
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: pnpm über corepack aktivieren
+        run: corepack enable
+
+      - name: Abhängigkeiten installieren (gefrorenes Lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Vorschau bauen
+        run: pnpm build:pages
+        env:
+          PAGES_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+
+      # Smoke-Test des Artefakts vor der Veröffentlichung
+      - name: Vorschau prüfen
+        run: |
+          test -f dist-pages/index.html
+          test -f dist-pages/.nojekyll
+          grep -q 'noindex' dist-pages/index.html
+          grep -q '/luescherwohnen-ch/_astro/' dist-pages/index.html || grep -q '/_astro/' dist-pages/index.html
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: dist-pages
+          include-hidden-files: true
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Nur dieser Job darf veröffentlichen; er checkt nichts aus und führt keinen Projektcode aus.
+    permissions:
+      pages: write # Pages-Deployment anlegen
+      id-token: write # OIDC-Token, mit dem deploy-pages sich bei Pages ausweist
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

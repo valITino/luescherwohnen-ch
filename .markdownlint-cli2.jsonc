@@ -2,5 +2,18 @@
   "config": {
     "MD013": false,
     "MD060": false
-  }
+  },
+  "globs": ["**/*.md"],
+  "ignores": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "dist-pages/**",
+    "docs/ressources/**",
+    // Upstream-Material (THIRD_PARTY_NOTICES.md) und die wörtliche Primärquelle bleiben unverändert.
+    ".claude/skills/**",
+    "docs/homepage-anforderungen.md",
+    "playwright-report/**",
+    "test-results/**",
+    "shots/**"
+  ]
 }

@@ -1,0 +1,22 @@
+# Lokale Vorschau des Container-Images: http://localhost:8080
+#   docker compose up --build
+# Gehärtet wie im Betrieb vorgesehen: nur lesbares Dateisystem, keine Zusatzrechte.
+services:
+  web:
+    build:
+      context: .
+      args:
+        PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-http://localhost:8080}
+        PUBLIC_CONTACT_ENDPOINT: ${PUBLIC_CONTACT_ENDPOINT:-mock}
+        PUBLIC_PREVIEW: ${PUBLIC_PREVIEW:-true}
+    image: luescherwohnen:local
+    ports:
+      - '127.0.0.1:8080:8080'
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped

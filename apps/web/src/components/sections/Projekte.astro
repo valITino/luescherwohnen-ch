@@ -1,0 +1,136 @@
+---
+/**
+ * 04 Projekte: ausgeführte Einrichtungen (die fünf Referenzen der bisherigen Startseite, ohne
+ * Doppel mit dem Sortiment). Titel aus den Dateinamen, ohne Ortsangaben der Kundschaft.
+ * Erscheint nur mit freigegebenen Inhalten (WEB-F-006, D-005): siehe `showProjects`.
+ */
+import { Picture } from 'astro:assets';
+import gesamtkonzept from '../../assets/photos/projekt-gesamtkonzept.jpg';
+import hobbyraum from '../../assets/photos/projekt-hobbyraum.jpg';
+import wohnEss from '../../assets/photos/projekt-wohn-essbereich.jpg';
+import wohnzimmer from '../../assets/photos/projekt-wohnzimmer.jpg';
+import SectionHead from '../SectionHead.astro';
+
+const projects = [
+  {
+    title: 'Neugestaltung Wohn- und Essbereich',
+    year: '2009',
+    image: wohnEss,
+    alt: 'Wohnbereich unter einer Holzbalkendecke mit schwarzem Ledersofa, Sessel und Teppich',
+  },
+  {
+    title: 'Gesamtkonzept Wohn- und Essraum',
+    year: '2018',
+    image: gesamtkonzept,
+    alt: 'Heller Wohnraum mit grauem Ecksofa, Drehsessel und Teppich',
+  },
+  {
+    title: 'Hobbyraum',
+    year: '2021',
+    image: hobbyraum,
+    alt: 'Hobbyraum mit Bücherregal aus Metall und Fitnessgeräten vor einer gelben Wand',
+  },
+  {
+    title: 'Wohnzimmer',
+    year: '2021',
+    image: wohnzimmer,
+    alt: 'Graues Sofa mit violetten Kissen, buntem Teppich und Glas-Beistelltisch',
+  },
+];
+---
+
+<section data-lazy class="sheet" id="projekte" aria-labelledby="projekte-title">
+  <div class="wrap">
+    <SectionHead
+      num="04"
+      kicker="Projekte"
+      title="Bereits ausgeführt."
+      id="projekte-title"
+      layout="split"
+      lead="Eine Auswahl von Einrichtungen, die wir für unsere Kundschaft umgesetzt haben."
+    />
+
+    <ul class="projects">
+      {projects.map((project) => (
+        <li class="project">
+          <figure>
+            <div class="project-media">
+              <Picture
+                src={project.image}
+                formats={['avif', 'webp']}
+                widths={[360, 600, 900]}
+                sizes="(min-width: 64rem) 22rem, (min-width: 40rem) 45vw, 100vw"
+                alt={project.alt}
+                class="project-photo"
+                loading="lazy"
+              />
+            </div>
+            <figcaption class="project-caption">
+              <span class="title">{project.title}</span>
+              <span class="tag">{project.year}</span>
+            </figcaption>
+          </figure>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .projects {
+    display: grid;
+    gap: 1.5rem;
+    margin-top: clamp(2.5rem, 6vw, 5rem);
+  }
+
+  .project figure {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .project-media {
+    aspect-ratio: 1;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--r-card);
+    background-color: var(--sand);
+  }
+
+  .project-media :global(.project-photo) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--dur-3) var(--ease);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .project:hover :global(.project-photo) {
+      transform: scale(1.03);
+    }
+  }
+
+  .project-caption {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  @media (min-width: 40rem) {
+    .projects {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .projects {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    /* Leichter Versatz wie eine Bildstrecke an der Wand */
+    .project:nth-child(even) {
+      margin-top: 3rem;
+    }
+  }
+</style>

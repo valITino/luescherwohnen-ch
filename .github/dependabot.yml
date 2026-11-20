@@ -1,0 +1,56 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    # Am ersten Tag des Monats. Sicherheitsupdates kommen unabhängig davon sofort,
+    # sobald «Dependabot security updates» im Repository eingeschaltet ist.
+    schedule:
+      interval: monthly
+      time: '06:00'
+      timezone: Europe/Zurich
+    open-pull-requests-limit: 8
+    ignore:
+      # Die Typen folgen der Node-Version, die wirklich läuft (.nvmrc: 22).
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+    groups:
+      astro:
+        patterns: ['astro', '@astrojs/*']
+      tailwind:
+        patterns: ['tailwindcss', '@tailwindcss/*']
+      tests:
+        patterns: ['vitest', '@vitest/*', '@playwright/test', '@axe-core/*']
+      lint:
+        patterns:
+          [
+            'eslint',
+            '@eslint/*',
+            'eslint-*',
+            'typescript-eslint',
+            'prettier',
+            'prettier-*',
+            'globals',
+            'markdownlint-cli2',
+          ]
+    commit-message:
+      prefix: deps
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      time: '06:00'
+      timezone: Europe/Zurich
+    commit-message:
+      prefix: ci
+
+  # Basis-Images im Dockerfile (per Digest gepinnt)
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Zurich
+    commit-message:
+      prefix: deps

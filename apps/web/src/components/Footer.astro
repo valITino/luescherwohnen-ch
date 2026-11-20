@@ -1,0 +1,273 @@
+---
+/**
+ * Footer als grosse, dunkle Bühne: Spalten, Kontakt, Zeilen in Mono und die Wortmarke in voller
+ * Breite. Kein Cookie-Banner, weil keine Cookies gesetzt werden.
+ */
+import Logo from '@luescher/ui/components/Logo.astro';
+import logoLightUrl from '@luescher/ui/brand/logo-light.svg?url';
+import { company, href, mapUrl } from '../config/site.ts';
+
+interface Props {
+  home?: boolean;
+}
+
+const { home = false } = Astro.props;
+const anchor = (hash: string) => (home ? hash : href(`/${hash}`));
+const year = new Date().getFullYear();
+const [emailUser, emailDomain] = company.email.split('@');
+
+const columns = [
+  {
+    title: 'Angebot',
+    links: [
+      { label: 'Sortiment', href: anchor('#sortiment') },
+      { label: 'Service', href: anchor('#service') },
+      { label: 'Aktuell', href: anchor('#aktuell') },
+    ],
+  },
+  {
+    title: 'Lüscher Wohnen',
+    links: [
+      { label: 'Über uns', href: anchor('#ueber') },
+      { label: 'Kontakt', href: anchor('#kontakt') },
+      { label: 'Anfahrt', href: mapUrl, external: true },
+    ],
+  },
+  {
+    title: 'Rechtliches',
+    links: [
+      { label: 'Impressum', href: href('/impressum') },
+      { label: 'Datenschutz', href: href('/datenschutz') },
+    ],
+  },
+];
+---
+
+{/* Zurückgestellt wird nur auf der Startseite: Nur dort legt home.ts die Teile später aus. */}
+<footer class="site-footer" data-lazy={home ? '' : undefined}>
+  <div class="wrap">
+    <div class="stage stage-night on-night footer-stage">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <Logo href={href('/')} tone="light" class="footer-logo" />
+          <p class="footer-claim">Wir nehmen uns Zeit für all Ihre Anliegen.</p>
+        </div>
+
+        <nav class="footer-nav" aria-label="Footer">
+          {columns.map((column) => (
+            <div>
+              <h2 class="label-up footer-title">{column.title}</h2>
+              <ul>
+                {column.links.map((item) => (
+                  <li>
+                    {'external' in item ? (
+                      <a href={item.href} rel="noopener">
+                        {item.label}
+                        <span class="sr-only"> (Karte bei OpenStreetMap)</span>
+                      </a>
+                    ) : (
+                      <a href={item.href}>{item.label}</a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <div>
+            <h2 class="label-up footer-title">Kontakt</h2>
+            <ul>
+              <li>
+                <a class="tabular" href={`tel:${company.phone.tel}`}>
+                  {company.phone.label}
+                </a>
+              </li>
+              <li>
+                {/* <wbr>: Umbruch höchstens am «@», nie mitten im Wort */}
+                <a href={`mailto:${company.email}`}>
+                  {emailUser}
+                  <wbr />@{emailDomain}
+                </a>
+              </li>
+              <li>
+                <span>
+                  {company.street}, {company.zip} {company.city}
+                </span>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </div>
+
+      <div class="footer-bottom mono">
+        <ul class="footer-lines">
+          <li>Kein Cookie-Banner. Weil diese Website keine Cookies setzt.</li>
+          <li>Kein Tracking, keine Analysedienste, keine Schriften von Dritten.</li>
+          <li>
+            Sicherheitslücke gefunden?{' '}
+            <a class="link" href={href('/.well-known/security.txt')}>
+              /.well-known/security.txt
+            </a>
+          </li>
+          <li>
+            © {year} {company.name}
+          </li>
+        </ul>
+      </div>
+
+      <div class="footer-word" aria-hidden="true">
+        <p class="kicker footer-word-kicker">Inneneinrichtung in {company.city}</p>
+        <img
+          class="footer-word-img"
+          src={logoLightUrl}
+          width="765"
+          height="190"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    padding-block: clamp(1.25rem, 3vw, 2.5rem) 1.5rem;
+    background-color: var(--linen);
+  }
+
+  .footer-stage {
+    overflow: hidden;
+    padding: clamp(1.5rem, 0.6rem + 3.6vw, 4.5rem);
+    padding-bottom: 0;
+    background-image:
+      radial-gradient(46rem 30rem at 100% 0%, rgb(var(--leaf-rgb) / 0.16), transparent 70%),
+      radial-gradient(50rem 26rem at 30% 100%, rgb(var(--leaf-rgb) / 0.1), transparent 70%);
+  }
+
+  .footer-top {
+    display: grid;
+    gap: 3rem;
+  }
+
+  .footer-brand {
+    display: grid;
+    gap: 1.5rem;
+    align-content: start;
+    justify-items: start;
+  }
+
+  .footer-brand :global(.footer-logo) {
+    --logo-h: 2.5rem;
+  }
+
+  .footer-claim {
+    max-width: 11em;
+    color: var(--linen);
+    font-size: var(--fs-h3);
+    font-weight: var(--fw-display);
+    letter-spacing: var(--ls-heading);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .footer-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2.5rem 1.5rem;
+  }
+
+  /* Schmal: Die Kontaktspalte bekommt die ganze Breite (lange Adressen) */
+  .footer-nav > div:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .footer-title {
+    margin-bottom: 1rem;
+  }
+
+  .footer-nav ul {
+    display: grid;
+    gap: 0.125rem;
+  }
+
+  /* 5vw: Auf den schmalsten Handys passt so auch «Datenschutz» in eine der zwei Spalten. */
+  .footer-nav a,
+  .footer-nav span:not(.sr-only) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    color: var(--linen);
+    font-size: min(var(--fs-h4), 5vw);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+    transition: color var(--dur-2) var(--ease);
+  }
+
+  .footer-nav a:hover {
+    color: var(--leaf);
+  }
+
+  .footer-bottom {
+    margin-top: clamp(3rem, 6vw, 5rem);
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--night-line);
+    color: var(--night-muted);
+    font-size: var(--fs-micro);
+    letter-spacing: 0.02em;
+  }
+
+  .footer-lines {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .footer-lines .link {
+    color: var(--linen);
+    overflow-wrap: anywhere;
+  }
+
+  /* Wortmarke in voller Breite */
+  .footer-word {
+    display: grid;
+    gap: clamp(0.75rem, 2vw, 1.5rem);
+    margin-block: clamp(2.5rem, 6vw, 5rem) clamp(1.5rem, 3.6vw, 4.5rem);
+  }
+
+  .footer-word-img {
+    width: min(100%, 64rem);
+    height: auto;
+  }
+
+  /* Drei Spalten, darunter Kontakt in voller Breite */
+  @media (min-width: 40rem) {
+    .footer-nav {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  /* Vier Spalten erst, wenn jede breit genug für ihr längstes Wort ist («Datenschutz») */
+  @media (min-width: 60rem) {
+    .footer-nav {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 2fr);
+    }
+
+    .footer-nav > div:last-child {
+      grid-column: auto;
+    }
+  }
+
+  @media (min-width: 72rem) {
+    .footer-top {
+      grid-template-columns: minmax(0, 3fr) minmax(0, 9fr);
+    }
+  }
+
+  @media print {
+    .site-footer {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,17 @@
+node_modules
+dist
+dist-pages
+.astro
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+test-results
+playwright-report
+coverage
+reports
+shots
+sbom*.json
+*.tsbuildinfo
+__pycache__/

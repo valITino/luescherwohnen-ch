@@ -1,0 +1,360 @@
+---
+/**
+ * Hero: der alte Slogan als riesige Headline in zwei Zeilen, rechts die runde Bild-Bühne (an der
+ * Stelle des Globus bei PSYber), oben rechts die Statuszeilen mit Uhrzeit und Öffnungsstatus.
+ * Darunter, im selben Abschnitt, die Bühne mit dem Wichtigsten für einen Besuch.
+ * Die Headline blendet zeilenweise hinter einer Maske ein (reines CSS, Stagger 80 ms).
+ * Verhalten (Uhrzeit, Öffnungsstatus, Scroll-Verlauf): src/scripts/hero.ts
+ *
+ * Text: Slogans der bisherigen Website («Wohnen heisst leben», «Wohnen heisst sich wohl fühlen»,
+ * docs/Homepage.docx); zu einer Headline verbunden (Entwurf, docs/DECISIONS.md).
+ */
+import { Picture } from 'astro:assets';
+import Button from '@luescher/ui/components/Button.astro';
+import Kicker from '@luescher/ui/components/Kicker.astro';
+import heroPhoto from '../../assets/photos/hero-liege.jpg';
+import { company, primaryCta } from '../../config/site.ts';
+import Visit from './Visit.astro';
+
+const cta = primaryCta(true);
+---
+
+<section class="hero" aria-labelledby="hero-title" data-hero>
+  <div class="hero-track" data-hero-track>
+    <div class="hero-pin">
+      <div class="hero-sky" aria-hidden="true"></div>
+
+      <div class="wrap hero-inner">
+        <figure class="hero-orb">
+          <Picture
+            src={heroPhoto}
+            formats={['avif', 'webp']}
+            widths={[360, 600]}
+            sizes="(min-width: 64rem) 36rem, 58vw"
+            alt="Grüne Liege in einem hellen Wohnraum mit Holzboden"
+            class="hero-photo"
+            loading="eager"
+            fetchpriority="high"
+          />
+        </figure>
+        <ul class="hero-hud" aria-label="Kurzinfo">
+          <li>
+            <span class="hud-strong">
+              {company.city}{' '}
+              <span class="mono" data-local-time>
+                --:--
+              </span>
+            </span>
+            <span class="hud-rule" aria-hidden="true"></span>
+            <span class="hud-key" data-open-status hidden>
+              <i class="dot" aria-hidden="true"></i>
+              <span data-open-status-text></span>
+            </span>
+          </li>
+          <li class="hud-hint">Ausstellung auf 6 Etagen · rund 1200 m²</li>
+        </ul>
+
+        <div class="hero-head">
+          <Kicker>Familienunternehmen in {company.city} seit 1946</Kicker>
+          <h1 id="hero-title" class="display hero-title">
+            <span class="q q1">
+              <span class="mask">
+                <span class="mask-line">Wohnen heisst leben.</span>
+              </span>
+            </span>{' '}
+            <span class="q q2">
+              <span class="mask">
+                <span class="mask-line">Und sich</span>
+              </span>{' '}
+              <span class="mask">
+                <span class="mask-line">wohl fühlen.</span>
+              </span>
+            </span>
+          </h1>
+        </div>
+
+        <div class="hero-foot">
+          <p class="lead hero-lead">
+            Wir unterstützen Sie bei all Ihren Einrichtungsfragen: im Geschäft in {company.city}{' '}
+            oder bei Ihnen zu Hause, von der Beratung bis zur Montage.
+          </p>
+          <div class="hero-actions">
+            <Button href={cta.href} icon>
+              {cta.label}
+            </Button>
+            <Button href="#sortiment" variant="secondary" icon="arrow-down-right">
+              Sortiment ansehen
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap hero-demo">
+    <Visit />
+  </div>
+</section>
+
+<style>
+  .hero {
+    --hero-p: 0;
+    position: relative;
+    padding-bottom: calc(var(--section-y) * 0.75 + var(--r-sheet));
+    background-color: var(--linen);
+  }
+
+  .hero-track {
+    position: relative;
+  }
+
+  .hero-pin {
+    position: relative;
+    display: grid;
+    min-height: 100svh;
+    overflow: clip;
+  }
+
+  /* Angepinnt (hero.ts): Der Hero bleibt eine Dreiviertel-Bildschirmhöhe lang stehen. */
+  .hero[data-pinned] .hero-track {
+    height: 175svh;
+  }
+
+  .hero[data-pinned] .hero-pin {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+  }
+
+  /* ---------- Hintergrund: warmes Licht von rechts ---------- */
+
+  .hero-sky {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to bottom, rgb(var(--linen-rgb) / 0) 70%, var(--linen) 100%),
+      radial-gradient(
+        64% 60% at 76% 44%,
+        rgb(var(--sage-rgb) / 0.95) 0%,
+        rgb(var(--sage-rgb) / 0) 70%
+      );
+  }
+
+  /* ---------- Runde Bühne mit Foto ---------- */
+
+  /* Mobile: im Fluss oben rechts, die Headline steht darunter (auch auf kleinen Geräten) */
+  .hero-orb {
+    justify-self: end;
+    width: min(58vw, 30svh, 22rem);
+    aspect-ratio: 1;
+    margin: 0 calc(var(--gutter) * -0.25) 0 0;
+    border-radius: 50%;
+    box-shadow:
+      0 0 0 1px var(--leaf-edge),
+      0 0 0 0.75rem rgb(var(--leaf-rgb) / 0.12),
+      0 2rem 4rem rgb(var(--charcoal-rgb) / 0.14);
+    transform: scale(calc(1 + var(--hero-p) * 0.07));
+    animation: orb-in var(--dur-4) var(--ease) 120ms backwards;
+  }
+
+  .hero-orb :global(.hero-photo) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  @keyframes orb-in {
+    from {
+      opacity: 0;
+      transform: scale(0.94);
+    }
+  }
+
+  /* ---------- Inhalt ---------- */
+
+  .hero-inner {
+    position: relative;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: clamp(1.5rem, 3.5svh, 2.75rem);
+    min-height: 100svh;
+    padding-block: calc(var(--header-h) + 1rem) 2.5rem;
+  }
+
+  .hero-hud {
+    display: none;
+  }
+
+  .hero-head {
+    display: grid;
+    align-self: end;
+    gap: clamp(1rem, 2.5svh, 1.5rem);
+  }
+
+  .hero-title {
+    position: relative;
+    font-size: clamp(2rem, 9.6vw, 4.5rem);
+    line-height: 0.98;
+  }
+
+  .q {
+    display: block;
+  }
+
+  /* Die erste Zeile tritt mit dem Scrollen zurück (bleibt aber über 3:1 lesbar). */
+  .q1 {
+    opacity: calc(1 - var(--hero-p) * 0.5);
+  }
+
+  /* Maske: Zeile fährt von unten herein; Luft für Umlaute */
+  .mask {
+    display: block;
+    overflow: hidden;
+    margin-block: -0.12em;
+    padding-block: 0.12em;
+  }
+
+  .mask-line {
+    display: block;
+    animation: hero-line var(--dur-4) var(--ease) both;
+  }
+
+  .q2 .mask:nth-child(1) .mask-line {
+    animation-delay: 80ms;
+  }
+
+  .q2 .mask:nth-child(2) .mask-line {
+    animation-delay: 160ms;
+  }
+
+  @keyframes hero-line {
+    from {
+      transform: translateY(118%);
+    }
+  }
+
+  .hero-foot {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .hero-lead {
+    max-width: 24em;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  /* ---------- Bühne mit den Angaben für den Besuch ---------- */
+
+  .hero-demo {
+    position: relative;
+    margin-top: clamp(1rem, 4vw, 3rem);
+  }
+
+  @media (min-width: 64rem) {
+    /* Desktop: rechts, mittig zur Höhe; ausserhalb des Rasters, die Texte laufen links davon */
+    .hero-orb {
+      position: absolute;
+      top: 50%;
+      right: 0;
+      width: min(33vw, 60svh, 36rem);
+      margin: 0;
+      transform: translateY(-50%) scale(calc(1 + var(--hero-p) * 0.07));
+    }
+
+    @keyframes orb-in {
+      from {
+        opacity: 0;
+        transform: translateY(-50%) scale(0.94);
+      }
+    }
+
+    .hero-inner {
+      grid-template-rows: auto 1fr auto;
+      padding-bottom: clamp(5.5rem, 11svh, 6.5rem);
+    }
+
+    /* Statuszeilen oben rechts */
+    .hero-hud {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      justify-items: end;
+      gap: 0.625rem;
+      color: var(--ash);
+      font-size: var(--fs-micro);
+      font-weight: 600;
+      letter-spacing: var(--ls-label);
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .hero-hud li {
+      display: flex;
+      align-items: center;
+      gap: 1.125rem;
+    }
+
+    .hud-strong {
+      color: var(--charcoal);
+    }
+
+    .hud-strong .mono {
+      font-family: var(--ff-mono);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    .hud-rule {
+      width: 1px;
+      height: 1rem;
+      background-color: var(--steel);
+    }
+
+    .hud-key {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--charcoal);
+    }
+
+    .hero-head {
+      position: relative;
+      align-self: center;
+    }
+
+    /* So gross, dass die Zeilen links neben der runden Bühne enden (Text nie über dem Foto). */
+    .hero-title {
+      font-size: clamp(3.25rem, 0.2rem + 4.9vw, 5.75rem);
+    }
+
+    /* Die zweite Zeile steht eingerückt auf einer Zeile */
+    .q2 {
+      display: flex;
+      gap: 0.2em;
+      padding-left: 0.4em;
+      white-space: nowrap;
+    }
+
+    .hero-foot {
+      position: relative;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: end;
+      gap: clamp(1.5rem, 4vw, 4rem);
+    }
+  }
+
+  /* Ohne Skripte gibt es weder Uhrzeit noch Status: die Zeile dazu entfällt. */
+  @media (scripting: none) {
+    .hero-hud li:first-child {
+      display: none;
+    }
+  }
+</style>

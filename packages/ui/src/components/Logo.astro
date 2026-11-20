@@ -1,0 +1,36 @@
+---
+/**
+ * Wortmarke «Lüscher WOHNEN AG» aus dem Logo-Kit (vektorisiert aus dem bisherigen Logo).
+ * `tone="light"` für dunkle Flächen (Footer). Als Link trägt der Link den Namen; das Bild ist
+ * dann Dekoration.
+ */
+import darkUrl from '../brand/logo-dark.svg?url';
+import lightUrl from '../brand/logo-light.svg?url';
+
+interface Props {
+  href?: string;
+  tone?: 'dark' | 'light';
+  class?: string;
+  /** Zugänglicher Name des Links */
+  label?: string;
+}
+
+const {
+  href,
+  tone = 'dark',
+  class: className,
+  label = 'Lüscher Wohnen, zur Startseite',
+} = Astro.props;
+const Tag = href ? 'a' : 'span';
+---
+
+<Tag class:list={['logo', className]} href={href} aria-label={href ? label : undefined}>
+  <img
+    class="logo-img"
+    src={tone === 'light' ? lightUrl : darkUrl}
+    width="765"
+    height="190"
+    alt={href ? '' : 'Lüscher Wohnen AG'}
+    decoding="async"
+  />
+</Tag>

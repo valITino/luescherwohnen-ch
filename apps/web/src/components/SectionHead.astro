@@ -1,0 +1,117 @@
+---
+/**
+ * Kopf einer Sektion: Kicker («01 / …»), riesige H2 in Versalien und optionaler Einleitungstext.
+ */
+import Kicker from '@luescher/ui/components/Kicker.astro';
+
+interface Props {
+  /** Abschnittsnummer, z. B. '01'. Ohne Angabe entfällt die Nummer. */
+  num?: string;
+  kicker?: string;
+  title: string;
+  /** id der Überschrift, für aria-labelledby an der Sektion */
+  id: string;
+  lead?: string;
+  /** `split`: Überschrift links, Einleitung rechts (ab Desktop) */
+  layout?: 'stack' | 'split';
+  /** `xl` für die ganz grossen Auftritte */
+  size?: 'l' | 'xl';
+  class?: string;
+}
+
+const {
+  num,
+  kicker,
+  title,
+  id,
+  lead,
+  layout = 'stack',
+  size = 'l',
+  class: className,
+} = Astro.props;
+---
+
+<header
+  class:list={['section-head', { 'section-head-split': layout === 'split' }, className]}
+  data-enter
+>
+  <div class="section-head-main">
+    {kicker && <Kicker num={num}>{kicker}</Kicker>}
+    <h2 id={id} class:list={['display', size === 'xl' ? 'h1' : 'h2', 'section-title']}>
+      {title}
+    </h2>
+  </div>
+  {lead && <p class="lead section-lead">{lead}</p>}
+  <slot />
+</header>
+
+<style>
+  .section-head {
+    display: grid;
+    gap: clamp(1.25rem, 2.5vw, 2rem);
+  }
+
+  .section-head-main {
+    display: grid;
+    gap: clamp(0.875rem, 1.6vw, 1.25rem);
+  }
+
+  .section-title {
+    max-width: 17em;
+  }
+
+  /*
+   * Der Kicker gleitet einmal von links herein, sobald die Sektion ins Bild kommt (reveal.ts setzt
+   * data-enter). Er ist so breit wie sein Text, damit die Maske stimmt.
+   */
+  .section-head-main :global(.kicker) {
+    justify-self: start;
+  }
+
+  .section-head[data-enter='wait'] :global(.kicker) {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  .section-head[data-enter='in'] :global(.kicker) {
+    animation: kicker-in 520ms var(--ease) backwards;
+  }
+
+  @keyframes kicker-in {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+
+    to {
+      clip-path: inset(0);
+    }
+  }
+
+  /* Im Druck und bei angehaltener Bewegung wartet nichts auf seinen Auftritt. */
+  @media print {
+    .section-head[data-enter] :global(.kicker) {
+      clip-path: none;
+    }
+  }
+
+  :global(html[data-motion='off']) .section-head[data-enter] :global(.kicker) {
+    clip-path: none;
+    animation: none;
+  }
+
+  .section-lead {
+    max-width: 26em;
+    color: var(--fg-muted);
+  }
+
+  @media (min-width: 64rem) {
+    .section-head-split {
+      grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+      align-items: end;
+      gap: clamp(2rem, 5vw, 5rem);
+    }
+
+    .section-head-split .section-lead {
+      padding-bottom: 0.35em;
+    }
+  }
+</style>

@@ -1,0 +1,114 @@
+---
+import Legal from '../components/Legal.astro';
+import { company, sites } from '../config/site.ts';
+import Page from '../layouts/Page.astro';
+
+const form = sites.contact.mode !== 'off';
+---
+
+<Page
+  title="Datenschutzerklärung – Lüscher Wohnen"
+  description="Welche Daten die Website der Lüscher Wohnen AG bearbeitet und wozu. Kurz gesagt: so wenig wie möglich, keine Cookies, kein Tracking."
+  path="/datenschutz"
+  crumb="Datenschutzerklärung"
+>
+  {/* Weiches Trennzeichen als Zeichen: Eine Entität in einem Attribut käme wörtlich an. */}
+  <Legal kicker="Rechtliches" title={'Datenschutz­erklärung'} stand="November 2026">
+    <p>
+      Diese Erklärung gilt für die Website von {company.name}. Sie richtet sich nach dem Schweizer
+      Datenschutzgesetz (DSG). Unser Grundsatz: so wenig Daten wie möglich.
+    </p>
+
+    <h2>Das Wichtigste in Kürze</h2>
+    <ul>
+      <li>Diese Website setzt keine Cookies und verfolgt niemanden.</li>
+      <li>Es gibt keine Analysedienste und keine Werbung.</li>
+      <li>
+        Schriften, Bilder und Skripte laden wir von unserer eigenen Adresse, nicht von Dritten.
+      </li>
+      <li>Die Karte öffnet sich erst, wenn Sie selbst auf «Route planen» klicken.</li>
+    </ul>
+
+    <h2>Verantwortlich</h2>
+    <dl>
+      <div>
+        <dt>Firma und Adresse</dt>
+        <dd>
+          {company.name}, {company.street}, {company.zip}
+          {company.city}
+        </dd>
+      </div>
+      <div>
+        <dt>Kontakt für Datenschutzfragen</dt>
+        <dd>
+          <a class="link" href={`mailto:${company.email}`}>
+            {company.email}
+          </a>
+        </dd>
+      </div>
+    </dl>
+
+    <h2>Welche Daten wir bearbeiten</h2>
+
+    <h3>Besuch der Website</h3>
+    {sites.preview ? (
+      <p>
+        Diese Vorschau liegt bei GitHub Pages (GitHub, Inc., USA). Beim Aufruf einer Seite
+        verarbeitet GitHub technische Verbindungsdaten wie IP-Adresse, Zeitpunkt und aufgerufene
+        Adresse, um die Seite auszuliefern und Angriffe abzuwehren. Wir selbst erhalten und
+        speichern diese Daten nicht.
+      </p>
+    ) : (
+      <p>
+        Beim Aufruf einer Seite verarbeitet unser Hosting-Anbieter{' '}
+        <span class="todo">[TODO: Name und Sitz des Hosting-Anbieters, D-007]</span> technische
+        Verbindungsdaten wie IP-Adresse, Zeitpunkt und aufgerufene Adresse. Das ist nötig, um die
+        Seite auszuliefern und Angriffe abzuwehren. Unser eigener Webserver protokolliert nur
+        Zeitpunkt, aufgerufene Adresse und Ergebnis, ohne IP-Adresse und ohne Angaben zu Ihrem
+        Browser. Aufbewahrung der Protokolle:{' '}
+        <span class="todo">[TODO: Aufbewahrungsdauer, D-007]</span>.
+      </p>
+    )}
+
+    <h3>Kontakt per Telefon oder E-Mail</h3>
+    <p>
+      Wenn Sie uns anrufen oder schreiben, bearbeiten wir Ihre Angaben, um Ihr Anliegen zu
+      beantworten und eine Beratung, Lieferung oder Montage zu organisieren.
+    </p>
+
+    {form && (
+      <>
+        <h3>Kontaktformular</h3>
+        <p>
+          Wenn Sie uns über das Formular schreiben, bearbeiten wir Ihren Namen, Ihre E-Mail-Adresse,
+          Ihr Anliegen und Ihre Nachricht sowie, falls angegeben, Ihre Telefonnummer. Wir verwenden
+          diese Angaben nur, um Ihre Anfrage zu beantworten. Wie lange wir sie aufbewahren:{' '}
+          <span class="todo">[TODO: Aufbewahrung und Löschung, D-003]</span>.
+        </p>
+      </>
+    )}
+
+    <h3>Karte und Anfahrt</h3>
+    <p>
+      Die Links «Route planen» und «Anfahrt» führen zu OpenStreetMap. Erst wenn Sie darauf klicken,
+      verlassen Sie unsere Website; dann gilt die Datenschutzerklärung der OpenStreetMap Foundation.
+    </p>
+
+    <h2>Weitergabe</h2>
+    <p>
+      Wir verkaufen keine Daten und geben sie nur weiter, wenn das für Ihr Anliegen nötig ist (zum
+      Beispiel an einen Lieferanten für eine Bestellung) oder wenn ein Gesetz es verlangt.
+    </p>
+
+    <h2>Ihre Rechte</h2>
+    <p>
+      Sie können jederzeit Auskunft über Ihre Daten verlangen, sie berichtigen oder löschen lassen.
+      Schreiben Sie uns dazu an{' '}
+      {/* Auf einer Zeile: Ein Umbruch vor dem Punkt würde als Leerzeichen sichtbar. */}
+      {/* prettier-ignore */}
+      <span><a class="link" href={`mailto:${company.email}`}>{company.email}</a>.</span> Sie haben
+      zudem das Recht, sich beim Eidgenössischen Datenschutz- und Öffentlichkeitsbeauftragten (EDÖB)
+      zu beschweren.
+    </p>
+  </Legal>
+</Page>
