@@ -1,0 +1,23 @@
+node_modules
+dist
+dist-pages
+.astro
+coverage
+playwright-report
+test-results
+shots
+reports
+pnpm-lock.yaml
+# Bestand, Primärquellen und von Menschen gepflegte Steuerdokumente: nicht automatisch umformatieren.
+docs/homepage-anforderungen.md
+docs/requirements-analysis.md
+docs/project-plan.md
+CLAUDE.md
+THIRD_PARTY_NOTICES.md
+docs/index.html
+docs/index-new.html
+docs/ressources
+.claude
+# Generiert
+packages/ui/src/icons/data.ts
+apps/*/public

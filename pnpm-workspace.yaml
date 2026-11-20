@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+allowBuilds:
+  esbuild: true
+  sharp: true
+overrides:
+  # KaTeX kommt nur über markdownlint (Mathe-Erweiterung, hier ungenutzt) und hat unter
+  # 0.18.2 eine Lücke (GHSA, low). Entfernen, sobald markdownlint selbst aktualisiert.
+  katex: '>=0.18.2'
