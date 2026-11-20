@@ -12,6 +12,19 @@ stillstehendem Header und ein Durchgang nach den Regeln (nur `transform`, `opaci
 Auftritte, Pause, Sprünge und Seitenwechsel. Kein zusätzliches Paket, JavaScript 59,3 KB von
 120 KB.
 
+Vier unabhängige Prüfungen (Leistung, Zustände und Barrierefreiheit, Code, Gestaltung) fanden
+danach u. a.: Milchglas der Kapsel weg, Kapsel beim Seitenwechsel aufgeblasen, Header-Wechsel
+träge und kurz leer, Lead im Hero zu spät (LCP auf dem Handy schlechter), Bild-Enthüllung teuer
+beim Wischen, Auftritte nach dem Fortsetzen doppelt. Behoben in zwei Schritten
+(`docs/DECISIONS.md` 38), gemessen gegen den Stand davor (`db2ca8b`, Chromium ohne Grafikchip):
+
+- LCP Handy 1292 → 76 ms (4-fach gedrosselt 1392 → 188 ms), Desktop unverändert um 100 ms.
+- Header-Wechsel: erste Reaktion nach 20–40 statt rund 100 ms, ruhig nach 520–580 statt
+  630–760 ms, leer höchstens 2–3 Bilder wie zuvor.
+- Wischen auf dem Handy (4-fach gedrosselt): 26–40 ausgefallene Bilder statt 55–63.
+- Drei neue und ein erweiterter e2e-Test (Desktop und Handy); alle schlagen auf `db2ca8b` fehl
+  und laufen auf dem neuen Stand.
+
 ## 20.11.2026: Demo nach dem PSYber-System
 
 Auftrag des Repository-Inhabers: Stil, Design, Format und Logik von `valITino/PsySec`
