@@ -34,6 +34,13 @@ Fünf neue e2e-Tests (Seitenwechsel zu einer Marke, Vorladen beim allmählichen 
 Schalter, Sprung aus dem Hero); die ersten vier schlagen auf `72b5b36` fehl. Gemessen beim
 allmählichen Scrollen: Abruf der Bilder rund 1200 px vor dem Bild statt 150 px darin.
 
+Dritte Prüfrunde gegen `f1173cc` (fünf Blickwinkel, `docs/DECISIONS.md` 40). Behoben: Header ohne
+`checkVisibility()` (Safari vor 17.4) eingefroren, ein graues Bild im stehenden Header beim
+Seitenwechsel, Schalter ohne Wirkung auf Lenis, Hero und Haltung; dazu sichtbare Bild-Enthüllung
+ab einem Viertel, kein Aufsteigen über ein fehlendes Foto, Überschriften ohne Sprung im Umbruch,
+genaue Landung nach Sprüngen aus der Leiste, Fokus in der Navigation. Acht neue e2e-Tests (fünf
+auf Desktop und Handy, drei nur am Desktop), zwei bestehende geschärft.
+
 ## 20.11.2026: Demo nach dem PSYber-System
 
 Auftrag des Repository-Inhabers: Stil, Design, Format und Logik von `valITino/PsySec`

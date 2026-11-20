@@ -185,3 +185,47 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
     beide Gegenprüfungen stuften das als gering ein). Offen und auf echte Geräte angewiesen:
     Rastern des Menü-Vorhangs am Desktop, gelegentliche 83-ms-Stockung beim Wischen,
     Seitenfehler «Transition was aborted» bei manchen Seitenwechseln (`docs/TODO.md`).
+- **40.** **Dritte Prüfrunde** gegen `f1173cc` (fünf Blickwinkel: Seitenwechsel, Bild-Enthüllung,
+  Header mit Fokus und Pause, Wischen und Sprünge, Code; jeder Befund ab «mittel» zweimal
+  gegengeprüft). Drei bestätigte Befunde, dazu die meisten kleineren:
+  - **`checkVisibility()` mit Prüfung** (mittel, neu in `15ea507`): Safari und iOS 16.4 bis 17.3
+    (im Ziel des Builds) kennen die Methode nicht. Der Header blieb dort beim Scrollen die
+    durchsichtige Leiste über dem Inhalt. Jetzt mit Rückfall auf `getClientRects()`; ein e2e-Test
+    löscht die Methode.
+  - **Kein graues Bild im stehenden Header** (mittel, neu in `15ea507`): Oben von Seite zu Seite
+    wurden alte und neue Leiste übergeblendet. Gerät die Überblendung im ersten Bild aus dem
+    Takt (Chromium, Animation im Compositor), wird die Leiste ein Bild lang grau; mit der
+    bremsenden Kurve fast bei jedem Wechsel (Handy 22 von 26 Läufen). Ein Paar wird jetzt gar
+    nicht mehr übergeblendet, nur eine Leiste ohne Gegenstück blendet aus bzw. ein
+    (`:only-child`, gemessen 0 von 14). Verworfen: das Paar wieder mit 400 ms `ease-in-out`
+    (am Desktop weiter 7 von 24) und `:not(:only-child)` (passt in Chromium nie).
+  - **Der Schalter «Bewegung pausieren» stoppt auch das Scrollen** (mittel, Bestand; die
+    Aussage «gilt überall» aus Entscheid 39 stimmte nicht): Lenis wird beendet, solange
+    angehalten ist (Sprünge sofort am Ziel, kein Ausgleiten), der Hero hängt nicht mehr am
+    Scrollen (Anpinnen bleibt, damit die Seite nicht springt), die Haltung steht in voller
+    Deckkraft. Beim Fortsetzen läuft all das wieder; Auftritte bleiben aus. Der Schalter gilt nur
+    für die aktuelle Seite (kein Web-Speicher).
+  - **Bild-Enthüllung, die man sieht**: Die Enthüllung begann, sobald der Rahmen 8 % über dem
+    unteren Rand stand; das Foto stieg so grösstenteils unter dem Rand auf, zu sehen war nur die
+    ankommende Oberkante (gemessen 330 bis 770 ms leere Rahmen). Jetzt beginnt sie, sobald ein
+    Viertel des Rahmens zu sehen ist, bleibt der Rahmen knapp darunter stehen, nach 700 ms.
+    Lädt das Foto dann noch (langsames Netz, schnelles Wischen), wartet die Enthüllung bis
+    500 ms und steht sonst ohne Auftritt auf Sand, statt über einen leeren Rahmen zu steigen.
+    Der Sucher im Porträt beginnt mit dem Foto, seine oberen Ecken und die Linie erst, wenn das
+    Foto oben ankommt.
+  - **Überschriften brechen beim Auftritt wie danach um.** SplitText hielt «Familien­unternehmen»
+    zusammen und bricht ausgewogene Überschriften anders um; am Ende des Auftritts sprang der
+    Umbruch (Bestand, war in `docs/TODO.md`). Jetzt werden die Umbrüche vorher gemessen und für
+    den Auftritt fest gesetzt; ein e2e-Test vergleicht alle Überschriften.
+  - **Kleinere:** Sprung aus der Leiste landet genau unter dem Header (der Öffnungsstatus im
+    Besuch erschien erst unterwegs, das Gleiten endete 32 px zu tief; jetzt steht er vor dem
+    Sprung); ein fokussierter Link der Navigation taucht nicht ab, das Gegenstück steht sofort
+    ganz da, und für Links und Logo ist es das nächste Bedienelement der Leiste (Tab bleibt in
+    der Kapsel); die Leertaste auf einem Knopf hält das Ausgleiten nicht mehr an; Kommentare
+    (Druck, Porträtrahmen, `skipTransition()`) berichtigt; der e2e-Test zur Pause prüft den
+    Header jetzt auch auf dem Handy.
+  - **Bewusst nicht geändert** (`docs/TODO.md`): Zurück und vor zwischen zwei Seiten, die oben
+    stehen, blendet der Header über, statt zu stehen (die alte Seite weiss nicht, wo die neue
+    beginnt; ein blockierendes Skript im Kopf dafür lohnt sich nicht). Der sofortige Formwechsel
+    bei reduzierter und angehaltener Bewegung zählt als kleine Layoutverschiebung. Eine Taste
+    während des Ausgleitens kostet einmal ein Layout.

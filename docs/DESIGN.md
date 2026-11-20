@@ -119,7 +119,7 @@ acht Breiten). E-Mail-Adressen dürfen nur am «@» umbrechen (`<wbr>`).
 
 ## 6. Motion
 
-Stand nach der Überarbeitung vom 20.11.2026 und zwei Prüfrunden danach (Entscheide 37 bis 39).
+Stand nach der Überarbeitung vom 20.11.2026 und drei Prüfrunden danach (Entscheide 37 bis 40).
 Bewegung soll ruhig und präzise wirken und eine Zielgruppe ab 40 nie beim Lesen aufhalten.
 
 ### Grundsätze
@@ -138,9 +138,10 @@ Bewegung soll ruhig und präzise wirken und eine Zielgruppe ab 40 nie beim Lesen
    andere ist Präzision: dieselben Kurven, gestaffelt und jederzeit unterbrechbar.
 5. **Im Zweifel sichtbar.** Ohne JavaScript ist alles sichtbar, verborgen ist nur, was ein Skript
    selbst gesetzt hat. Bei reduzierter Bewegung bewegt sich nichts und nichts wartet. Mit dem
-   Schalter «Bewegung pausieren» steht alles: Dauerbewegung hält an, Auftritte, Übergänge, der
-   Formwechsel des Headers und der Seitenübergang entfallen. Ein Sprung zu einer Marke landet
-   auf fertigem Inhalt.
+   Schalter «Bewegung pausieren» steht alles wie bei reduzierter Bewegung: Dauerbewegung hält
+   an, Auftritte, Übergänge, der Formwechsel des Headers und der Seitenübergang entfallen, der
+   Browser scrollt selbst (kein Ausgleiten), und nichts hängt am Scrollen. Ein Sprung zu einer
+   Marke landet auf fertigem Inhalt, genau unter dem Header.
 
 ### Tokens
 
@@ -195,24 +196,34 @@ Alles andere ist leise:
    die Glasfläche faltet sich aus der Mitte auf (`clip-path` von 10 % Rand, 360 ms), der Schatten
    blendet 60 ms später als eigene Ebene ein, die Teile kommen sofort gestaffelt zurück
    (`--dur-3`). Nach gut einer halben Sekunde ruht alles. Was den Tastaturfokus trägt, taucht
-   nicht ab; gibt es das Element in der neuen Form nicht, übernimmt ein sichtbares Gegenstück den
-   Fokus. Ist beim Umkehren nichts zu sehen, wechselt die Form sofort. Bei einem Sprung
+   nicht ab, auch ein Link der Navigation. Gibt es das Element in der neuen Form nicht, übernimmt
+   ein sichtbares Gegenstück den Fokus und steht sofort ganz da: für den Menü-Knopf die
+   Navigation, sonst das nächste Bedienelement der Leiste (Tab führt so in der gewohnten
+   Reihenfolge weiter). Ist beim Umkehren nichts zu sehen, wechselt die Form sofort. Bei einem Sprung
    (Direktlink, wiederhergestellte Position) und bei angehaltener Bewegung steht die Form sofort,
    samt Glasfläche.
 2. **Überschriften**: Der Kicker zeichnet sich ein (`clip-path`, `--dur-4`), 60 ms später steigen
-   die Zeilen aus ihrer Maske (GSAP SplitText, `--dur-4`, `expo.out`, `--stagger`). Danach ist
-   das Markup wieder wie zuvor.
+   die Zeilen aus ihrer Maske (GSAP SplitText, `--dur-4`, `expo.out`, `--stagger`). Die Zeilen
+   sind dabei genau die, die der Browser setzt: Jeder Umbruch wird vorher gemessen und bis zum
+   Ende fest gesetzt (sonst bräche SplitText ausgewogene Überschriften und weiche Trennstriche
+   anders um, und am Ende spränge der Umbruch). Danach ist das Markup wieder wie zuvor.
 3. **Bild-Enthüllung** (`.enter-unveil`: Sortiment, Aktuell, Projekte, Porträt): Das Foto steigt
    vom unteren Rand seines Rahmens auf und setzt sich aus einem leichten Zoom zur Mitte hin
    (`clip-path` und `scale` am Bild selbst, `--dur-4`, `--ease-expo`). Am Bild statt am Rahmen,
    weil der Browser dann nur eine Ebene bewegt: Beim Wischen auf dem Handy fielen so gemessen
-   halb so viele Bilder aus. Solange es wartet, ist das Bild nur durchsichtig (nicht beschnitten,
-   sonst lädt der Browser es nicht vor), und der Rahmen ist leer statt sandfarben. Bilder, die
+   halb so viele Bilder aus. Es beginnt, sobald ein Viertel des Rahmens zu sehen ist (bleibt der
+   Rahmen knapp darunter stehen, nach 700 ms): So ist das Aufsteigen zu sehen, statt grösstenteils
+   unter dem Rand zu geschehen. Solange es wartet, ist das Bild nur durchsichtig (nicht
+   beschnitten, sonst lädt der Browser es nicht vor), und der Rahmen ist leer statt sandfarben.
+   Lädt das Foto beim Auftritt noch (langsames Netz), wartet die Enthüllung bis zu 500 ms; danach
+   steht der Rahmen ohne Auftritt auf Sand, und das Foto erscheint, sobald es da ist. Bilder, die
    zusammen ankommen, folgen einander im Abstand `--stagger` (höchstens drei Versätze).
-4. **Über uns**: Die Ecken des Suchers rücken weich an ihren Platz (`--dur-4`, `--ease-expo`),
-   eine grüne Linie tastet das Bild einmal ab (nur `transform`, `--dur-4`), die Werte erscheinen
-   im Abstand `--stagger`.
-5. **Haltung**: Die Wörter werden beim Scrollen dunkel, jedes mit weichem Ein- und Auslauf.
+4. **Über uns**: Der Sucher beginnt mit dem Foto. Die unteren Ecken rücken sofort weich an ihren
+   Platz (`--dur-4`, `--ease-expo`), die oberen erst nach 360 ms, wenn das aufsteigende Foto sie
+   erreicht (vorher wären sie hell auf hellem Rahmen); ab 400 ms tastet eine grüne Linie das Bild
+   einmal ab (nur `transform`, `--dur-4`). Die Werte erscheinen im Abstand `--stagger`.
+5. **Haltung**: Die Wörter werden beim Scrollen dunkel, jedes mit weichem Ein- und Auslauf
+   (angehalten: volle Deckkraft).
 6. **Service**: Die Überschrift bleibt am Desktop stehen, die Schritte ziehen vorbei.
 7. **Band**: Sortiment und Service als Endlosband (pausiert bei Hover, Fokus und über den Knopf).
 8. **Seitenwechsel** (View Transitions zwischen Dokumenten, reines CSS): Der Header steht still,
@@ -220,9 +231,13 @@ Alles andere ist leise:
    nie: Sonst zöge der Browser sie auf die Grösse der Leiste (verzerrt), und ihr Milchglas bliebe
    klar (ein benanntes Element begrenzt die Unschärfe seiner Kinder). Verlässt man die Seite aus
    der Kapsel, zu einer Marke (`/#kontakt`) oder durch den Verlauf, geht der Header mit der alten
-   Seite (`header.ts`, `is-leaving`), und der neue blendet für sich ein (`--dur-2`). Die alte
-   Seite weicht schnell (`--dur-1`, `--ease-out`), die neue setzt sich 40 ms später von leicht
-   unten (480 ms, `--ease-expo`); so liegen die beiden kaum übereinander.
+   Seite (`header.ts`, `is-leaving`), und der neue blendet für sich ein (`--dur-2`). Das gilt
+   auch zurück und vor zwischen zwei Seiten, die oben stehen (die alte Seite weiss nicht, wo die
+   neue beginnt). Stehen beide oben, werden alte und neue Leiste nicht überblendet: Die neue
+   steht vom ersten Bild an (eine Überblendung gleicher Bilder kann im ersten Bild aus dem Takt
+   geraten, dann wird die Leiste für ein Bild grau). Die alte Seite weicht schnell (`--dur-1`,
+   `--ease-out`), die neue setzt sich 40 ms später von leicht unten (480 ms, `--ease-expo`); so
+   liegen die beiden kaum übereinander.
 9. **Kleinigkeiten**: Der Hover-Schein der Buttons liegt auf einer eigenen Ebene (`::after`) und
    blendet nur über; die Lichtkante des sekundären Buttons wächst aus der Mitte (`scaleX`,
    `--dur-3`). Fotos zoomen bei Hover fein (nur feiner Pointer). Der Cookie-Hinweis wächst aus
@@ -248,20 +263,29 @@ Alles andere ist leise:
   Anpinnen, keine Auftritte, kein Seitenübergang, das Band bricht um.
 - **Pause** (`html[data-motion="off"]`): `base.css` hält jede Animation an und setzt jeden
   Übergang auf 0 (Menü-Vorhang, Hover-Zoom); `header.ts` wechselt die Form ohne Abtauchen und
-  überspringt den Seitenübergang; `reveal.ts` löst alle wartenden und erfolgten Auftritte auf
-  (`data-enter=""`), `hero.ts` beendet den Auftakt (`data-rested`), Komponenten setzen ihre
-  laufenden Auftritte ans Ende (Rückfall in CSS). Nach dem Fortsetzen spielt nichts ein zweites
-  Mal (geprüft in `e2e/web.spec.ts`).
+  überspringt den Seitenübergang; `smooth.ts` beendet Lenis, der Browser scrollt selbst;
+  `hero.ts` beendet den Auftakt (`data-rested`) und nimmt den Scroll-Verlauf weg (das Anpinnen
+  bleibt, damit nichts springt); `haltung.ts` zeigt alle Wörter ganz; `reveal.ts` löst alle
+  wartenden und erfolgten Auftritte auf (`data-enter=""`); Komponenten setzen ihre laufenden
+  Auftritte ans Ende (Rückfall in CSS). Beim Fortsetzen laufen Dauerbewegung, Lenis und die
+  Effekte am Scrollen wieder, Auftritte spielen nicht ein zweites Mal (geprüft in
+  `e2e/web.spec.ts`). Der Schalter gilt nur für die aktuelle Seite: Ohne Web-Speicher kann ihn
+  die nächste Seite nicht kennen.
 - **Ohne JavaScript** gibt es keinen Wartezustand; CSS-Auftritte (Hero, 404) enden sichtbar.
 - **Sprünge** (`data-jump` am `<html>`, `home.ts`): Was unterwegs oder am Ziel ins Bild kommt,
   steht sofort da. Die Marke fällt erst, wenn Lenis nicht mehr gleitet und zehn Bilder lang kein
   Scrollen kam (gezählt in Bildern, damit eine stockende Darstellung den Sprung nicht beendet).
+  Vor dem Sprung steht alles, was die Seite oberhalb des Ziels noch verlängern würde (Teile mit
+  `data-lazy`, Öffnungsstatus): Sonst endete das Gleiten zu tief.
 - **CSP**: keine `style`-Attribute im Markup; Skripte dürfen `element.style` und eigene
   Custom Properties setzen (z. B. `--enter-i`).
 - **Keine weitere Bibliothek**: GSAP mit SplitText und Lenis (lerp 0.1) genügen. Lenis läuft nur
   mit Maus oder Trackpad: Auf Geräten, die man nur mit dem Finger bedient, scrollt der Browser
   selbst (Lenis hängte sich sonst mit blockierenden Zuhörern an jede Berührung), Sprünge zu
-  Marken sind dort sofort am Ziel. Eine Taste zum Scrollen hält ein Ausgleiten von Lenis an.
+  Marken sind dort sofort am Ziel. Eine Taste zum Scrollen hält ein Ausgleiten von Lenis an,
+  die Leertaste auf einem Knopf nicht (sie löst den Knopf aus).
+- **Ältere Browser**: Neuere Schnittstellen nur mit Prüfung (z. B. `checkVisibility()`, fehlt in
+  Safari vor 17.4; `requestIdleCallback`).
 
 Bewusst nicht: Auftritte aus der Unschärfe, Parallax, Fliesstext, der beim Scrollen einblendet,
 gescrubbte Galerien, eigener Mauszeiger, magnetische oder kippende Elemente, Zähler.
@@ -274,7 +298,8 @@ auf derselben Zeile mit `{/* prettier-ignore */}`, Formulare immer `method="post
 eigenem Scrollen tragen `data-lenis-prevent`, Klassennamen in Scoped Styles nie wie ein Baustein
 aus `components.css` (`pnpm test` prüft das), Bilder mit `width`, `height` und `alt`.
 Sektionen weit unter dem ersten Bildschirm tragen `data-lazy`; vor jedem Sprung zu einer Marke
-legt `home.ts` sie aus und vermisst Lenis neu (sonst endete der Sprung an einer alten Grenze).
+legt `home.ts` sie aus, zeigt den Öffnungsstatus und vermisst Lenis neu (sonst endete der Sprung
+an einer alten Grenze oder zu tief).
 
 ## 8. Suchmaschinen
 

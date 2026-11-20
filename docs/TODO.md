@@ -71,6 +71,9 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
       Vorhang und Bild-Enthüllung beim Wischen, Wischen ohne Lenis (Entscheid 39), gelegentliche
       Stockung von 83 ms beim Wischen. In der Cloud-Umgebung ohne Grafikchip lief der Vorhang am
       Desktop mit halber Bildrate; das sagt über echte Geräte wenig aus.
+- [ ] Auf einem iPhone prüfen: Bild-Enthüllung ab einem Viertel (Entscheid 40) fühlt sich beim
+      Lesen ruhig an; das offene Menü sperrt den Hintergrund (ohne Lenis nur über
+      `overflow: hidden` am `<html>`; iOS vor 16 beachtet das beim Wischen nicht, nicht prüfbar).
 - [ ] Kontrast des Knopfs «Beratung anfragen» in der Kapsel von Hand bestätigen: axe kann ihn wegen
       der Ebene für den Hover-Schein (`::after`) nicht mehr berechnen. Gemessen 7,2:1 (berechnet)
       und 7,3:1 (Pixel), Hover 9,2:1; erfüllt AA. Die Farben sind unverändert.
@@ -80,17 +83,25 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
 - [ ] Shop (Phase 5, separater Auftrag mit eigenem Threat Model; AGB im Bestand vorhanden).
 - [ ] Hero-Fotos in höherer Auflösung (keine Datei im Bestand ist breiter als 1920 px).
 - [ ] Fotos der Ausstellung an der Weiten Gasse 9 (es gibt nur ein Innenbild).
-- [ ] «Über uns»: Die Überschrift bricht während ihres Auftritts anders um, weil SplitText den
-      weichen Trennstrich nicht kennt, und springt danach zurück (Bestand vor der Bewegungsarbeit).
 - [ ] Ohne JavaScript ist die Leiste beim Scrollen durchsichtig, und der Menü-Knopf auf dem Handy
       tut nichts (Bestand). Knopf erst mit Skript zeigen oder auf eine Linkliste verweisen.
 - [ ] Bewegungswächter (`scripts/motion-guard.test.ts`) als Positivliste statt Sperrliste.
 - [ ] Der Bewegungsschalter verschiebt sich bei jedem Header-Wechsel minimal (CLS 0,0009, Bestand).
 - [ ] Seitenwechsel melden in Chromium ohne Fenster gelegentlich «Transition was aborted because of
-      invalid state» als Seitenfehler (in allen Ständen, auch vor der Bewegungsarbeit). Ursache
-      klären; im sichtbaren Browser nicht geprüft.
+      invalid state. ViewTransition opt-in disabled» als Seitenfehler (in allen Ständen, auch vor
+      der Bewegungsarbeit). Eingegrenzt: Es tritt nur mit dem Testserver auf, der `no-store`
+      sendet (rund jeder zweite unterbrochene Wechsel); mit den Cache-Regeln der Produktion 0 von
+      rund 450 Wechseln. Die neue Seite verwirft dann den angebotenen Übergang, ein Skript kann
+      den Fehler nicht abfangen. Möglich: den Testserver mit `--production` starten.
 - [ ] Menüpunkt am Desktop: Lenis gleitet 1,7 s durch die ganze Seite, ein Teil davon nach dem
       Vorhang. Auf dem Handy ist der Sprung sofort am Ziel (Entscheid 39). Prüfen, ob der Sprung
       am Desktop unter dem Vorhang ebenfalls sofort landen soll.
 - [ ] Mit Tastaturfokus im Header ist der Knopf beim Formwechsel zwei Bilder lang verborgen
       (`is-swapping`, gegen Layoutverschiebung); bewusst so belassen.
+- [ ] Bei reduzierter und angehaltener Bewegung wechselt der Header sofort die Form; das zählt
+      als Layoutverschiebung (CLS 0,031 je Wechsel, gemessen am Desktop beim Scrollen mit dem
+      Rad). Bewusst so belassen: Die Leiste dafür ein Bild lang zu verbergen, wie beim animierten
+      Wechsel, wäre ohne Abtauchen ein sichtbares Blinken.
+- [ ] Eine Taste zum Scrollen während eines Ausgleitens von Lenis kostet einmal 3 bis 12 ms
+      (Lenis setzt beim Anhalten kurz `overflow: clip` am `<html>`, mit klassischen Bildlaufleisten
+      rechnet der Browser das Layout neu). Nicht sichtbar; bei Bedarf ohne Anhalten zurücksetzen.
