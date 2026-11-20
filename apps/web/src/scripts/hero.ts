@@ -6,7 +6,7 @@
  * Hero normal. Bei reduzierter Bewegung hängt nichts am Scrollen. Alles hier ist Zugabe: Die
  * Inhalte stehen im Markup.
  */
-import { motionAllowed, onceInView } from '@luescher/ui/motion';
+import { motionAllowed, onceInView, onMotionPausedChange } from '@luescher/ui/motion';
 import { hours } from '../config/hours.ts';
 import { statusAt, statusText } from '../lib/opening-hours.ts';
 import { startClock } from './clock.ts';
@@ -41,6 +41,13 @@ export function initOpenStatus(element: HTMLElement): void {
 export function initHero(root: HTMLElement): void {
   const track = root.querySelector<HTMLElement>('[data-hero-track]');
   startClock(root.querySelector<HTMLElement>('[data-local-time]'));
+  // Hält jemand die Bewegung an, ist der Auftakt vorbei: Er steht sofort am Ende und spielt auch
+  // nach dem Fortsetzen nicht weiter (Hero.astro, data-rested).
+  const stopOverture = onMotionPausedChange((paused) => {
+    if (!paused) return;
+    stopOverture();
+    root.dataset.rested = '';
+  });
   if (!motionAllowed() || !track) return;
 
   const pin = window.matchMedia('(min-width: 64rem) and (min-height: 40rem)');

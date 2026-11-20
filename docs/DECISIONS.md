@@ -120,3 +120,27 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
     der Schatten nicht über den 1 px breiten Rand des Buttons fällt.
   - **Bewusst nicht:** Auftritte aus der Unschärfe, Parallax, einblendender Fliesstext,
     gescrubbte Galerien, eigener Mauszeiger, magnetische Buttons, neue Bibliotheken.
+- **38.** **Nach vier unabhängigen Prüfungen** (Leistung, Zustände und Barrierefreiheit, Code,
+  Gestaltung; je gegen den Stand vor der Bewegungsarbeit gemessen) nachgeschärft:
+  - **Kapsel ohne Namen für den Seitenwechsel.** Nur die Leiste oben heisst `site-bar`. Grund:
+    Mit Namen zog der Browser die Kapsel beim Wechsel auf die Grösse der Leiste (Logo und Knöpfe
+    verzerrt), und ein benanntes Element begrenzt die Unschärfe seiner Kinder: Das Milchglas
+    blieb klar.
+  - **Header antwortet sofort.** Abtauchen in `--dur-1` mit bremsender Kurve statt `--dur-2`
+    beschleunigend, Rückkehr ohne Vorlauf, Glasfläche 360 ms aus 10 % Rand. Grund: Der Wechsel
+    dauerte 2- bis 2,7-mal so lang wie vorher und stand einen Moment leer. Fokus taucht nicht
+    ab; bei einem Sprung steht die Form sofort.
+  - **Lead im Hero blendet nicht ein** und die Folgeelemente setzen sich ab 200 ms statt
+    380 ms. Grund: Grundsatz «Fliesstext blendet nie ein», und auf dem Handy wurde der Lead zum
+    grössten Element: LCP 1004 → 1268 ms.
+  - **Bild-Enthüllung kürzer** (`--dur-4`) und **ohne Zoom auf Touch-Geräten.** Grund: Beim
+    Wischen auf dem Handy fielen 3,6-mal so viele Bilder aus; die Annahme «nach 400 ms frei»
+    hielt mit `--dur-5` nicht.
+  - **Menü schliesst bremsend** (`--ease-out`) statt `--ease-in-out`, Wörter ab 70 ms. Grund:
+    150–200 ms ohne sichtbare Antwort auf einen Fingertipp.
+  - **Seitenwechsel ohne Doppelbelichtung:** alte Seite `--dur-1` bremsend, neue 80 ms später.
+  - **Anhalten und Fortsetzen spielt nichts zweimal.** Erfolgte Auftritte verlieren beim
+    Anhalten ihr `in`, der Hero-Auftakt endet (`data-rested`). Grund: Nach dem Fortsetzen
+    öffneten sich fertige Bilder neu, und der Hero sprang zurück.
+  - **Nicht übernommen:** stärkere Blende über 1400 ms (sprengt die 1,2 s), Positivliste im
+    Bewegungswächter (offen in `docs/TODO.md`).

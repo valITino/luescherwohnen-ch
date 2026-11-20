@@ -437,6 +437,34 @@ test.describe('Bewegung und Chrome', () => {
     await context.close();
   });
 
+  test('Hero: Foto und Lead vom ersten Bild an sichtbar', async ({ page }) => {
+    await page.goto(`${PROD}/`);
+    const hero = page.locator('[data-hero]');
+    const first = await hero.evaluate((root) => {
+      const photo = root.querySelector('.hero-photo')!;
+      const lead = root.querySelector('.hero-lead')!;
+      const animated = (element: Element) =>
+        element.getAnimations().map((animation) => ({
+          name: (animation as CSSAnimation).animationName,
+          properties: (animation.effect as KeyframeEffect)
+            .getKeyframes()
+            .flatMap((frame) => Object.keys(frame)),
+        }));
+      return {
+        photo: getComputedStyle(photo).opacity,
+        photoAnimations: animated(photo).map(({ name }) => name),
+        lead: getComputedStyle(lead).opacity,
+        leadProperties: animated(lead).flatMap(({ properties }) => properties),
+      };
+    });
+    // Die Blende öffnet das Foto, ohne es je zu verbergen (LCP).
+    expect(first.photo).toBe('1');
+    expect(first.photoAnimations).toContain('hero-aperture');
+    // Fliesstext blendet nie ein: Der Lead rückt höchstens nach.
+    expect(first.lead).toBe('1');
+    expect(first.leadProperties).not.toContain('opacity');
+  });
+
   test('Hero: nach 1,5 s ruht alles', async ({ page }) => {
     await page.goto(`${PROD}/`);
     const hero = page.locator('[data-hero]');
@@ -508,6 +536,14 @@ test.describe('Bewegung und Chrome', () => {
     expect(state.surface).toMatch(/inset\(0px round/);
     expect(state.surfaceOpacity).toBe('1');
     expect(state.shadowOpacity).toBe('1');
+    // Milchglas: Die Kapsel trägt keinen Namen für den Seitenwechsel. Mit Namen grenzt Chromium
+    // die Unschärfe der Fläche (::before) auf die Kapsel selbst ab, das Glas bliebe klar.
+    const glass = await header.locator('.bar').evaluate((bar) => ({
+      name: getComputedStyle(bar).viewTransitionName,
+      blur: getComputedStyle(bar, '::before').backdropFilter,
+    }));
+    expect(glass.name).toBe('none');
+    expect(glass.blur).toContain('blur');
   });
 
   test('Auftritte beim Hereinscrollen: am Ende wartet nichts mehr', async ({ page }) => {
@@ -554,7 +590,7 @@ test.describe('Bewegung und Chrome', () => {
     );
     expect(await page.locator('[data-enter="wait"]').count()).toBe(0);
     // Auftritte gab es wirklich (auch die Bilder), und jeder endet spätestens nach dem längsten
-    // Plan: Bild-Enthüllung 1200 ms plus höchstens drei Versätze von 70 ms.
+    // Plan: 1200 ms (Linie im Sucher 1120 ms, Bilder 800 ms) plus höchstens drei Versätze von 70 ms.
     expect(seen.map(({ name }) => name)).toContain('unveil');
     for (const { name, end } of seen) expect(end, name).toBeLessThanOrEqual(1200 + 3 * 70);
   });
@@ -586,6 +622,81 @@ test.describe('Bewegung und Chrome', () => {
       expect(await page.locator('[data-enter="wait"]').count(), `bei ${y} px`).toBe(0);
       expect(await page.locator('.ln-mask').count(), `bei ${y} px`).toBe(0);
     }
+  });
+
+  test('Anhalten und Fortsetzen: Der Auftakt spielt nicht weiter', async ({ page }) => {
+    await page.goto(`${PROD}/`);
+    // Zehnmal langsamer: So läuft der Auftakt sicher noch, wenn der Schalter erscheint.
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Animation.enable');
+    await cdp.send('Animation.setPlaybackRate', { playbackRate: 0.1 });
+    const hero = page.locator('[data-hero]');
+    const running = () =>
+      hero.evaluate((root) =>
+        root
+          .getAnimations({ subtree: true })
+          .filter((animation) => animation.playState === 'running')
+          .map((animation) => (animation as CSSAnimation).animationName),
+      );
+    const toggle = page.locator('[data-motion-toggle]');
+    await expect(toggle).toBeVisible();
+    expect((await running()).length, 'Der Auftakt läuft noch').toBeGreaterThan(0);
+
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'on');
+    await nextFrames(page);
+    // Nach dem Fortsetzen steht der Hero fertig da und baut sich nicht nochmals auf.
+    expect(await running()).toEqual([]);
+    const state = await hero.evaluate((root) => ({
+      photo: getComputedStyle(root.querySelector('.hero-photo')!).clipPath,
+      lines: [...root.querySelectorAll('.mask-line')].map(
+        (line) => getComputedStyle(line).transform,
+      ),
+      actions: getComputedStyle(root.querySelector('.hero-actions')!).opacity,
+    }));
+    expect(state.photo).toBe('none');
+    for (const transform of state.lines) expect(transform).toBe('none');
+    expect(state.actions).toBe('1');
+  });
+
+  test('Anhalten und Fortsetzen: Fertige Bilder öffnen sich nicht nochmals', async ({ page }) => {
+    await page.goto(`${PROD}/`);
+    await layOutAll(page);
+    await page.mouse.wheel(0, 200);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    await nextFrames(page);
+    // Ein Bild, das noch wartet, ins Bild holen und seinen Auftritt ganz abwarten.
+    const media = await page.locator('.enter-unveil[data-enter="wait"]').first().elementHandle();
+    expect(media).not.toBeNull();
+    await media!.evaluate((element) =>
+      window.scrollTo(0, element.getBoundingClientRect().top + window.scrollY - 200),
+    );
+    await page.waitForFunction(
+      (element) =>
+        (element as HTMLElement).dataset.enter === 'in' &&
+        element.getAnimations({ subtree: true }).every((a) => a.playState !== 'running'),
+      media!,
+      { timeout: 5_000 },
+    );
+
+    const toggle = page.locator('[data-motion-toggle]');
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'on');
+    await nextFrames(page);
+    const after = await media!.evaluate((element) => ({
+      running: element
+        .getAnimations({ subtree: true })
+        .filter((animation) => animation.playState === 'running').length,
+      clip: getComputedStyle(element).clipPath,
+    }));
+    expect(after.running).toBe(0);
+    expect(after.clip).toBe('none');
   });
 
   test('Cookie-Hinweis öffnet und schliesst sich', async ({ page }) => {

@@ -495,9 +495,11 @@
   /* ---------- Bild-Auftritt ---------- */
 
   /*
-   * Ein Bild öffnet sich beim Hereinscrollen vom unteren Rand nach oben und setzt sich dabei aus
-   * einem leichten Zoom (reveal.ts setzt data-enter). Kommen mehrere zusammen ins Bild, folgen sie
-   * einander im Abstand von --stagger: reveal.ts nummeriert sie mit --enter-i.
+   * Ein Bild öffnet sich beim Hereinscrollen vom unteren Rand nach oben (reveal.ts setzt
+   * data-enter). Kommen mehrere zusammen ins Bild, folgen sie einander im Abstand von --stagger:
+   * reveal.ts nummeriert sie mit --enter-i.
+   * Mit Maus setzt sich das Bild dabei zusätzlich aus einem leichten Zoom. Auf Touch-Geräten
+   * nicht: Dort scrollt der Finger die Seite, und jede weitere Ebene kostete gemessen Bilder.
    * Ohne Skript, bei reduzierter Bewegung und im Druck steht das Bild einfach da.
    */
   .enter-unveil[data-enter='wait'] {
@@ -505,13 +507,15 @@
   }
 
   .enter-unveil[data-enter='in'] {
-    animation: unveil var(--dur-5) var(--ease-expo) calc(var(--enter-i, 0) * var(--stagger))
+    animation: unveil var(--dur-4) var(--ease-expo) calc(var(--enter-i, 0) * var(--stagger))
       backwards;
   }
 
-  .enter-unveil[data-enter='in'] img {
-    animation: unveil-settle var(--dur-5) var(--ease-expo) calc(var(--enter-i, 0) * var(--stagger))
-      backwards;
+  @media (hover: hover) and (pointer: fine) {
+    .enter-unveil[data-enter='in'] img {
+      animation: unveil-settle var(--dur-4) var(--ease-expo)
+        calc(var(--enter-i, 0) * var(--stagger)) backwards;
+    }
   }
 
   /* Mit Ziel: Von einer Form zu «none» springt clip-path, statt zu gleiten. */

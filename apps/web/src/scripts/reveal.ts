@@ -146,10 +146,16 @@ function initEntrances(): { resolveAll(): void } {
   elements.forEach((element) => observer.observe(element));
 
   return {
-    /** Alles, was noch wartet, steht sofort da; beobachtet wird nichts mehr. */
+    /**
+     * Alles, was noch wartet, steht sofort da; beobachtet wird nichts mehr. Auch was schon
+     * aufgetreten ist, verliert seinen Auftritt: Sonst fänden die Regeln in components.css nach
+     * dem Fortsetzen wieder ihr `in` und spielten ihn ein zweites Mal.
+     */
     resolveAll() {
       observer.disconnect();
-      for (const element of document.querySelectorAll<HTMLElement>('main [data-enter="wait"]')) {
+      for (const element of document.querySelectorAll<HTMLElement>(
+        'main [data-enter="wait"], main [data-enter="in"]',
+      )) {
         element.dataset.enter = '';
       }
     },
@@ -164,8 +170,9 @@ function initEntrances(): { resolveAll(): void } {
 function placeInRow(element: HTMLElement, index: number): void {
   if (index === 0) return;
   element.style.setProperty('--enter-i', String(index));
-  const clear = (event: Event) => {
-    if (event.target !== element) return;
+  const clear = (event: AnimationEvent) => {
+    // Auch Animationen der eigenen Pseudo-Elemente (etwa die Linie im Sucher) melden sich hier.
+    if (event.target !== element || event.pseudoElement !== '') return;
     element.style.removeProperty('--enter-i');
     if (element.style.length === 0) element.removeAttribute('style');
     element.removeEventListener('animationend', clear);

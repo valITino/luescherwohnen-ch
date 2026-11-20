@@ -14,9 +14,9 @@ const CAPSULE_ON = 96;
 const CAPSULE_OFF = 40;
 /**
  * Spätestens dann wechselt die Form, falls kein transitionend kommt (etwa wenn nichts sichtbar
- * war, das abtauchen konnte): das Abtauchen in Header.astro (`--dur-2`) plus etwas Luft.
+ * war, das abtauchen konnte): das Abtauchen in Header.astro (`--dur-1`) plus etwas Luft.
  */
-const MORPH_FALLBACK_MS = DUR.d2 * 1000 + 50;
+const MORPH_FALLBACK_MS = DUR.d1 * 1000 + 50;
 
 export function initHeader(lock: () => ScrollLock | null): void {
   const header = document.querySelector<HTMLElement>('[data-header]');
@@ -52,7 +52,9 @@ export function initHeader(lock: () => ScrollLock | null): void {
     if (next === scrolled) return;
     scrolled = next;
     window.clearTimeout(morph);
-    if (!animate || !motionAllowed()) {
+    // Bei einem Sprung (Direktlink, wiederhergestellte Position, home.ts) kommt man an, statt zu
+    // scrollen: Die Form steht dann sofort, statt sich über dem neuen Inhalt umzubauen.
+    if (!animate || !motionAllowed() || 'jump' in document.documentElement.dataset) {
       header.classList.remove('is-morphing');
       header.classList.toggle('is-scrolled', scrolled);
       return;

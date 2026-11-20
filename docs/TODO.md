@@ -67,9 +67,20 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
 - [ ] Repository-Einstellungen (nur mit Admin-Recht, von hier nicht prüfbar): Pages-Quelle
       «GitHub Actions»; Environment `github-pages` nur für `main` (`docs/DEPLOY.md`, Abschnitt 1).
 - [ ] Freigabe des Designs durch den Auftraggeber.
+- [ ] Bewegung auf einem echten Mittelklasse-Android messen (Chrome DevTools, Leistung): Menü-
+      Vorhang und Bild-Enthüllung beim Wischen. In der Cloud-Umgebung ohne Grafikchip lief der
+      Vorhang mit halber Bildrate; das sagt über echte Geräte wenig aus.
+- [ ] Kontrast des Knopfs «Beratung anfragen» in der Kapsel von Hand prüfen: axe kann ihn wegen
+      der Ebene für den Hover-Schein (`::after`) nicht mehr berechnen. Die Farben sind unverändert.
 
 ## Später
 
 - [ ] Shop (Phase 5, separater Auftrag mit eigenem Threat Model; AGB im Bestand vorhanden).
 - [ ] Hero-Fotos in höherer Auflösung (keine Datei im Bestand ist breiter als 1920 px).
 - [ ] Fotos der Ausstellung an der Weiten Gasse 9 (es gibt nur ein Innenbild).
+- [ ] «Über uns»: Die Überschrift bricht während ihres Auftritts anders um, weil SplitText den
+      weichen Trennstrich nicht kennt, und springt danach zurück (Bestand vor der Bewegungsarbeit).
+- [ ] Ohne JavaScript ist die Leiste beim Scrollen durchsichtig, und der Menü-Knopf auf dem Handy
+      tut nichts (Bestand). Knopf erst mit Skript zeigen oder auf eine Linkliste verweisen.
+- [ ] Bewegungswächter (`scripts/motion-guard.test.ts`) als Positivliste statt Sperrliste.
+- [ ] Der Bewegungsschalter verschiebt sich bei jedem Header-Wechsel minimal (CLS 0,0009, Bestand).

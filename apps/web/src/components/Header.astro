@@ -176,31 +176,25 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
    * Beim Seitenwechsel (View Transition, global.css) steht die Leiste still, statt mit der Seite
    * überzublenden. Der Name ist pro Seite einmalig; bei reduzierter Bewegung gibt es keinen
    * Übergang und darum auch keinen Namen.
+   * Nur die Leiste oben trägt ihn, nie die Kapsel: Der Browser würde die Kapsel sonst beim Wechsel
+   * auf die Grösse der Leiste ziehen (Logo und Knöpfe verzerrt). Und ein Element mit Namen grenzt
+   * die Unschärfe seiner Kinder ab: Das Milchglas der Kapsel (::before) bliebe klar.
    */
   @media (prefers-reduced-motion: no-preference) {
-    .bar {
+    .site-header:not(:global(.is-scrolled)) .bar {
       view-transition-name: site-bar;
     }
   }
 
   /*
    * Formwechsel Leiste ↔ Kapsel in zwei Phasen (header.ts): Erst tauchen die Teile kurz nach oben
-   * ab (--dur-2, beschleunigend), dann wechselt die Form, und die Teile kommen gestaffelt wieder
-   * (--dur-3, bremsend). In der Kapsel faltet sich zuerst die Fläche auf, der Inhalt folgt einen
-   * Takt später: das Logo nach 80 ms, die Knöpfe ab 120 ms im Abstand --stagger-tight. Zurück zur
-   * Leiste gibt es keine Fläche, die diesen Takt überbrückt: Dort beginnt dieselbe Folge sofort,
-   * sonst stünde der Header einen Moment ganz leer.
+   * ab (--dur-1, weich bremsend: Die Antwort ist schon im ersten Bild zu sehen), dann wechselt die
+   * Form, und die Teile kommen sofort gestaffelt wieder (--dur-3, bremsend): das Logo zuerst, die
+   * Navigation 20 ms, die Knöpfe ab 20 ms im Abstand --stagger-tight. In der Kapsel faltet sich
+   * gleichzeitig die Fläche auf. Nach gut einer halben Sekunde ruht alles.
    * Die Leiste selbst bleibt sichtbar; Breite und Abstände springen nur, solange alles abgetaucht
    * ist. Telefon und Menü-Knopf führen dieselben Übergänge neben ihren Farben (siehe unten).
    */
-  .bar {
-    --bar-lead: 0ms;
-  }
-
-  .site-header:global(.is-scrolled) .bar {
-    --bar-lead: 80ms;
-  }
-
   .bar :global(.bar-logo),
   .bar-nav,
   .bar-cta-slot {
@@ -209,16 +203,12 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
       transform var(--dur-3) var(--ease-out) var(--bar-delay, 0s);
   }
 
-  .bar :global(.bar-logo) {
-    --bar-delay: var(--bar-lead);
-  }
-
   .bar-nav {
-    --bar-delay: calc(var(--bar-lead) + 40ms);
+    --bar-delay: 20ms;
   }
 
   .bar-actions > * {
-    --bar-delay: calc(var(--bar-lead) + 40ms + var(--bar-i, 0) * var(--stagger-tight));
+    --bar-delay: calc(20ms + var(--bar-i, 0) * var(--stagger-tight));
   }
 
   .bar-actions > :nth-child(2) {
@@ -234,14 +224,24 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
   .site-header:global(.is-morphing) .bar-actions > * {
     opacity: 0;
     transform: translateY(-0.25rem);
-    transition-duration: var(--dur-2);
-    transition-timing-function: var(--ease-in);
+    transition-duration: var(--dur-1);
+    transition-timing-function: var(--ease-out);
     transition-delay: 0s;
   }
 
   /* Die Navigation ist über transform zentriert: Das Abtauchen kommt dazu. */
   .site-header:global(.is-morphing) .bar-nav {
     transform: translateX(-50%) translateY(-0.25rem);
+  }
+
+  /*
+   * Was den Tastaturfokus trägt, taucht nicht ab: Fokusring und Ziel bleiben während des ganzen
+   * Wechsels sichtbar (WCAG 2.4.7). Die Navigation fehlt hier, sie gibt es in der Kapsel nicht.
+   */
+  .site-header:global(.is-morphing) :global(.bar-logo):focus-visible,
+  .site-header:global(.is-morphing) .bar-actions > :is(:focus-visible, :has(:focus-visible)) {
+    opacity: 1;
+    transform: none;
   }
 
   /*
@@ -430,18 +430,18 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     -webkit-backdrop-filter: blur(16px) saturate(1.4);
     backdrop-filter: blur(16px) saturate(1.4);
     transition:
-      clip-path 520ms var(--ease-expo),
-      opacity var(--dur-2) var(--ease-out);
+      clip-path 360ms var(--ease-expo),
+      opacity var(--dur-1) var(--ease-out);
   }
 
   .site-header:global(.is-scrolled) .bar::after {
     box-shadow: 0 0.75rem 2rem rgb(var(--charcoal-rgb) / 0.1);
-    transition: opacity var(--dur-3) var(--ease-out) 120ms;
+    transition: opacity var(--dur-3) var(--ease-out) 60ms;
   }
 
   @starting-style {
     .site-header:global(.is-scrolled) .bar::before {
-      clip-path: inset(0 22% round var(--r-pill));
+      clip-path: inset(0 10% round var(--r-pill));
       opacity: 0;
     }
 
@@ -452,15 +452,15 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
 
   /* Zurück zur Leiste: Die Kapsel faltet sich zusammen, während ihr Inhalt abtaucht. */
   .site-header:global(.is-scrolled.is-morphing) .bar::before {
-    clip-path: inset(0 22% round var(--r-pill));
+    clip-path: inset(0 10% round var(--r-pill));
     opacity: 0;
-    transition-duration: var(--dur-2);
-    transition-timing-function: var(--ease-in);
+    transition-duration: var(--dur-1);
+    transition-timing-function: var(--ease-out);
   }
 
   .site-header:global(.is-scrolled.is-morphing) .bar::after {
     opacity: 0;
-    transition: opacity var(--dur-2) var(--ease-in);
+    transition: opacity var(--dur-1) var(--ease-out);
   }
 
   .site-header:global(.is-scrolled) .bar-nav {
@@ -516,13 +516,14 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
       radial-gradient(40rem 30rem at 0% 100%, rgb(var(--sage-rgb) / 0.9), transparent 70%);
     clip-path: inset(0);
     transition:
-      clip-path var(--dur-3) var(--ease-in-out),
+      clip-path var(--dur-3) var(--ease-out),
       display var(--dur-3) allow-discrete;
   }
 
   /*
    * Vorhang: Das Menü rollt vom Header nach unten aus (560 ms, weich bremsend) und fährt beim
-   * Schliessen schneller nach oben zurück (--dur-3). Reines CSS am hidden-Attribut: Dank
+   * Schliessen schneller nach oben zurück (--dur-3, ebenfalls bremsend: Schon im ersten Bild
+   * bewegt sich etwas, ein Fingertipp bekommt sofort Antwort). Reines CSS am hidden-Attribut: Dank
    * allow-discrete wird display erst am Ende des Schliessens zu none, @starting-style gibt dem
    * Öffnen seinen Anfang. Browser ohne allow-discrete schalten wie bisher sofort um.
    */
@@ -589,13 +590,13 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
   }
 
   /*
-   * Hinter dem Vorhang steigen die Wörter Zeile für Zeile aus ihrer Maske (ab 140 ms im Abstand
-   * --stagger-tight), die runden Pfeile folgen je 60 ms später, der Kontaktblock setzt sich
-   * zuletzt. Die Animationen beginnen bei jedem Öffnen neu; beim Schliessen trägt der Vorhang
-   * alles allein.
+   * Hinter dem Vorhang steigen die Wörter Zeile für Zeile aus ihrer Maske (ab 70 ms im Abstand
+   * --stagger-tight, während der Vorhang noch ausrollt), die runden Pfeile folgen je 40 ms später,
+   * der Kontaktblock setzt sich zuletzt. Die Animationen beginnen bei jedem Öffnen neu; beim
+   * Schliessen trägt der Vorhang alles allein.
    */
   .menu-links li {
-    --menu-delay: calc(140ms + var(--menu-i, 0) * var(--stagger-tight));
+    --menu-delay: calc(70ms + var(--menu-i, 0) * var(--stagger-tight));
   }
 
   .menu-links li:nth-child(2) {
@@ -623,11 +624,11 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
   }
 
   .menu:not([hidden]) .orb {
-    animation: menu-orb var(--dur-3) var(--ease-out) calc(var(--menu-delay) + 60ms) backwards;
+    animation: menu-orb var(--dur-3) var(--ease-out) calc(var(--menu-delay) + 40ms) backwards;
   }
 
   .menu:not([hidden]) .menu-foot {
-    animation: menu-foot var(--dur-4) var(--ease-out) 320ms backwards;
+    animation: menu-foot 560ms var(--ease-out) 200ms backwards;
   }
 
   /*
@@ -664,6 +665,11 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
   :global(html[data-motion='off']) .menu:not([hidden]) .menu-foot {
     animation-duration: 0s;
     animation-delay: 0s;
+  }
+
+  /* Ein Fingertipp färbt das Wort sofort: Die Wahl ist angekommen, bevor der Vorhang hochfährt. */
+  .menu-links a:active .menu-link-label {
+    color: var(--leaf-deep);
   }
 
   @media (hover: hover) {
