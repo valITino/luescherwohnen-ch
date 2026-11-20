@@ -1,0 +1,61 @@
+name: Container (wiederverwendbar)
+
+# Dockerfile-Lint, Build ohne Push, gehärteter Smoke-Test (Header, 404, Methoden), SBOM und
+# Image-Scan. Es wird nichts veröffentlicht: Docker Hub (Namensraum, Tags, Freigabe-Branches)
+# ist noch nicht entschieden (D-008). Aufgerufen vom Dispatcher in ci.yml.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    name: Lint, Build, Smoke-Test, SBOM, Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Dockerfile-Lint (hadolint)
+        run: >-
+          docker run --rm -i
+          hadolint/hadolint:v2.14.0@sha256:27086352fd5e1907ea2b934eb1023f217c5ae087992eb59fde121dce9c9ff21e
+          < Dockerfile
+
+      - name: Image bauen (ohne Push)
+        run: docker build --tag luescherwohnen:ci --label "org.opencontainers.image.revision=${GITHUB_SHA}" .
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      # Startet den Container gehärtet (nur lesbar, ohne Capabilities, ohne root) und prüft ihn.
+      - name: Smoke-Test (Header, Adressen, Methoden)
+        run: node scripts/check-headers.mjs --image luescherwohnen:ci
+
+      - name: Image exportieren
+        run: docker save luescherwohnen:ci -o image.tar
+
+      - name: SBOM (CycloneDX, Syft)
+        run: >-
+          docker run --rm -v "$PWD":/scan
+          anchore/syft:v1.57.2@sha256:e97e20b6e6d1699c60296b66ab337941724f9bd06ac279d893eda89601fc4b2a
+          /scan/image.tar -o cyclonedx-json=/scan/sbom.cdx.json -q
+
+      - name: Schwachstellen-Scan (Trivy, bricht bei Critical und High ab)
+        run: >-
+          docker run --rm -v "$PWD":/scan
+          aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
+          image --input /scan/image.tar --scanners vuln,secret
+          --severity CRITICAL,HIGH --ignore-unfixed --exit-code 1 --no-progress
+
+      - name: SBOM sichern
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom
+          path: sbom.cdx.json
+          retention-days: 30
