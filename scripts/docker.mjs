@@ -22,37 +22,59 @@ const tag = flag('--tag', 'luescherwohnen:local');
 const name = flag('--name', 'luescher-web');
 const port = flag('--port', '8080');
 
-const docker = (dockerArgs) => {
-  console.log(`$ docker ${dockerArgs.join(' ')}`);
-  execFileSync('docker', dockerArgs, { cwd: root, stdio: 'inherit' });
+/**
+ * Führt docker aus und zeigt den Aufruf. `shown` ersetzt Werte aus der Umgebung durch Platzhalter:
+ * Eine Proxy-Adresse kann Zugangsdaten enthalten und gehört nicht ins Protokoll.
+ * @param {string[]} dockerArgs
+ * @param {{ shown?: string[], env?: NodeJS.ProcessEnv }} [options]
+ */
+const docker = (dockerArgs, { shown = dockerArgs, env = process.env } = {}) => {
+  console.log(`$ docker ${shown.join(' ')}`);
+  execFileSync('docker', dockerArgs, { cwd: root, stdio: 'inherit', env });
 };
 
 if (command === 'build') {
   const proxy = process.env.HTTPS_PROXY || process.env.https_proxy || '';
+  const noProxy = process.env.NO_PROXY || process.env.no_proxy || '';
   const ca = [process.env.NODE_EXTRA_CA_CERTS, process.env.SSL_CERT_FILE].find(
     (file) => file && existsSync(file),
   );
   const preview = args.includes('--preview');
   const buildArgs = ['build', '--tag', tag, '--progress', 'plain'];
+  const shown = [...buildArgs];
+  const env = { ...process.env };
   if (proxy) {
-    // Der Proxy lauscht auf 127.0.0.1 des Hosts: nur im Host-Netz erreichbar.
-    buildArgs.push('--network', 'host', '--build-arg', `HTTPS_PROXY=${proxy}`);
-    const noProxy = process.env.NO_PROXY || process.env.no_proxy;
-    if (noProxy) buildArgs.push('--build-arg', `NO_PROXY=${noProxy}`);
+    // Der Proxy lauscht auf 127.0.0.1 des Hosts: nur im Host-Netz erreichbar. `--build-arg NAME`
+    // ohne Wert übernimmt docker aus seiner Umgebung: So steht die Adresse weder im Protokoll
+    // noch in der Prozessliste.
+    env.HTTPS_PROXY = proxy;
+    buildArgs.push('--network', 'host', '--build-arg', 'HTTPS_PROXY');
+    shown.push('--network', 'host', '--build-arg', 'HTTPS_PROXY');
+    if (noProxy) {
+      env.NO_PROXY = noProxy;
+      buildArgs.push('--build-arg', 'NO_PROXY');
+      shown.push('--build-arg', 'NO_PROXY');
+    }
   }
-  if (ca) buildArgs.push('--secret', `id=ca,src=${ca}`);
+  if (ca) {
+    buildArgs.push('--secret', `id=ca,src=${ca}`);
+    shown.push('--secret', 'id=ca,src=<CA-Zertifikat>');
+  }
   if (preview) {
-    buildArgs.push(
+    const previewArgs = [
       '--build-arg',
       `PUBLIC_WEB_URL=http://localhost:${port}`,
       '--build-arg',
       'PUBLIC_CONTACT_ENDPOINT=mock',
       '--build-arg',
       'PUBLIC_PREVIEW=true',
-    );
+    ];
+    buildArgs.push(...previewArgs);
+    shown.push(...previewArgs);
   }
   buildArgs.push('.');
-  docker(buildArgs);
+  shown.push('.');
+  docker(buildArgs, { shown, env });
 } else if (command === 'run') {
   docker([
     'run',

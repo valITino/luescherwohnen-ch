@@ -20,6 +20,9 @@ export interface Sites {
   verification: { google: string; bing: string };
 }
 
+/** Entfernt Schrägstriche am Ende (linear, ohne regulären Ausdruck). */
+export declare function stripTrailingSlashes(value: string): string;
+
 export declare function resolveContact(value: unknown): ContactTarget;
 
 export declare function resolveSites(

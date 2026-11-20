@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { cspDirectives, nginxHeaders, securityHeaders } from '../src/security.mjs';
-import { joinPath, resolveContact, resolveSites, splitSiteUrl } from '../src/sites.mjs';
+import {
+  joinPath,
+  resolveContact,
+  resolveSites,
+  splitSiteUrl,
+  stripTrailingSlashes,
+} from '../src/sites.mjs';
 
 describe('Adressen und Basis-Pfad', () => {
   it('zerlegt GitHub-Pages-Adressen in site und base', () => {
@@ -12,6 +18,21 @@ describe('Adressen und Basis-Pfad', () => {
       site: 'https://luescherwohnen.ch',
       base: '',
     });
+  });
+
+  it('entfernt Schrägstriche am Ende, auch viele, in linearer Zeit', () => {
+    expect(stripTrailingSlashes('https://luescherwohnen.ch///')).toBe('https://luescherwohnen.ch');
+    expect(stripTrailingSlashes('/luescherwohnen-ch/')).toBe('/luescherwohnen-ch');
+    expect(stripTrailingSlashes('/')).toBe('');
+    expect(stripTrailingSlashes('')).toBe('');
+    expect(resolveSites({ PUBLIC_WEB_URL: ' https://example.ch// ' }).web).toBe(
+      'https://example.ch',
+    );
+    // Viele Schrägstriche mitten im Text: Der frühere reguläre Ausdruck brauchte dafür Sekunden.
+    const hostile = `x${'/'.repeat(200_000)}x`;
+    const start = performance.now();
+    expect(stripTrailingSlashes(hostile)).toBe(hostile);
+    expect(performance.now() - start).toBeLessThan(100);
   });
 
   it('baut interne Links mit Basis-Pfad', () => {

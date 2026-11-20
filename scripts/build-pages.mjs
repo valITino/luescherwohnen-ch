@@ -11,17 +11,18 @@ import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { stripTrailingSlashes } from '../packages/config/src/sites.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const out = resolve(root, 'dist-pages');
 
-const raw = (process.env.PAGES_URL || 'https://valitino.github.io/luescherwohnen-ch').replace(
-  /\/+$/,
-  '',
+const raw = stripTrailingSlashes(
+  process.env.PAGES_URL || 'https://valitino.github.io/luescherwohnen-ch',
 );
 const parsed = new URL(raw);
+const basePath = stripTrailingSlashes(parsed.pathname);
 // Hostnamen sind klein geschrieben, der Pfad behält die Schreibweise des Repos.
-const pagesUrl = `${parsed.protocol}//${parsed.host.toLowerCase()}${parsed.pathname.replace(/\/+$/, '')}`;
+const pagesUrl = `${parsed.protocol}//${parsed.host.toLowerCase()}${basePath}`;
 
 const env = {
   ...process.env,
@@ -45,7 +46,5 @@ if (!existsSync(resolve(out, 'index.html'))) {
   throw new Error('dist-pages/index.html fehlt: Build von apps/web prüfen.');
 }
 console.log(`\nFertig: ${out}`);
-console.log(
-  `Lokal ansehen: node scripts/serve.mjs dist-pages --base ${parsed.pathname.replace(/\/+$/, '') || '/'}`,
-);
+console.log(`Lokal ansehen: node scripts/serve.mjs dist-pages --base ${basePath || '/'}`);
 console.log('Achtung: apps/web/dist ist jetzt der Vorschau-Build. Vor Tests wieder «pnpm build».');

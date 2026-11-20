@@ -10,6 +10,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { stripTrailingSlashes } from '../packages/config/src/sites.mjs';
 import { createGzip } from 'node:zlib';
 
 const TYPES = {
@@ -38,7 +39,7 @@ const COMPRESSIBLE = new Set(['.html', '.css', '.js', '.mjs', '.json', '.webmani
  */
 export function serve({ dir, port = 4321, base = '', quiet = false, production = false }) {
   const root = resolve(dir);
-  const prefix = base.replace(/\/+$/, '');
+  const prefix = stripTrailingSlashes(base);
 
   const find = (pathname) => {
     const safe = normalize(decodeURIComponent(pathname)).replace(/^(\.\.[/\\])+/, '');

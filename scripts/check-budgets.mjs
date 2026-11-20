@@ -64,13 +64,14 @@ for (const site of SITES) {
   let inlineBytes = 0;
   const queue = [];
 
-  for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
+  // Gross-/Kleinschreibung und Attribute im End-Tag egal: Kein Skript darf am Budget vorbei.
+  for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi)) {
     const [, attrs, body] = match;
-    const src = /\bsrc=["']([^"']+)["']/.exec(attrs)?.[1];
+    const src = /\bsrc=["']([^"']+)["']/i.exec(attrs)?.[1];
     if (src) {
       if (/^https?:\/\//.test(src)) continue; // Dritte (Turnstile) zählen nicht zum Budget
       queue.push(toFile(dist, src));
-    } else if (!/type=["']application\/(ld\+)?json["']/.test(attrs) && body.trim()) {
+    } else if (!/\btype=["']application\/(ld\+)?json["']/i.test(attrs) && body.trim()) {
       inlineBytes += gzipSize(body);
     }
   }

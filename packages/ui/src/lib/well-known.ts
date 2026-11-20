@@ -2,6 +2,7 @@
  * Inhalte für /.well-known/security.txt (RFC 9116), /humans.txt und /robots.txt (RFC 9309).
  * `Expires` wird beim Build auf heute + 1 Jahr gesetzt: mindestens einmal pro Jahr neu bauen.
  */
+import { stripTrailingSlashes } from '@luescher/config/sites';
 
 /**
  * Suchmaschinen, die «noindex» beachten. Auf Sites, die nirgends erscheinen sollen, dürfen sie
@@ -73,7 +74,7 @@ export function securityTxt(origin: string, contact: string, now: Date = new Dat
   const expires = new Date(now);
   expires.setUTCFullYear(expires.getUTCFullYear() + 1);
   expires.setUTCHours(0, 0, 0, 0);
-  const canonical = new URL('.well-known/security.txt', `${origin.replace(/\/+$/, '')}/`).href;
+  const canonical = new URL('.well-known/security.txt', `${stripTrailingSlashes(origin)}/`).href;
   return [
     `Contact: mailto:${contact}`,
     `Expires: ${expires.toISOString().replace('.000Z', 'Z')}`,

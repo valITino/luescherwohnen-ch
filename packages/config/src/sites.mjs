@@ -8,7 +8,18 @@
 export const PROD_URL = 'https://luescherwohnen.ch';
 export const DEV_URL = 'http://localhost:4321';
 
-const trim = (value) => String(value).trim().replace(/\/+$/, '');
+/**
+ * Entfernt Schrägstriche am Ende. Linear statt `/\/+$/`: Der reguläre Ausdruck braucht bei vielen
+ * Schrägstrichen mitten im Text quadratische Zeit (CodeQL js/polynomial-redos).
+ * @param {string} value
+ */
+export function stripTrailingSlashes(value) {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === '/') end -= 1;
+  return value.slice(0, end);
+}
+
+const trim = (value) => stripTrailingSlashes(String(value).trim());
 /** Nur Zeichen, die in solchen Codes vorkommen: So landet nie fremdes Markup im <head>. */
 const verificationCode = (value) => {
   const code = String(value ?? '').trim();
@@ -70,7 +81,7 @@ export function resolveSites(env, options = {}) {
  */
 export function splitSiteUrl(url) {
   const parsed = new URL(url);
-  const base = parsed.pathname.replace(/\/+$/, '');
+  const base = stripTrailingSlashes(parsed.pathname);
   return { site: parsed.origin, base };
 }
 
