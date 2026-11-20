@@ -162,6 +162,42 @@ test.describe('Navigation', () => {
     await expect(toggle).toBeFocused();
   });
 
+  test('Menü bei reduzierter Bewegung: sofort offen und zu', async ({ browser }, testInfo) => {
+    // Schmal, damit der Menü-Knopf auch im Desktop-Projekt ohne Scrollen da ist
+    const context = await browser.newContext({
+      ...testInfo.project.use,
+      viewport: { width: 390, height: 844 },
+      reducedMotion: 'reduce',
+    });
+    const page = await context.newPage();
+    await page.goto(`${PROD}/impressum`);
+    const menu = page.locator('#mobile-menu');
+    await page.locator('[data-menu-toggle]').click();
+    // Direkt nach dem Klick: Vorhang ganz offen, kein Auftritt mit Dauer (base.css kürzt alle).
+    const state = await menu.evaluate((element) => ({
+      clip: getComputedStyle(element).clipPath,
+      waiting: element
+        .getAnimations({ subtree: true })
+        .filter(
+          (animation) =>
+            animation.playState !== 'finished' &&
+            Number(animation.effect?.getComputedTiming().endTime) >= 1,
+        )
+        .map((animation) =>
+          'animationName' in animation
+            ? (animation as CSSAnimation).animationName
+            : (animation as CSSTransition).transitionProperty,
+        ),
+    }));
+    expect(state).toEqual({ clip: 'inset(0px)', waiting: [] });
+    await expect(page.locator('.menu-links a').first()).toBeFocused();
+    await page.keyboard.press('Escape');
+    // Kein Vorhang, der noch hochfährt: Das Menü ist im nächsten Bild weg.
+    await expect(menu).toBeHidden({ timeout: 100 });
+    await expect(page.locator('[data-menu-toggle]')).toBeFocused();
+    await context.close();
+  });
+
   test('Menüpunkt springt zur Sektion und schliesst das Menü', async ({ page }) => {
     await page.goto(`${PROD}/`);
     await page.mouse.wheel(0, 600);
@@ -365,6 +401,50 @@ test.describe('Bewegung und Chrome', () => {
         .map((animation) => (animation as CSSAnimation).animationName),
     );
     expect(running).toEqual([]);
+  });
+
+  test('Kapsel: nach dem Wechsel voll sichtbar', async ({ page }) => {
+    await page.goto(`${PROD}/`);
+    const header = page.locator('[data-header]');
+    // Festhalten, dass die Leiste wirklich den animierten Weg nimmt (Abtauchen, dann Wechsel).
+    await header.evaluate((element) => {
+      new MutationObserver(() => {
+        if (element.classList.contains('is-morphing')) element.dataset.testMorphed = '';
+      }).observe(element, { attributes: true, attributeFilter: ['class'] });
+    });
+    await page.mouse.wheel(0, 600);
+    await expect(header).toHaveClass(/is-scrolled/);
+    await expect(header).toHaveAttribute('data-test-morphed', '');
+    // Gewartet wird auf den echten Zustand, nicht auf eine feste Zeit: Der Wechsel ist fertig,
+    // wenn an Leiste und Fläche nichts mehr läuft (nach Plan gut 0,6 s, hier höchstens 3 s).
+    await page.waitForFunction(
+      () => {
+        const element = document.querySelector('[data-header]')!;
+        return (
+          !element.matches('.is-morphing, .is-swapping') &&
+          element.querySelector('.bar')!.getAnimations({ subtree: true }).length === 0
+        );
+      },
+      null,
+      { timeout: 3000 },
+    );
+    const state = await header.locator('.bar').evaluate((bar) => {
+      const shown = (element: Element) => getComputedStyle(element).display !== 'none';
+      const parts = [...bar.children, ...bar.querySelector('.bar-actions')!.children].filter(shown);
+      return {
+        bar: getComputedStyle(bar).opacity,
+        parts: parts.map((element) => getComputedStyle(element).opacity),
+        surface: getComputedStyle(bar, '::before').clipPath,
+        surfaceOpacity: getComputedStyle(bar, '::before').opacity,
+        shadowOpacity: getComputedStyle(bar, '::after').opacity,
+      };
+    });
+    expect(state.bar).toBe('1');
+    expect(state.parts.length).toBeGreaterThan(1);
+    for (const opacity of state.parts) expect(opacity).toBe('1');
+    expect(state.surface).toMatch(/inset\(0px round/);
+    expect(state.surfaceOpacity).toBe('1');
+    expect(state.shadowOpacity).toBe('1');
   });
 
   test('Auftritte beim Hereinscrollen: am Ende wartet nichts mehr', async ({ page }) => {

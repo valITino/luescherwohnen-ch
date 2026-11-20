@@ -4,6 +4,9 @@
  *   oben:     Logo links, Navigation in der Mitte, CTA rechts (Mobile: Logo, Anrufen und «Menü»)
  *   gescrollt: schwebende Kapsel in der Mitte mit Logo, Anrufen, CTA und rundem Menü-Knopf
  * Das Vollbild-Menü hält den Fokus, Esc schliesst, die Beschriftung wechselt auf «Schliessen».
+ * Bewegung: Die Leiste wird zur Kapsel, indem ihr Inhalt kurz abtaucht und die Glasfläche sich
+ * danach aus der Mitte auffaltet. Das Menü rollt wie ein Vorhang aus, die grossen Wörter steigen
+ * Zeile für Zeile aus ihrer Maske. Beides reines CSS, header.ts setzt nur Klassen und hidden.
  * Verhalten: src/scripts/header.ts
  */
 import Button from '@luescher/ui/components/Button.astro';
@@ -45,9 +48,12 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
       >
         <Icon name="phone" size={18} />
       </a>
-      <Button href={cta.href} size="sm" icon class="bar-cta">
-        {cta.label}
-      </Button>
+      {/* Eigene Hülle: Sie taucht beim Formwechsel ab, die Übergänge des Buttons bleiben unberührt. */}
+      <span class="bar-cta-slot">
+        <Button href={cta.href} size="sm" icon class="bar-cta">
+          {cta.label}
+        </Button>
+      </span>
       <button
         type="button"
         class="menu-toggle"
@@ -77,7 +83,9 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
                 <span class="secnum" aria-hidden="true">
                   {pad(index)}
                 </span>
-                <span class="menu-link-label">{item.label}</span>
+                <span class="menu-link-mask">
+                  <span class="menu-link-label">{item.label}</span>
+                </span>
                 <span class="orb" aria-hidden="true">
                   <Icon name="arrow-right" size={20} />
                 </span>
@@ -162,15 +170,76 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     border: 1px solid transparent;
     border-radius: var(--r-pill);
     transform: translateX(-50%);
-    transition:
-      opacity var(--dur-1) var(--ease),
-      transform var(--dur-1) var(--ease);
   }
 
-  /* Kurzes Abtauchen, während die Leiste ihre Form wechselt */
-  .site-header:global(.is-morphing) .bar {
+  /*
+   * Formwechsel Leiste ↔ Kapsel in zwei Phasen (header.ts): Erst tauchen die Teile kurz nach oben
+   * ab (--dur-2, beschleunigend), dann wechselt die Form, und die Teile kommen gestaffelt wieder
+   * (--dur-3, bremsend). In der Kapsel faltet sich zuerst die Fläche auf, der Inhalt folgt einen
+   * Takt später: das Logo nach 80 ms, die Knöpfe ab 120 ms im Abstand --stagger-tight. Zurück zur
+   * Leiste gibt es keine Fläche, die diesen Takt überbrückt: Dort beginnt dieselbe Folge sofort,
+   * sonst stünde der Header einen Moment ganz leer.
+   * Die Leiste selbst bleibt sichtbar; Breite und Abstände springen nur, solange alles abgetaucht
+   * ist. Telefon und Menü-Knopf führen dieselben Übergänge neben ihren Farben (siehe unten).
+   */
+  .bar {
+    --bar-lead: 0ms;
+  }
+
+  .site-header:global(.is-scrolled) .bar {
+    --bar-lead: 80ms;
+  }
+
+  .bar :global(.bar-logo),
+  .bar-nav,
+  .bar-cta-slot {
+    transition:
+      opacity var(--dur-3) var(--ease-out) var(--bar-delay, 0s),
+      transform var(--dur-3) var(--ease-out) var(--bar-delay, 0s);
+  }
+
+  .bar :global(.bar-logo) {
+    --bar-delay: var(--bar-lead);
+  }
+
+  .bar-nav {
+    --bar-delay: calc(var(--bar-lead) + 40ms);
+  }
+
+  .bar-actions > * {
+    --bar-delay: calc(var(--bar-lead) + 40ms + var(--bar-i, 0) * var(--stagger-tight));
+  }
+
+  .bar-actions > :nth-child(2) {
+    --bar-i: 1;
+  }
+
+  .bar-actions > :nth-child(3) {
+    --bar-i: 2;
+  }
+
+  .site-header:global(.is-morphing) :global(.bar-logo),
+  .site-header:global(.is-morphing) .bar-nav,
+  .site-header:global(.is-morphing) .bar-actions > * {
     opacity: 0;
-    transform: translateX(-50%) translateY(-0.5rem);
+    transform: translateY(-0.25rem);
+    transition-duration: var(--dur-2);
+    transition-timing-function: var(--ease-in);
+    transition-delay: 0s;
+  }
+
+  /* Die Navigation ist über transform zentriert: Das Abtauchen kommt dazu. */
+  .site-header:global(.is-morphing) .bar-nav {
+    transform: translateX(-50%) translateY(-0.25rem);
+  }
+
+  /*
+   * Im ersten Bild nach dem Wechsel ist die Leiste ganz verborgen (header.ts nimmt die Klasse ein
+   * Bild später weg). Zu sehen ist in diesem Moment ohnehin nichts, aber so zählt der Browser den
+   * Sprung von Breite und Lage nicht als Layoutverschiebung (CLS).
+   */
+  .site-header:global(.is-swapping) .bar {
+    opacity: 0;
   }
 
   /* ---------- Navigation (nur Desktop, nur oben) ---------- */
@@ -220,7 +289,9 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     color: var(--charcoal);
     transition:
       border-color var(--dur-2) var(--ease),
-      background-color var(--dur-2) var(--ease);
+      background-color var(--dur-2) var(--ease),
+      opacity var(--dur-3) var(--ease-out) var(--bar-delay, 0s),
+      transform var(--dur-3) var(--ease-out) var(--bar-delay, 0s);
   }
 
   .bar-phone:hover {
@@ -249,7 +320,7 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
   }
 
   /* Oben und schmal: Der CTA steht im Menü, in der Kapsel erscheint er wieder. */
-  .bar-actions :global(.bar-cta) {
+  .bar-cta-slot {
     display: none;
   }
 
@@ -271,7 +342,9 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     text-transform: uppercase;
     transition:
       border-color var(--dur-2) var(--ease),
-      background-color var(--dur-2) var(--ease);
+      background-color var(--dur-2) var(--ease),
+      opacity var(--dur-3) var(--ease-out) var(--bar-delay, 0s),
+      transform var(--dur-3) var(--ease-out) var(--bar-delay, 0s);
   }
 
   .menu-toggle:hover {
@@ -320,11 +393,63 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     max-width: calc(100% - 2 * var(--gutter));
     min-height: 0;
     padding: 0.375rem;
-    border-color: var(--hairline);
+  }
+
+  /*
+   * Die Fläche der Kapsel liegt auf eigenen Ebenen hinter dem Inhalt: ::before trägt Glas, Rand
+   * und Unschärfe und faltet sich nach dem Wechsel aus der Mitte seitlich auf (clip-path, weich
+   * bremsend). ::after trägt nur den Schatten und blendet etwas später ein: So schneidet der Clip
+   * den Schatten nie ab, und box-shadow selbst wird nie animiert. inset: -1px deckt den
+   * transparenten Rand der Leiste, die Kapsel ist also genau so gross wie bisher.
+   */
+  .site-header:global(.is-scrolled) .bar::before,
+  .site-header:global(.is-scrolled) .bar::after {
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    border-radius: inherit;
+    content: '';
+    pointer-events: none;
+  }
+
+  .site-header:global(.is-scrolled) .bar::before {
+    border: 1px solid var(--hairline);
     background-color: rgb(var(--paper-rgb) / 0.82);
-    box-shadow: 0 0.75rem 2rem rgb(var(--charcoal-rgb) / 0.1);
+    clip-path: inset(0 round var(--r-pill));
     -webkit-backdrop-filter: blur(16px) saturate(1.4);
     backdrop-filter: blur(16px) saturate(1.4);
+    transition:
+      clip-path 520ms var(--ease-expo),
+      opacity var(--dur-2) var(--ease-out);
+  }
+
+  .site-header:global(.is-scrolled) .bar::after {
+    box-shadow: 0 0.75rem 2rem rgb(var(--charcoal-rgb) / 0.1);
+    transition: opacity var(--dur-3) var(--ease-out) 120ms;
+  }
+
+  @starting-style {
+    .site-header:global(.is-scrolled) .bar::before {
+      clip-path: inset(0 22% round var(--r-pill));
+      opacity: 0;
+    }
+
+    .site-header:global(.is-scrolled) .bar::after {
+      opacity: 0;
+    }
+  }
+
+  /* Zurück zur Leiste: Die Kapsel faltet sich zusammen, während ihr Inhalt abtaucht. */
+  .site-header:global(.is-scrolled.is-morphing) .bar::before {
+    clip-path: inset(0 22% round var(--r-pill));
+    opacity: 0;
+    transition-duration: var(--dur-2);
+    transition-timing-function: var(--ease-in);
+  }
+
+  .site-header:global(.is-scrolled.is-morphing) .bar::after {
+    opacity: 0;
+    transition: opacity var(--dur-2) var(--ease-in);
   }
 
   .site-header:global(.is-scrolled) .bar-nav {
@@ -347,8 +472,8 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     gap: 0.375rem;
   }
 
-  .site-header:global(.is-scrolled) .bar-actions :global(.bar-cta) {
-    display: inline-flex;
+  .site-header:global(.is-scrolled) .bar-cta-slot {
+    display: flex;
   }
 
   .site-header:global(.is-scrolled) .menu-toggle {
@@ -378,6 +503,31 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     background-image:
       radial-gradient(60rem 40rem at 100% 0%, rgb(var(--leaf-rgb) / 0.16), transparent 70%),
       radial-gradient(40rem 30rem at 0% 100%, rgb(var(--sage-rgb) / 0.9), transparent 70%);
+    clip-path: inset(0);
+    transition:
+      clip-path var(--dur-3) var(--ease-in-out),
+      display var(--dur-3) allow-discrete;
+  }
+
+  /*
+   * Vorhang: Das Menü rollt vom Header nach unten aus (560 ms, weich bremsend) und fährt beim
+   * Schliessen schneller nach oben zurück (--dur-3). Reines CSS am hidden-Attribut: Dank
+   * allow-discrete wird display erst am Ende des Schliessens zu none, @starting-style gibt dem
+   * Öffnen seinen Anfang. Browser ohne allow-discrete schalten wie bisher sofort um.
+   */
+  .menu[hidden] {
+    clip-path: inset(0 0 100% 0);
+  }
+
+  .menu:not([hidden]) {
+    transition-duration: 560ms;
+    transition-timing-function: var(--ease-expo);
+  }
+
+  @starting-style {
+    .menu:not([hidden]) {
+      clip-path: inset(0 0 100% 0);
+    }
   }
 
   .menu-inner {
@@ -405,14 +555,104 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     text-decoration: none;
   }
 
-  .menu-link-label {
-    color: var(--charcoal);
+  /*
+   * Maske der grossen Menüwörter, wie .ln-mask bei den Überschriften: Sie reicht etwas über die
+   * Zeile hinaus, damit Umlaute nicht abgeschnitten werden. Die Schriftgrösse sitzt hier, damit
+   * sich 0.2em auf das grosse Wort bezieht. Der Fokusring liegt am Link und bleibt ganz.
+   */
+  .menu-link-mask {
+    display: block;
+    overflow: clip;
+    overflow-clip-margin: 0.2em;
     font-size: clamp(2rem, 1rem + 5.4vw, 5rem);
+    line-height: 1;
+  }
+
+  .menu-link-label {
+    display: block;
+    color: var(--charcoal);
     font-weight: var(--fw-display);
     letter-spacing: var(--ls-display);
-    line-height: 1;
     text-transform: uppercase;
     transition: color var(--dur-2) var(--ease);
+  }
+
+  /*
+   * Hinter dem Vorhang steigen die Wörter Zeile für Zeile aus ihrer Maske (ab 140 ms im Abstand
+   * --stagger-tight), die runden Pfeile folgen je 60 ms später, der Kontaktblock setzt sich
+   * zuletzt. Die Animationen beginnen bei jedem Öffnen neu; beim Schliessen trägt der Vorhang
+   * alles allein.
+   */
+  .menu-links li {
+    --menu-delay: calc(140ms + var(--menu-i, 0) * var(--stagger-tight));
+  }
+
+  .menu-links li:nth-child(2) {
+    --menu-i: 1;
+  }
+
+  .menu-links li:nth-child(3) {
+    --menu-i: 2;
+  }
+
+  .menu-links li:nth-child(4) {
+    --menu-i: 3;
+  }
+
+  .menu-links li:nth-child(5) {
+    --menu-i: 4;
+  }
+
+  .menu-links li:nth-child(6) {
+    --menu-i: 5;
+  }
+
+  .menu:not([hidden]) .menu-link-label {
+    animation: menu-rise var(--dur-4) var(--ease-expo) var(--menu-delay) backwards;
+  }
+
+  .menu:not([hidden]) .orb {
+    animation: menu-orb var(--dur-3) var(--ease-out) calc(var(--menu-delay) + 60ms) backwards;
+  }
+
+  .menu:not([hidden]) .menu-foot {
+    animation: menu-foot var(--dur-4) var(--ease-out) 320ms backwards;
+  }
+
+  /*
+   * Start 130 % unter der Zeile: Die Maske lässt unten 0.2em Luft, bei 105 % schauten dort noch
+   * Versalien und die Punkte von «Ü» heraus (gemessen, erst ab 125 % ganz verborgen).
+   */
+  @keyframes menu-rise {
+    from {
+      transform: translateY(130%);
+    }
+  }
+
+  @keyframes menu-orb {
+    from {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+  }
+
+  @keyframes menu-foot {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+  }
+
+  /*
+   * Hält jemand die Bewegung an (Schalter), stehen die Auftritte im Menü sofort am Ende, statt am
+   * Anfang angehalten zu warten (base.css hält jede Animation an; ohne Dauer und Verzögerung liegt
+   * sie dann hinter ihrem Ende). Der Vorhang ist ein Übergang und bleibt.
+   */
+  :global(html[data-motion='off']) .menu:not([hidden]) .menu-link-label,
+  :global(html[data-motion='off']) .menu:not([hidden]) .orb,
+  :global(html[data-motion='off']) .menu:not([hidden]) .menu-foot {
+    animation-duration: 0s;
+    animation-delay: 0s;
   }
 
   @media (hover: hover) {
@@ -469,8 +709,8 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
       display: block;
     }
 
-    .bar-actions :global(.bar-cta) {
-      display: inline-flex;
+    .bar-cta-slot {
+      display: flex;
     }
 
     /* Oben ist die Navigation sichtbar: Den Telefon- und Menü-Knopf braucht es erst in der Kapsel. */

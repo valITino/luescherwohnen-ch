@@ -12,17 +12,39 @@ export interface ScrollLock {
 /** Ab hier wird die Leiste zur Kapsel, darunter wieder zur Leiste (Abstand gegen Flackern). */
 const CAPSULE_ON = 96;
 const CAPSULE_OFF = 40;
-/** So lange taucht die Leiste ab: dieselbe Dauer wie ihr Übergang in Header.astro (`--dur-1`) */
-const MORPH_MS = DUR.d1 * 1000;
+/**
+ * Spätestens dann wechselt die Form, falls kein transitionend kommt (etwa wenn nichts sichtbar
+ * war, das abtauchen konnte): das Abtauchen in Header.astro (`--dur-2`) plus etwas Luft.
+ */
+const MORPH_FALLBACK_MS = DUR.d2 * 1000 + 50;
 
 export function initHeader(lock: () => ScrollLock | null): void {
   const header = document.querySelector<HTMLElement>('[data-header]');
-  if (!header) return;
+  const bar = header?.querySelector<HTMLElement>('.bar');
+  if (!header || !bar) return;
 
   // --- Leiste oder Kapsel ---
   let scrolled = false;
   let ticking = false;
   let morph = 0;
+  // Zweite Phase: Form wechseln, solange noch alles abgetaucht ist, dann wieder auftauchen.
+  const swap = () => {
+    window.clearTimeout(morph);
+    if (!header.classList.contains('is-morphing')) return;
+    header.classList.toggle('is-scrolled', scrolled);
+    // Stil jetzt berechnen: Was erst in der neuen Form erscheint (z. B. Telefon und Menü-Knopf in
+    // der Kapsel), startet so unsichtbar und blendet mit den anderen ein, statt aufzuspringen.
+    // Kostet kein zusätzliches Layout: Danach ändern sich nur noch Deckkraft und transform.
+    bar.getBoundingClientRect();
+    header.classList.remove('is-morphing');
+    // Das erste Bild in der neuen Form zeigt die Leiste nicht (Header.astro): So zählt der Sprung
+    // von Breite und Lage nicht als Layoutverschiebung. Zwei rAF, weil der erste unter Umständen
+    // noch vor diesem Bild läuft.
+    header.classList.add('is-swapping');
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => header.classList.remove('is-swapping')),
+    );
+  };
   const update = (animate = true) => {
     ticking = false;
     const y = window.scrollY;
@@ -35,13 +57,20 @@ export function initHeader(lock: () => ScrollLock | null): void {
       header.classList.toggle('is-scrolled', scrolled);
       return;
     }
-    // Kurz abtauchen, Form wechseln, wieder auftauchen.
+    // Erste Phase: Die Teile der Leiste tauchen ab (Header.astro).
     header.classList.add('is-morphing');
-    morph = window.setTimeout(() => {
-      header.classList.toggle('is-scrolled', scrolled);
-      header.classList.remove('is-morphing');
-    }, MORPH_MS);
+    morph = window.setTimeout(swap, MORPH_FALLBACK_MS);
   };
+  // Das Ende des Abtauchens meldet der erste Teil, dessen Deckkraft fertig übergeblendet ist.
+  // Übergänge der Fläche (::before, ::after) melden sich an der Leiste selbst und zählen nicht.
+  // Es zählt nur ein Teil, der wirklich unsichtbar ist: Chromium meldet mitunter schon beim Start
+  // eines Übergangs ein zusätzliches transitionend (elapsedTime 0), während er weiterläuft.
+  bar.addEventListener('transitionend', (event) => {
+    const part = event.target as HTMLElement;
+    if (event.propertyName !== 'opacity' || part === bar) return;
+    if (!header.classList.contains('is-morphing')) return;
+    if (getComputedStyle(part).opacity === '0') swap();
+  });
   window.addEventListener(
     'scroll',
     () => {
@@ -75,6 +104,9 @@ export function initHeader(lock: () => ScrollLock | null): void {
   const setOpen = (next: boolean, restoreFocus = true) => {
     if (open === next) return;
     open = next;
+    // Das Menü bleibt beim Schliessen noch so lange sichtbar, wie der Vorhang hochfährt
+    // (Header.astro). inert nimmt es sofort aus Tab-Reihenfolge und Bedienung.
+    menu.inert = !open;
     menu.hidden = !open;
     toggle.setAttribute('aria-expanded', String(open));
     label.textContent = open ? 'Schliessen' : 'Menü';

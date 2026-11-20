@@ -42,6 +42,13 @@ test('Menü offen: auch das Overlay ist zugänglich', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('[data-menu-toggle]').click();
   await expect(page.locator('#mobile-menu')).toBeVisible();
+  // Gemessen wird der Endzustand: erst, wenn Vorhang und Auftritte im Menü fertig sind.
+  await page.waitForFunction(() =>
+    document
+      .querySelector('#mobile-menu')!
+      .getAnimations({ subtree: true })
+      .every((animation) => animation.playState === 'finished'),
+  );
   const result = await new AxeBuilder({ page }).include('#mobile-menu').withTags(TAGS).analyze();
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
