@@ -197,21 +197,17 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .area-wide {
-      grid-column: span 2;
-    }
-
-    .area-wide .area-media {
-      aspect-ratio: 16 / 9;
-    }
-
     /* Breite Karten: Bild und Text nebeneinander wirken ruhiger als ein sehr flaches Bild. */
     .area-wide {
+      grid-column: span 2;
       grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
       grid-template-rows: none;
     }
 
-    .area-wide .area-media {
+    /* `:first-child` mitnennen: Die Regel ab 40rem ist sonst spezifischer und erzwingt 16:9,
+       dann wird das Bild breiter als seine Spalte und liegt über dem Text. */
+    .area-wide .area-media,
+    .area-wide:first-child .area-media {
       aspect-ratio: auto;
       min-height: 22rem;
     }

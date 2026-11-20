@@ -123,6 +123,61 @@ export async function brokenWords(page: Page): Promise<string[]> {
 }
 
 /**
+ * Text, der auf einem Foto liegt, und Bildquellen, die selbst Platz belegen. Beides passiert bei
+ * Spezifitäts- oder Grid-Fehlern lautlos: nichts ragt über den Rand, aber Text wird unlesbar oder
+ * über dem Bild klafft eine Lücke. Bildunterschriften im selben Rahmen zählen nicht.
+ */
+export async function imageCollisions(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const found: string[] = [];
+    for (const source of document.querySelectorAll('picture > source')) {
+      const rect = source.getBoundingClientRect();
+      if (rect.width > 0 || rect.height > 0) {
+        found.push(`<source> belegt ${Math.round(rect.width)}×${Math.round(rect.height)} px`);
+      }
+    }
+    const visible = (element: Element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && getComputedStyle(element).visibility !== 'hidden';
+    };
+    const images = [...document.querySelectorAll<HTMLImageElement>('main img')].filter(
+      (img) => visible(img) && img.getBoundingClientRect().width > 40,
+    );
+    const texts = [
+      ...document.querySelectorAll<HTMLElement>(
+        'main :is(p, h1, h2, h3, h4, li, dt, dd, blockquote)',
+      ),
+    ].filter((element) => element.textContent?.trim() && visible(element));
+    for (const img of images) {
+      const frame = img.closest('figure') ?? img.parentElement;
+      const box = img.getBoundingClientRect();
+      for (const text of texts) {
+        if (frame?.contains(text) || text.contains(img)) continue;
+        // Nur die Zeilen der Textknoten zählen, nicht die Boxen (die können breiter sein).
+        const walker = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
+        const lines: DOMRect[] = [];
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          if (!node.textContent?.trim()) continue;
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          lines.push(...range.getClientRects());
+        }
+        const hit = lines.some((line) => {
+          const width = Math.min(box.right, line.right) - Math.max(box.left, line.left);
+          const height = Math.min(box.bottom, line.bottom) - Math.max(box.top, line.top);
+          return width > 4 && height > 4;
+        });
+        if (hit) {
+          const label = text.textContent!.trim().replace(/\s+/g, ' ').slice(0, 40);
+          found.push(`«${label}» liegt auf dem Bild «${img.alt}»`);
+        }
+      }
+    }
+    return found;
+  });
+}
+
+/**
  * Die Startseite stellt Sektionen weit unter dem ersten Bildschirm zurück (data-lazy) und rechnet
  * sie erst bei der ersten Interaktion. Für Prüfungen der ganzen Seite hier sofort nachholen.
  */

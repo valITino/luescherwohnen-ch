@@ -20,6 +20,12 @@ picture {
   display: contents;
 }
 
+/* Die <source>-Elemente würden sonst selbst zu Grid-Elementen des Rahmens und Platz belegen
+   (leere Zeile über dem Porträt). Für die Auswahl der Quelle spielt `display` keine Rolle. */
+picture > source {
+  display: none;
+}
+
 /*
  * Zeilenmaske der Überschriften (reveal.ts): Die Maske darf etwas über die Zeile hinausreichen,
  * damit Umlaute und Unterlängen nicht abgeschnitten werden. Bewusst ohne padding oder margin:

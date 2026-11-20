@@ -330,9 +330,11 @@ const cta = primaryCta(true);
       align-self: center;
     }
 
-    /* So gross, dass die Zeilen links neben der runden Bühne enden (Text nie über dem Foto). */
+    /* So gross, dass die Zeilen links neben der runden Bühne enden (Text nie über dem Foto):
+       4.6vw lässt ab 1024 px rund 60 px Luft. Ab etwa 1600 px wächst der Inhalt nicht mehr mit
+       (max. 1440 px), darum endet die Schrift bei 4.5rem. */
     .hero-title {
-      font-size: clamp(3.25rem, 0.2rem + 4.9vw, 5.75rem);
+      font-size: clamp(3rem, 4.6vw, 4.5rem);
     }
 
     /* Die zweite Zeile steht eingerückt auf einer Zeile */

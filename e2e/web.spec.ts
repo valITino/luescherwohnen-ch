@@ -7,6 +7,7 @@ import {
   collectErrors,
   cutOff,
   horizontalOverflow,
+  imageCollisions,
   layOutAll,
 } from './helpers.ts';
 
@@ -101,10 +102,25 @@ test.describe('Layout', () => {
         expect(await horizontalOverflow(page), `${width}px`).toBe(0);
         expect(await cutOff(page), `${width}px`).toEqual([]);
         expect(await brokenWords(page), `${width}px`).toEqual([]);
+        expect(await imageCollisions(page), `${width}px`).toEqual([]);
       }
       await context.close();
     });
   }
+
+  test('Vorschau-Hinweis passt auf jede Breite', async ({ page }) => {
+    await page.goto(`${PREVIEW}/`);
+    await page.evaluate(() => document.fonts.ready);
+    for (const width of [320, 360, 390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 800 });
+      const clipped = await page.$$eval('[data-preview-note] .preview-text', (spans) =>
+        spans
+          .filter((span) => span.getClientRects().length > 0)
+          .map((span) => span.scrollWidth - span.clientWidth),
+      );
+      expect(clipped, `${width}px`).toEqual([0]);
+    }
+  });
 
   test('angepinnte Flächen passen in niedrige Fenster', async ({ page }) => {
     for (const viewport of [

@@ -90,7 +90,7 @@ export function humansTxt(site: string): string {
     'Lüscher Wohnen AG, Inneneinrichtung in Baden',
     '',
     '/* SITE */',
-    `Site: ${site}`,
+    `Site: ${stripTrailingSlashes(site)}/`,
     'Sprache: Deutsch (Schweiz)',
     'Technik: Astro, Tailwind CSS, GSAP, Lenis',
     'Schriften: Manrope und Geist Mono (SIL Open Font License)',
