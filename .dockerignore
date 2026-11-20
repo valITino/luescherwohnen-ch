@@ -1,0 +1,25 @@
+# Nur, was der Build braucht. Alles andere bleibt draussen (kleiner Kontext, keine Geheimnisse).
+.git
+.github
+.claude
+**/node_modules
+**/dist
+**/.astro
+dist-pages
+docs
+e2e
+tests
+test-results
+playwright-report
+coverage
+reports
+shots
+sbom*.json
+*.log
+.env
+.env.*
+!.env.example
+**/.DS_Store
+Dockerfile
+compose.yaml
+.dockerignore
