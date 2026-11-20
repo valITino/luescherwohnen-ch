@@ -119,12 +119,23 @@
   --glow-leaf: 0 0.5rem 1.5rem rgb(var(--leaf-rgb) / 0.32);
   --glow-leaf-hi: 0 0.75rem 2rem rgb(var(--leaf-rgb) / 0.45);
 
-  /* Motion */
-  --dur-1: 150ms;
-  --dur-2: 250ms;
-  --dur-3: 400ms;
-  --dur-4: 800ms;
-  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  /*
+   * Motion: einzige Quelle für CSS. packages/ui/src/motion/tokens.ts spiegelt die Werte für GSAP
+   * und Timer, packages/ui/test/motion-tokens.test.ts hält beide gleich. Jede Kurve bremst ohne
+   * Überschwingen ab und hat eine benannte GSAP-Kurve, die höchstens 0,012 davon abweicht.
+   */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1); /* GSAP power4.out */
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1); /* GSAP expo.out */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1); /* GSAP power2.inOut */
+  --ease-in: cubic-bezier(0.32, 0, 0.67, 0); /* GSAP power2.in */
+  --ease: var(--ease-out); /* Alias: alle bestehenden Übergänge bleiben so verdrahtet */
+  --dur-1: 150ms; /* Mikro: Farbe, Unterstrich */
+  --dur-2: 250ms; /* UI-Zustand, Ausgänge */
+  --dur-3: 400ms; /* Flächen: Kapsel, Menü schliessen, Seitenwechsel */
+  --dur-4: 800ms; /* Auftritte: Zeilen, Kicker, Folgeelemente */
+  --dur-5: 1200ms; /* Signatur: Hero-Blende, Bild-Enthüllung (lesbar nach etwa 350 ms) */
+  --stagger: 70ms; /* Versatz in einer Folge */
+  --stagger-tight: 45ms; /* dichte Folge, z. B. Menüpunkte */
 
   color-scheme: light;
 }

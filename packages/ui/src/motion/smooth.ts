@@ -7,9 +7,8 @@ gsap.registerPlugin(ScrollTrigger);
 
 export { gsap, ScrollTrigger };
 
-/** Motion-Tokens für GSAP (Sekunden) */
-export const DUR = { d1: 0.15, d2: 0.25, d3: 0.4, d4: 0.8 } as const;
-export const EASE = 'power3.out';
+/** Motion-Tokens aus tokens.ts (Sekunden, Kurven als `EASE.*.gsap`), gleich wie tokens.css */
+export { DUR, EASE, STAGGER } from './tokens.ts';
 
 export interface SmoothScroll {
   /** Lenis-Instanz; `null` bei reduzierter Bewegung (dann scrollt der Browser nativ) */

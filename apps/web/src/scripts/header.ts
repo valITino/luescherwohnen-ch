@@ -2,7 +2,7 @@
  * Header: oben volle Leiste, nach dem Scrollen eine schwebende Kapsel; dazu das Vollbild-Menü
  * mit Fokusfalle.
  */
-import { motionAllowed } from '@luescher/ui/motion';
+import { DUR, motionAllowed } from '@luescher/ui/motion';
 
 export interface ScrollLock {
   stop(): void;
@@ -12,7 +12,8 @@ export interface ScrollLock {
 /** Ab hier wird die Leiste zur Kapsel, darunter wieder zur Leiste (Abstand gegen Flackern). */
 const CAPSULE_ON = 96;
 const CAPSULE_OFF = 40;
-const MORPH_MS = 150;
+/** So lange taucht die Leiste ab: dieselbe Dauer wie ihr Übergang in Header.astro (`--dur-1`) */
+const MORPH_MS = DUR.d1 * 1000;
 
 export function initHeader(lock: () => ScrollLock | null): void {
   const header = document.querySelector<HTMLElement>('[data-header]');

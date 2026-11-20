@@ -33,7 +33,7 @@ export function initReveals(): void {
         gsap.from(split.lines, {
           yPercent: 118,
           duration: DUR.d4,
-          ease: EASE,
+          ease: EASE.expo.gsap,
           stagger: 0.08,
           onComplete: () => split.revert(),
         });
