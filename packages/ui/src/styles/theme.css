@@ -1,0 +1,64 @@
+/*
+ * Bindet die Tokens in Tailwind ein. Die Standardpalette wird entfernt,
+ * damit nur Markenfarben als Utilities existieren.
+ */
+
+@theme inline {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-linen: var(--linen);
+  --color-paper: var(--paper);
+  --color-sand: var(--sand);
+  --color-well: var(--well);
+  --color-hairline: var(--hairline);
+  --color-steel: var(--steel);
+  --color-ash: var(--ash);
+  --color-charcoal: var(--charcoal);
+  --color-white: var(--white);
+  --color-sage: var(--sage);
+  --color-sage-deep: var(--sage-deep);
+  --color-moss: var(--moss);
+  --color-leaf: var(--leaf);
+  --color-leaf-hi: var(--leaf-hi);
+  --color-leaf-edge: var(--leaf-edge);
+  --color-leaf-deep: var(--leaf-deep);
+  --color-ink: var(--ink);
+  --color-night: var(--night);
+  --color-night-line: var(--night-line);
+  --color-night-muted: var(--night-muted);
+  --color-amber: var(--amber);
+  --color-amber-deep: var(--amber-deep);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-crit: var(--crit);
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-fg-strong: var(--fg-strong);
+  --color-fg-muted: var(--fg-muted);
+  --color-accent: var(--accent);
+  --color-action: var(--action);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-deep: var(--surface-deep);
+
+  --font-sans: var(--ff-sans);
+  --font-mono: var(--ff-mono);
+
+  --text-micro: var(--fs-micro);
+  --text-meta: var(--fs-meta);
+  --text-small: var(--fs-small);
+  --text-body: var(--fs-body);
+  --text-lead: var(--fs-lead);
+
+  --radius-card: var(--r-card);
+  --radius-panel: var(--r-panel);
+  --radius-btn: var(--r-btn);
+  --radius-pill: var(--r-pill);
+
+  --ease-brand: var(--ease);
+
+  --container-page: var(--container);
+}

@@ -1,0 +1,65 @@
+---
+/**
+ * 404-Block: Nummer, Überschrift, kurze Erklärung, Weg zurück.
+ * Auftritt beim Laden: Die «404» rückt einmal sanft an ihren Platz (nur transform/opacity).
+ */
+import Button from './Button.astro';
+
+interface Props {
+  /** Ziel des Buttons */
+  href: string;
+  /** Beschriftung des Buttons, z. B. «Zur Startseite» */
+  label: string;
+}
+
+const { href, label } = Astro.props;
+---
+
+<section class="section wrap notfound">
+  <p class="kicker">
+    <span class="secnum" aria-hidden="true">
+      404
+    </span>
+    <span class="kicker-sep" aria-hidden="true">
+      {' / '}
+    </span>
+    Seite nicht gefunden
+  </p>
+  {/* Auf einer Zeile: Ein Umbruch nach «404» würde als doppeltes Leerzeichen sichtbar. */}
+  {/* prettier-ignore */}
+  <h1 class="display h1"><span class="notfound-code">404</span> – Diese Seite gibt es nicht.</h1>
+  <p class="lead notfound-lead">
+    Vielleicht hat sich die Adresse geändert. Auf der Startseite finden Sie Sortiment, Service und
+    Kontakt.
+  </p>
+  <Button href={href} icon>
+    {label}
+  </Button>
+</section>
+
+<style>
+  .notfound {
+    display: grid;
+    justify-items: start;
+    gap: 2rem;
+    min-height: 72svh;
+    padding-top: max(var(--section-y), calc(var(--header-h) + 1.5rem));
+    align-content: center;
+  }
+
+  .notfound-lead {
+    color: var(--fg-muted);
+  }
+
+  .notfound-code {
+    display: inline-block;
+    color: var(--leaf-deep);
+    animation: nf-settle 640ms var(--ease) 200ms backwards;
+  }
+
+  @keyframes nf-settle {
+    from {
+      transform: translateY(0.18em) rotate(-4deg);
+    }
+  }
+</style>
