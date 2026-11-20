@@ -332,12 +332,20 @@ const locations = [
     animation: about-focus var(--dur-4) var(--ease-expo) 140ms backwards;
   }
 
+  /*
+   * Die oberen Ecken sind hell wie der leere Rahmen: Sie rücken erst an, wenn das aufsteigende Foto
+   * sie erreicht (nach gut 0,4 s), sonst wären sie fast am Ziel, bevor man sie sieht.
+   */
   .portrait[data-enter='in'] .portrait-corner-tl {
     --from: -0.875rem -0.875rem;
+
+    animation-delay: 360ms;
   }
 
   .portrait[data-enter='in'] .portrait-corner-tr {
     --from: 0.875rem -0.875rem;
+
+    animation-delay: 360ms;
   }
 
   .portrait[data-enter='in'] .portrait-corner-bl {
@@ -349,11 +357,11 @@ const locations = [
   }
 
   /*
-   * --dur-4 statt --dur-5: Mit 320 ms Vorlauf endet die Linie nach 1120 ms, innerhalb der Grenze,
-   * die für jeden Auftritt gilt (1200 ms plus drei Versätze, e2e/web.spec.ts).
+   * Die Linie beginnt oben, sobald das Foto dort ankommt. --dur-4 statt --dur-5: Mit 400 ms Vorlauf
+   * endet sie nach 1200 ms, innerhalb der Grenze, die für jeden Auftritt gilt (e2e/web.spec.ts).
    */
   .portrait[data-enter='in'] .portrait-frame::after {
-    animation: about-scan var(--dur-4) var(--ease-in-out) 320ms;
+    animation: about-scan var(--dur-4) var(--ease-in-out) 400ms;
   }
 
   .values[data-enter='in'] .values-list li {

@@ -300,6 +300,28 @@ test.describe('Navigation', () => {
     await expect(header).not.toHaveAttribute('data-test-morphed');
   });
 
+  test('Sprung aus der Leiste landet genau unter dem Header', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'Die Navigation in der Leiste gibt es nur am Desktop');
+    await page.goto(`${PROD}/`);
+    await page.evaluate(() => document.fonts.ready);
+    await page.mouse.wheel(0, 10);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    await nextFrames(page);
+    // Unterwegs darf die Seite oberhalb des Ziels nicht mehr wachsen (etwa der Öffnungsstatus,
+    // der erst beim Vorbeiscrollen erschiene): Sonst endete das Gleiten zu tief.
+    await page.locator('.bar-nav a[href="#sortiment"]').click();
+    await expect(page).toHaveURL(/#sortiment$/);
+    await expectLanded(page, '#sortiment');
+    const offset = await page.evaluate(() => {
+      const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop);
+      return document.querySelector('#sortiment')!.getBoundingClientRect().top - padding;
+    });
+    expect(Math.abs(offset)).toBeLessThanOrEqual(2);
+  });
+
   test('Seitenwechsel zu einer Marke: Der Header wird nicht verzerrt', async ({
     browser,
     isMobile,
@@ -343,10 +365,14 @@ test.describe('Navigation', () => {
       return null;
     };
     try {
-      // Oben von Seite zu Seite: Die Leiste steht still (alte und neue Leiste als ein Paar).
+      // Oben von Seite zu Seite: Die Leiste steht still. Alte und neue Leiste bilden ein Paar (die
+      // Gruppe), und überblendet wird nicht: Weder die alte noch die neue Leiste hat eine
+      // Animation (eine neue Leiste ohne Partner blendete ein).
       const still = await change('/impressum', '[data-header] .bar-logo', /\/$/);
       expect(still, 'Übergang hat stattgefunden').not.toBeNull();
-      expect(still).toContain('::view-transition-old(site-bar)');
+      expect(still).toContain('::view-transition-group(site-bar)');
+      expect(still).not.toContain('::view-transition-old(site-bar)');
+      expect(still).not.toContain('::view-transition-new(site-bar)');
       // Zu einer Marke: Die neue Seite steht weiter unten (Kapsel). Die alte Leiste geht mit der
       // alten Seite; nichts zieht die Kapsel auf die Breite der Leiste.
       const toMark = await change('/impressum', '.bar-nav a[href="/#kontakt"]', /#kontakt$/);
@@ -690,6 +716,117 @@ test.describe('Bewegung und Chrome', () => {
     expect(state).toEqual({ inHeader: true, visible: true, ring: true });
   });
 
+  test('Tastatur: Ein Link der Navigation taucht nicht ab, Tab geht in der Kapsel weiter', async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'Die Navigation in der Leiste gibt es nur am Desktop');
+    await page.goto(`${PROD}/`);
+    await page.evaluate(() => document.fonts.ready);
+    const header = page.locator('[data-header]');
+    const link = header.locator('.bar-nav a').first();
+    await link.focus();
+    expect(await link.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
+    await page.evaluate(() => {
+      const header = document.querySelector<HTMLElement>('[data-header]')!;
+      const focused = document.activeElement!;
+      let lowest = 1;
+      const sample = () => {
+        if (header.classList.contains('is-morphing') && document.activeElement === focused) {
+          let value = 1;
+          for (
+            let node: Element | null = focused;
+            node && node !== header;
+            node = node.parentElement
+          ) {
+            value *= Number(getComputedStyle(node).opacity);
+          }
+          lowest = Math.min(lowest, value);
+          header.dataset.testLowest = String(lowest);
+        }
+        if (!header.classList.contains('is-scrolled')) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    await page.keyboard.press('PageDown');
+    await expect(header).toHaveClass(/is-scrolled/);
+    // Solange der Header abtaucht, bleibt der fokussierte Link ganz sichtbar.
+    expect(Number(await header.getAttribute('data-test-lowest'))).toBeGreaterThan(0.99);
+    // In der Kapsel gibt es die Navigation nicht: Der Fokus geht zum nächsten Bedienelement der
+    // Leiste (Anrufen), steht sofort ganz da, und Tab führt weiter durch die Kapsel.
+    const after = await page.evaluate(() => {
+      const active = document.activeElement as HTMLElement;
+      let opacity = 1;
+      for (
+        let node: Element | null = active;
+        node && !node.matches('[data-header]');
+        node = node.parentElement
+      ) {
+        opacity *= Number(getComputedStyle(node).opacity);
+      }
+      return {
+        phone: active.matches('.bar-phone'),
+        ring: active.matches(':focus-visible'),
+        swapping: document.querySelector('[data-header]')!.matches('.is-swapping'),
+        opacity,
+      };
+    });
+    expect(after.phone).toBe(true);
+    expect(after.ring).toBe(true);
+    if (!after.swapping) expect(after.opacity).toBeGreaterThan(0.99);
+    await page.keyboard.press('Tab');
+    expect(
+      await page.evaluate(() => document.activeElement?.closest('.bar-actions') !== null),
+    ).toBe(true);
+  });
+
+  test('Ohne checkVisibility (Safari vor 17.4): Der Header wechselt trotzdem die Form', async ({
+    page,
+  }) => {
+    const errors = collectErrors(page);
+    await page.addInitScript(() => {
+      delete (Element.prototype as Partial<Element>).checkVisibility;
+    });
+    await page.goto(`${PROD}/`);
+    expect(await page.evaluate(() => 'checkVisibility' in Element.prototype)).toBe(false);
+    const header = page.locator('[data-header]');
+    for (const [top, scrolled] of [
+      [800, true],
+      [0, false],
+      [1600, true],
+    ] as const) {
+      await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' }), top);
+      if (scrolled) await expect(header).toHaveClass(/is-scrolled/);
+      else await expect(header).not.toHaveClass(/is-scrolled/);
+    }
+    expect(errors).toEqual([]);
+  });
+
+  test('Leertaste auf einem Knopf hält das Ausgleiten nicht an', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'Am Handy gleitet nichts aus (kein Lenis)');
+    await page.goto(`${PROD}/`);
+    await layOutAll(page);
+    await page.mouse.wheel(0, 10);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    await page.evaluate(() => window.scrollTo({ top: 1500, behavior: 'instant' }));
+    await page.waitForTimeout(300);
+    const start = await page.evaluate(() => window.scrollY);
+    await page.mouse.wheel(0, 1500);
+    await page.waitForTimeout(120);
+    // Den Knopf des Bands fokussieren, ohne dorthin zu scrollen, und mit der Leertaste auslösen.
+    await page.evaluate(() =>
+      document.querySelector<HTMLElement>('[data-ticker-toggle]')!.focus({ preventScroll: true }),
+    );
+    await page.keyboard.press('Space');
+    await expect(page.locator('[data-ticker-toggle]')).toHaveText(/Band fortsetzen/);
+    // Die Seite gleitet trotzdem bis ans Ziel des Mausrads.
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY), { timeout: 5_000 })
+      .toBeGreaterThan(start + 1490);
+  });
+
   test('Auftritte beim Hereinscrollen: am Ende wartet nichts mehr', async ({ page }) => {
     await page.goto(`${PROD}/`);
     await layOutAll(page);
@@ -734,9 +871,76 @@ test.describe('Bewegung und Chrome', () => {
     );
     expect(await page.locator('[data-enter="wait"]').count()).toBe(0);
     // Auftritte gab es wirklich (auch die Bilder), und jeder endet spätestens nach dem längsten
-    // Plan: 1200 ms (Linie im Sucher 1120 ms, Bilder 800 ms) plus höchstens drei Versätze von 70 ms.
+    // Plan: 1200 ms (Linie im Sucher, Bilder 800 ms) plus höchstens drei Versätze von 70 ms.
     expect(seen.map(({ name }) => name)).toContain('unveil');
     for (const { name, end } of seen) expect(end, name).toBeLessThanOrEqual(1200 + 3 * 70);
+  });
+
+  test('Überschriften: Beim Auftritt dieselben Zeilen wie danach', async ({ page }) => {
+    await page.goto(`${PROD}/`);
+    await page.evaluate(() => document.fonts.ready);
+    await layOutAll(page);
+    await page.mouse.wheel(0, 10);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    await nextFrames(page);
+    const ids = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('main h2.display[id]')]
+        .filter((title) => title.getBoundingClientRect().top > window.innerHeight)
+        .map((title) => title.id),
+    );
+    expect(ids).toContain('ueber-title');
+    for (const id of ids) {
+      // Zeilen, wie der Browser die Überschrift ohne Teilung setzt (Zeichen nach Unterkante).
+      const natural = await page.evaluate((key) => {
+        const title = document.getElementById(key)!;
+        const range = document.createRange();
+        const lines: string[] = [];
+        let last = Number.NEGATIVE_INFINITY;
+        const walker = document.createTreeWalker(title, NodeFilter.SHOW_TEXT);
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          const text = node as Text;
+          for (let at = 0; at < text.data.length; at++) {
+            const char = text.data[at]!;
+            if (/\s|\u00AD/.test(char)) {
+              if (lines.length) lines[lines.length - 1] += char === '\u00AD' ? '' : ' ';
+              continue;
+            }
+            range.setStart(text, at);
+            range.setEnd(text, at + 1);
+            const bottom = range.getBoundingClientRect().bottom;
+            if (bottom > last + 1) lines.push('');
+            last = Math.max(last, bottom);
+            lines[lines.length - 1] += char;
+          }
+        }
+        return lines.map((line) => line.replace(/\s+/g, ' ').trim());
+      }, id);
+      const title = page.locator(`#${id}`);
+      await title.evaluate((element) =>
+        window.scrollTo({
+          top: element.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.6,
+          behavior: 'instant',
+        }),
+      );
+      await expect(title.locator('.ln').first()).toBeAttached({ timeout: 2_000 });
+      const split = await title.evaluate((element) =>
+        [...element.querySelectorAll('.ln')].map((line) =>
+          (line.textContent ?? '')
+            .replace(/\u00AD/g, '')
+            .replace(/-$/, '')
+            .replace(/\s+/g, ' ')
+            .trim(),
+        ),
+      );
+      expect(split, id).toEqual(natural.map((line) => line.replace(/-$/, '')));
+      // Danach ist das Markup wieder wie vorher: kein Umbruch und kein Strich bleibt zurück.
+      await expect(title.locator('.ln')).toHaveCount(0, { timeout: 3_000 });
+      expect(await title.locator('br').count(), id).toBe(0);
+    }
+    expect(await page.locator('#ueber-title').textContent()).toContain('Familien\u00ADunternehmen');
   });
 
   test('Bilder laden vor ihrem Auftritt (loading="lazy")', async ({ page }) => {
@@ -776,6 +980,129 @@ test.describe('Bewegung und Chrome', () => {
     expect(await media!.evaluate((element) => (element as HTMLElement).dataset.enter)).toBe('wait');
   });
 
+  test('Bilder öffnen sich ab einem Viertel, am Rand nach kurzer Zeit', async ({ page }) => {
+    await page.goto(`${PROD}/`);
+    await layOutAll(page);
+    await page.mouse.wheel(0, 200);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    await nextFrames(page);
+    const frame = await page
+      .locator('.story-media.enter-unveil[data-enter="wait"]')
+      .first()
+      .elementHandle();
+    expect(frame).not.toBeNull();
+    // Rahmen so stellen, dass ein Anteil davon über der Auslösekante steht (8 % über dem Rand).
+    const showShare = (share: number) =>
+      frame!.evaluate((element, wanted) => {
+        const rect = element.getBoundingClientRect();
+        const edge = window.innerHeight * 0.92;
+        window.scrollTo({
+          top: window.scrollY + rect.top - edge + rect.height * wanted,
+          behavior: 'instant',
+        });
+      }, share);
+    // Erst knapp darunter vorladen lassen, damit es um den Auslöser geht, nicht ums Laden.
+    await showShare(-0.5);
+    await page.waitForFunction((element) => element.querySelector('img')!.complete, frame!, {
+      timeout: 5_000,
+    });
+    // Ein Zehntel im Bild: Das Bild wartet noch.
+    await showShare(0.1);
+    await nextFrames(page);
+    expect(await frame!.evaluate((element) => (element as HTMLElement).dataset.enter)).toBe('wait');
+    // Bleibt der Rahmen dort stehen, öffnet sich das Bild nach kurzer Zeit trotzdem.
+    await page.waitForFunction(
+      (element) => (element as HTMLElement).dataset.enter === 'in',
+      frame!,
+      { timeout: 3_000 },
+    );
+    // Ein zweites Bild weiter unten: Ab gut einem Viertel öffnet es sich sofort.
+    const next = await page.evaluateHandle(
+      () =>
+        [...document.querySelectorAll<HTMLElement>('.enter-unveil[data-enter="wait"]')].find(
+          (element) => element.getBoundingClientRect().top > window.innerHeight + 100,
+        ) ?? null,
+    );
+    const second = next.asElement();
+    expect(second).not.toBeNull();
+    const place = (share: number) =>
+      second!.evaluate((element, wanted) => {
+        const rect = element.getBoundingClientRect();
+        window.scrollTo({
+          top: window.scrollY + rect.top - window.innerHeight * 0.92 + rect.height * wanted,
+          behavior: 'instant',
+        });
+      }, share);
+    await place(-0.5);
+    await page.waitForFunction((element) => element.querySelector('img')!.complete, second!, {
+      timeout: 5_000,
+    });
+    await place(0.5);
+    await page.waitForFunction(
+      (element) => (element as HTMLElement).dataset.enter === 'in',
+      second!,
+      { timeout: 500 },
+    );
+  });
+
+  test('Langsames Netz: Ein Bild, das noch lädt, steigt nicht über einen leeren Rahmen', async ({
+    page,
+  }) => {
+    await page.goto(`${PROD}/`);
+    await layOutAll(page);
+    await page.mouse.wheel(0, 200);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    await nextFrames(page);
+    // Ab jetzt kommen Bilder erst nach 2,5 s an.
+    await page.route(/\.(avif|webp|jpe?g|png)(\?.*)?$/, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      await route.continue().catch(() => undefined);
+    });
+    const frame = await page
+      .locator(
+        '.project-media.enter-unveil[data-enter="wait"], .story-media.enter-unveil[data-enter="wait"]',
+      )
+      .last()
+      .elementHandle();
+    expect(frame).not.toBeNull();
+    expect(await frame!.evaluate((element) => element.querySelector('img')!.complete)).toBe(false);
+    // Festhalten, ob der Rahmen je «in» bekommt, solange das Bild fehlt.
+    await frame!.evaluate((element) => {
+      new MutationObserver(() => {
+        const image = element.querySelector('img')!;
+        if ((element as HTMLElement).dataset.enter === 'in' && !image.complete) {
+          document.documentElement.dataset.testRoseEmpty = '';
+        }
+      }).observe(element, { attributes: true, attributeFilter: ['data-enter'] });
+    });
+    // Sprunghaft halb ins Bild (wie schnelles Wischen).
+    await frame!.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      window.scrollTo({
+        top: window.scrollY + rect.top - window.innerHeight * 0.92 + rect.height * 0.5,
+        behavior: 'instant',
+      });
+    });
+    // Nach kurzem Warten steht der Rahmen ohne Auftritt da, mit der Sandfläche bis zum Bild.
+    await page.waitForFunction((element) => (element as HTMLElement).dataset.enter === '', frame!, {
+      timeout: 2_000,
+    });
+    const state = await frame!.evaluate((element) => ({
+      background: getComputedStyle(element).backgroundColor,
+      image: getComputedStyle(element.querySelector('img')!).opacity,
+      loaded: element.querySelector('img')!.complete,
+    }));
+    expect(state.loaded).toBe(false);
+    expect(state.background).not.toBe('rgba(0, 0, 0, 0)');
+    expect(state.image).toBe('1');
+    await expect(page.locator('html')).not.toHaveAttribute('data-test-rose-empty');
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+  });
+
   test('Bewegung pausiert: nichts wartet', async ({ page }) => {
     await page.goto(`${PROD}/`);
     await layOutAll(page);
@@ -811,14 +1138,20 @@ test.describe('Bewegung und Chrome', () => {
     await expect(toggle).toBeVisible();
     await toggle.click();
     await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
+    // Am Handy steht der Schalter im Seitenfluss, der Klick hat dorthin gescrollt: zurück nach oben.
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     const header = page.locator('[data-header]');
+    await expect(header).not.toHaveClass(/is-scrolled/);
     await header.evaluate((element) => {
       new MutationObserver(() => {
         if (element.classList.contains('is-morphing')) element.dataset.testMorphed = '';
+        if (element.classList.contains('is-scrolled')) element.dataset.testScrolled = '';
       }).observe(element, { attributes: true, attributeFilter: ['class'] });
     });
-    await page.mouse.wheel(0, 600);
+    await page.evaluate(() => window.scrollTo({ top: 600, behavior: 'instant' }));
     await expect(header).toHaveClass(/is-scrolled/);
+    // Der Wechsel geschah unter Beobachtung, aber ohne Abtauchen.
+    await expect(header).toHaveAttribute('data-test-scrolled', '');
     await expect(header).not.toHaveAttribute('data-test-morphed');
     // Fläche und Schatten der Kapsel stehen sofort, statt sich aufzufalten.
     const glass = await header
@@ -834,6 +1167,67 @@ test.describe('Bewegung und Chrome', () => {
       .locator('[data-menu]')
       .evaluate((element) => [element.getAnimations().length, getComputedStyle(element).clipPath]);
     expect(menu).toEqual([0, 'inset(0px)']);
+  });
+
+  test('Bewegung pausiert: kein sanftes Scrollen, nichts hängt am Scrollen', async ({
+    page,
+    isMobile,
+  }) => {
+    await page.goto(`${PROD}/`);
+    await layOutAll(page);
+    await page.mouse.wheel(0, 200);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    // Am Desktop gleitet Lenis, bis jemand pausiert (am Handy scrollt ohnehin der Browser).
+    expect(await page.locator('html.lenis').count()).toBe(isMobile ? 0 : 1);
+    const toggle = page.locator('[data-motion-toggle]');
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
+    expect(await page.locator('html.lenis').count()).toBe(0);
+
+    // Ein Sprung ist sofort am Ziel, statt durch die Seite zu gleiten.
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    await page.locator('[data-hero] a[href="#sortiment"]').click();
+    await nextFrames(page);
+    const landed = await page.evaluate(() => window.scrollY);
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => window.scrollY)).toBe(landed);
+    expect(landed).toBeGreaterThan(300);
+
+    // Der Hero hängt nicht am Scrollen.
+    await page.evaluate(() => window.scrollTo({ top: 300, behavior: 'instant' }));
+    await nextFrames(page);
+    const hero = page.locator('[data-hero]');
+    expect(await hero.evaluate((root) => root.style.getPropertyValue('--hero-p'))).toBe('');
+
+    // Die Haltung steht in voller Deckkraft, auch mitten auf ihrer Strecke.
+    const statement = page.locator('[data-reveal-words]').first();
+    const midway = () =>
+      statement.evaluate((element) =>
+        window.scrollTo({
+          top: element.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.75,
+          behavior: 'instant',
+        }),
+      );
+    const dimmed = () =>
+      statement.evaluate(
+        (element) =>
+          [...element.querySelectorAll<HTMLElement>('.word')].filter(
+            (word) => Number(getComputedStyle(word).opacity) < 1,
+          ).length,
+      );
+    await midway();
+    await nextFrames(page);
+    expect(await statement.locator('.word').count()).toBeGreaterThan(3);
+    expect(await dimmed()).toBe(0);
+
+    // Fortsetzen: Am Desktop gleitet es wieder, und die Wörter der Haltung werden wieder hell.
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'on');
+    expect(await page.locator('html.lenis').count()).toBe(isMobile ? 0 : 1);
+    await midway();
+    await expect.poll(dimmed).toBeGreaterThan(0);
   });
 
   test('Anhalten und Fortsetzen: Der Auftakt spielt nicht weiter', async ({ page }) => {

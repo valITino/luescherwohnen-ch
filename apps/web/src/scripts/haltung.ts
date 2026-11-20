@@ -7,8 +7,11 @@
  *
  * Der Fortschritt kommt direkt aus der Lage des Satzes im Bildschirm (kein vorab berechneter
  * Auslöser): So stimmt er auch, wenn sich die Höhe der Seite oberhalb noch ändert.
+ *
+ * Solange jemand die Bewegung angehalten hat (Schalter), steht der Satz in voller Deckkraft, wie
+ * bei reduzierter Bewegung.
  */
-import { whileInView } from '@luescher/ui/motion';
+import { motionPaused, onMotionPausedChange, whileInView } from '@luescher/ui/motion';
 import { gsap } from '@luescher/ui/motion/smooth';
 import { SplitText } from 'gsap/SplitText';
 
@@ -44,8 +47,10 @@ export function initHaltung(root: HTMLElement): void {
   /** progress 0 = der Satz erreicht den unteren Rand, 1 = er steht auf 38 % der Höhe */
   const update = () => {
     const height = window.innerHeight;
+    const paused = motionPaused();
     for (const item of statements) {
-      const top = item.statement.getBoundingClientRect().top;
+      // Angehalten: wie ausserhalb der Strecke, also volle Deckkraft.
+      const top = paused ? -height : item.statement.getBoundingClientRect().top;
       const progress = Math.max(0, Math.min(1, (height - top) / (height * (1 - END))));
       if (progress === item.last) continue;
       item.last = progress;
@@ -75,6 +80,7 @@ export function initHaltung(root: HTMLElement): void {
       update();
     });
   };
+  onMotionPausedChange(update);
   whileInView(root, (inView) => {
     if (inView) {
       window.addEventListener('scroll', onScroll, { passive: true });

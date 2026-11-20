@@ -37,6 +37,57 @@ const alreadySeen = (entry: IntersectionObserverEntry) => {
 /** Letzter Platz einer Folge (gezählt ab 0): Weitere Bilder starten zusammen mit ihm. */
 const MAX_INDEX = 3;
 
+/**
+ * Ein Bild öffnet sich erst, wenn ein Viertel seines Rahmens im Bild ist. Früher, gleich am
+ * unteren Rand, stiege es grösstenteils unter dem Rand auf: Zu sehen wäre nur, wie zuletzt seine
+ * Oberkante ankommt.
+ */
+const UNVEIL_AT = 0.25;
+/** Bleibt ein Rahmen knapp darunter stehen, öffnet sich das Bild nach dieser Zeit trotzdem. */
+const UNVEIL_PARK_MS = 700;
+/**
+ * So lange darf ein Bild, das noch lädt (langsames Netz, schnelles Wischen), seinen Auftritt
+ * hinauszögern. Danach steht es ohne Auftritt da und erscheint, sobald es geladen ist, auf der
+ * Sandfläche, statt dass der Ausschnitt über einen leeren Rahmen steigt und das Foto nachspringt.
+ */
+const IMAGE_WAIT_MS = 500;
+
+/**
+ * Die Zeilen bleiben während des Auftritts genau so, wie der Browser die Überschrift umbricht.
+ * SplitText hält jedes Wort zusammen und bricht ausgewogene Überschriften (text-wrap: balance)
+ * mitunter anders um: Bei «Ein Familien­unternehmen aus Baden.» stünde das ganze Wort in der
+ * nächsten Zeile, und am Ende des Auftritts spränge der Umbruch zurück. Darum wird jeder Umbruch
+ * vorher gemessen und für die Dauer des Auftritts fest gesetzt (an einem weichen Trennstrich mit
+ * sichtbarem Strich). Gibt zurück, wie das Markup wiederhergestellt wird.
+ */
+function holdLines(title: HTMLElement): () => void {
+  const breaks: { node: Text; at: number }[] = [];
+  const walker = document.createTreeWalker(title, NodeFilter.SHOW_TEXT);
+  const range = document.createRange();
+  let last = Number.NEGATIVE_INFINITY;
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const text = node as Text;
+    for (let at = 0; at < text.data.length; at++) {
+      if (/\s|\u00AD/.test(text.data[at] ?? '')) continue;
+      range.setStart(text, at);
+      range.setEnd(text, at + 1);
+      // Unterkante, nicht Oberkante: Ein Zeichen am Anfang einer Zeile schliesst das Ende der
+      // Zeile davor mit ein.
+      const bottom = range.getBoundingClientRect().bottom;
+      if (bottom > last + 1 && last > Number.NEGATIVE_INFINITY) breaks.push({ node: text, at });
+      last = Math.max(last, bottom);
+    }
+  }
+  const original = [...title.childNodes].map((child) => child.cloneNode(true));
+  // Von hinten nach vorn: So bleiben die gemerkten Stellen im selben Textknoten gültig.
+  for (const { node, at } of breaks.reverse()) {
+    node.splitText(at);
+    if (node.data.endsWith('\u00AD')) node.data = `${node.data.slice(0, -1)}-`;
+    node.after(document.createElement('br'));
+  }
+  return () => title.replaceChildren(...original);
+}
+
 export function initReveals(): void {
   if (typeof IntersectionObserver === 'undefined') return;
   // Pausiert: Nichts wird geteilt, nichts wartet. Die Elemente bleiben, wie sie im Markup stehen.
@@ -63,6 +114,7 @@ export function initReveals(): void {
         observer.unobserve(title);
         // Unterwegs zu einer Marke: nicht teilen, die Überschrift steht einfach da.
         if (jumping()) continue;
+        const restore = holdLines(title);
         const split = SplitText.create(title, { type: 'lines', mask: 'lines', linesClass: 'ln' });
         // Der Kicker führt (SectionHead.astro), die Zeilen folgen 60 ms später.
         const tween = gsap.from(split.lines, {
@@ -74,6 +126,7 @@ export function initReveals(): void {
           onComplete: () => {
             running.delete(tween);
             split.revert();
+            restore();
           },
         });
         running.add(tween);
@@ -101,13 +154,62 @@ export function initReveals(): void {
 /**
  * Kleine Auftritte, die das CSS selbst spielt (Kicker tippt sich ein, Bilder öffnen sich, der
  * Sucher stellt das Porträt scharf): Elemente mit `data-enter` warten ausserhalb des Bildes
- * (`wait`) und bekommen `in`, sobald sie hereinkommen. Was beim Start schon zu sehen ist, bleibt
- * einfach stehen. Ohne dieses Skript (reduzierte Bewegung, kein JavaScript) ist alles von Anfang
- * an sichtbar.
+ * (`wait`) und bekommen `in`, sobald sie hereinkommen, Bilder erst ab einem Viertel. Was beim
+ * Start schon zu sehen ist, bleibt einfach stehen. Ohne dieses Skript (reduzierte Bewegung, kein
+ * JavaScript) ist alles von Anfang an sichtbar.
  */
 function initEntrances(): { resolveAll(): void } {
   const elements = document.querySelectorAll<HTMLElement>('main [data-enter]');
+  const parked = new Map<HTMLElement, number>();
   let first = true;
+
+  const unpark = (element: HTMLElement) => {
+    window.clearTimeout(parked.get(element));
+    parked.delete(element);
+  };
+
+  /*
+   * Zustand setzen. Ein Auftritt, der ein Bild umschliesst (der Sucher um das Porträt), folgt
+   * dem Bild: Ecken, Linie und Bildtext beginnen, wenn das Foto aufsteigt.
+   */
+  const settle = (element: HTMLElement, state: '' | 'in') => {
+    element.dataset.enter = state;
+    if (!element.classList.contains('enter-unveil')) return;
+    const outer = element.parentElement?.closest<HTMLElement>('main [data-enter="wait"]');
+    if (!outer) return;
+    observer.unobserve(outer);
+    outer.dataset.enter = state;
+  };
+
+  const awaitImage = (element: HTMLElement, image: HTMLImageElement) => {
+    let timer = 0;
+    const done = (loaded: boolean) => {
+      window.clearTimeout(timer);
+      image.removeEventListener('load', onLoad);
+      image.removeEventListener('error', onError);
+      // Inzwischen angehalten (resolveAll): Es steht schon alles.
+      if (element.dataset.enter !== 'wait') return;
+      settle(element, loaded && !jumping() ? 'in' : '');
+    };
+    const onLoad = () => done(true);
+    const onError = () => done(false);
+    timer = window.setTimeout(() => done(false), IMAGE_WAIT_MS);
+    image.addEventListener('load', onLoad);
+    image.addEventListener('error', onError);
+  };
+
+  /** Auftritt beginnen; `index`: Platz in einer Folge gemeinsam hereinkommender Bilder */
+  const enter = (element: HTMLElement, index: number) => {
+    unpark(element);
+    observer.unobserve(element);
+    // Mitten in einem Sprung: kein Auftritt, das Ziel steht bei der Ankunft fertig da.
+    if (jumping()) return settle(element, '');
+    if (!element.classList.contains('enter-unveil')) return settle(element, 'in');
+    const image = element.querySelector('img');
+    if (image && !image.complete) return awaitImage(element, image);
+    placeInRow(element, Math.min(index, MAX_INDEX));
+    settle(element, 'in');
+  };
 
   const observer = new IntersectionObserver(
     (entries) => {
@@ -125,22 +227,36 @@ function initEntrances(): { resolveAll(): void } {
           else element.dataset.enter = 'wait';
           continue;
         }
-        if (!entry.isIntersecting) continue;
-        observer.unobserve(element);
-        // Mitten in einem Sprung: kein Auftritt, das Ziel steht bei der Ankunft fertig da.
-        if (jumping()) {
-          element.dataset.enter = '';
+        if (!entry.isIntersecting) {
+          unpark(element);
           continue;
         }
-        if (element.classList.contains('enter-unveil')) {
-          placeInRow(element, Math.min(index, MAX_INDEX));
-          index += 1;
+        // Schon mit seinem Bild erledigt (settle), die Meldung war unterwegs.
+        if (element.dataset.enter !== 'wait') {
+          observer.unobserve(element);
+          continue;
         }
-        element.dataset.enter = 'in';
+        if (jumping()) {
+          enter(element, 0);
+          continue;
+        }
+        const unveil = element.classList.contains('enter-unveil');
+        // Umschliesst es ein Bild, das noch wartet, beginnt es mit diesem (settle).
+        if (!unveil && element.querySelector('.enter-unveil[data-enter="wait"]')) continue;
+        if (unveil && entry.intersectionRatio < UNVEIL_AT) {
+          if (!parked.has(element)) {
+            parked.set(
+              element,
+              window.setTimeout(() => enter(element, 0), UNVEIL_PARK_MS),
+            );
+          }
+          continue;
+        }
+        enter(element, unveil ? index++ : 0);
       }
       first = false;
     },
-    { rootMargin: '0px 0px -8% 0px' },
+    { rootMargin: '0px 0px -8% 0px', threshold: [0, UNVEIL_AT] },
   );
 
   elements.forEach((element) => observer.observe(element));
@@ -153,6 +269,8 @@ function initEntrances(): { resolveAll(): void } {
      */
     resolveAll() {
       observer.disconnect();
+      for (const timer of parked.values()) window.clearTimeout(timer);
+      parked.clear();
       for (const element of document.querySelectorAll<HTMLElement>(
         'main [data-enter="wait"], main [data-enter="in"]',
       )) {

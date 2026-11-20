@@ -13,10 +13,16 @@ export interface ScrollLock {
 const CAPSULE_ON = 96;
 const CAPSULE_OFF = 40;
 /**
- * Spätestens dann wechselt die Form, falls kein transitionend kommt (etwa wenn nichts sichtbar
- * war, das abtauchen konnte): das Abtauchen in Header.astro (`--dur-1`) plus etwas Luft.
+ * Spätestens dann wechselt die Form, falls kein transitionend kommt (etwa wenn nur der Teil mit dem
+ * Tastaturfokus zu sehen ist, der nicht abtaucht): das Abtauchen in Header.astro (`--dur-1`) plus
+ * etwas Luft.
  */
 const MORPH_FALLBACK_MS = DUR.d1 * 1000 + 50;
+
+/** Wird das Element dargestellt? checkVisibility() fehlt in Safari und iOS vor 17.4. */
+const canCheckVisibility = typeof Element !== 'undefined' && 'checkVisibility' in Element.prototype;
+const shown = (element: Element) =>
+  canCheckVisibility ? element.checkVisibility() : element.getClientRects().length > 0;
 
 export function initHeader(lock: () => ScrollLock | null): void {
   const header = document.querySelector<HTMLElement>('[data-header]');
@@ -35,26 +41,30 @@ export function initHeader(lock: () => ScrollLock | null): void {
     bar.querySelectorAll<HTMLElement>(':scope > .bar-logo, :scope > .bar-nav, .bar-actions > *');
   // Ist davon gerade etwas zu sehen? Liest den laufenden Wert der Übergänge.
   const anyVisible = () =>
-    [...parts()].some(
-      (part) => part.checkVisibility() && Number(getComputedStyle(part).opacity) > 0.05,
-    );
+    [...parts()].some((part) => shown(part) && Number(getComputedStyle(part).opacity) > 0.05);
 
   /*
    * Der Tastaturfokus bleibt in der Leiste. Gibt es das fokussierte Bedienelement in der neuen Form
-   * nicht (etwa den Menü-Knopf oben am Desktop oder die Navigation in der Kapsel), wandert der
-   * Fokus zum ersten sichtbaren Gegenstück, statt auf <body> zu fallen (WCAG 2.4.3, 2.4.7).
+   * nicht, übernimmt ein sichtbares Gegenstück, statt dass der Fokus auf <body> fällt (WCAG 2.4.3,
+   * 2.4.7): für den Menü-Knopf (oben am Desktop) die Navigation, für die er steht; sonst das
+   * nächste sichtbare Bedienelement der Leiste, am Ende das vorherige. So führt Tab danach in der
+   * gewohnten Reihenfolge weiter durch die Leiste.
    */
-  const counterparts = [
-    header.querySelector<HTMLElement>('[data-menu-toggle]'),
-    header.querySelector<HTMLElement>('.bar-nav a'),
-    header.querySelector<HTMLElement>('.bar-logo'),
-  ];
+  const standIn = (lost: HTMLElement) => {
+    const nav = bar.querySelector<HTMLElement>('.bar-nav a');
+    if (lost.matches('[data-menu-toggle]') && nav && shown(nav)) return nav;
+    const controls = [...bar.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')];
+    const at = controls.indexOf(lost);
+    return (
+      controls.slice(at + 1).find(shown) ?? controls.slice(0, Math.max(0, at)).reverse().find(shown)
+    );
+  };
   const reshape = () => {
     const active = document.activeElement;
     const focused = active instanceof HTMLElement && bar.contains(active) ? active : null;
     header.classList.toggle('is-scrolled', scrolled);
-    if (!focused || focused.checkVisibility()) return;
-    counterparts.find((element) => element?.checkVisibility())?.focus({ preventScroll: true });
+    if (!focused || shown(focused)) return;
+    standIn(focused)?.focus({ preventScroll: true });
   };
 
   // Zweite Phase: Form wechseln, solange noch alles abgetaucht ist, dann wieder auftauchen.
@@ -143,6 +153,8 @@ export function initHeader(lock: () => ScrollLock | null): void {
     const transition = event.viewTransition;
     if (!transition) return;
     if (motionPaused()) {
+      // Chromium führt danach in der alten Seite kein Skript mehr aus (gemessen): Nach
+      // skipTransition() darf nichts folgen, und dieser Zuhörer bleibt der einzige für pageswap.
       transition.skipTransition();
       return;
     }

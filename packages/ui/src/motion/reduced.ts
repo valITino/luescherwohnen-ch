@@ -2,7 +2,10 @@
  * Bewegungs-Präferenzen.
  * - `prefers-reduced-motion`: keine Autoplay- oder Scrub-Animationen, kein Lenis.
  * - `data-motion="off"` am <html>: vom Menschen angehaltene Bewegung. Dauerbewegung (Band,
- *   Equalizer) steht, Auftritte, Übergänge und der Formwechsel des Headers entfallen.
+ *   Equalizer) steht, Auftritte, Übergänge, der Formwechsel des Headers und der Seitenwechsel
+ *   entfallen, es gibt kein sanftes Scrollen, und nichts hängt am Scrollen. Beim Fortsetzen
+ *   laufen Dauerbewegung, sanftes Scrollen und die Effekte am Scrollen wieder; Auftritte bleiben
+ *   aus. Gilt nur für die aktuelle Seite (kein Web-Speicher).
  */
 
 const QUERY = '(prefers-reduced-motion: reduce)';

@@ -246,14 +246,28 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
 
   /*
    * Was den Tastaturfokus trägt, taucht nicht ab: Fokusring und Ziel bleiben während des Abtauchens
-   * sichtbar (WCAG 2.4.7). Gibt es das Element in der neuen Form nicht, übernimmt beim Wechsel ein
-   * sichtbares Gegenstück den Fokus (header.ts). Die Navigation fehlt hier, sie gibt es in der
-   * Kapsel nicht.
+   * sichtbar (WCAG 2.4.7), auch ein Link der Navigation. Gibt es das Element in der neuen Form
+   * nicht, übernimmt beim Wechsel ein sichtbares Gegenstück den Fokus (header.ts). Es steht sofort
+   * ganz da, statt mit den anderen Teilen gestaffelt einzublenden.
    */
   .site-header:global(.is-morphing) :global(.bar-logo):focus-visible,
+  .site-header:global(.is-morphing) .bar-nav:has(:focus-visible),
   .site-header:global(.is-morphing) .bar-actions > :is(:focus-visible, :has(:focus-visible)) {
     opacity: 1;
     transform: none;
+    transition-duration: 0s;
+    transition-delay: 0s;
+  }
+
+  .site-header:global(.is-morphing) .bar-nav:has(:focus-visible) {
+    transform: translateX(-50%);
+  }
+
+  .bar :global(.bar-logo):focus-visible,
+  .bar-nav:has(:focus-visible),
+  .bar-actions > :is(:focus-visible, :has(:focus-visible)) {
+    transition-duration: 0s;
+    transition-delay: 0s;
   }
 
   /*

@@ -496,17 +496,20 @@
 
   /*
    * Ein Bild steigt beim Hereinscrollen vom unteren Rand seines Rahmens nach oben ins Bild und
-   * setzt sich dabei aus einem leichten Zoom (reveal.ts setzt data-enter). Kommen mehrere zusammen
-   * ins Bild, folgen sie einander im Abstand von --stagger: reveal.ts nummeriert sie mit --enter-i.
+   * setzt sich dabei aus einem leichten Zoom (reveal.ts setzt data-enter, sobald ein Viertel des
+   * Rahmens zu sehen ist). Kommen mehrere zusammen ins Bild, folgen sie einander im Abstand von
+   * --stagger: reveal.ts nummeriert sie mit --enter-i.
    * Clip und Zoom sitzen beide auf dem Bild selbst, nicht auf dem Rahmen: So bewegt der Browser
    * eine einzige Ebene. Mit dem Clip am Rahmen fielen beim Wischen auf dem Handy gemessen doppelt
    * so viele Bilder aus (Entscheid 38).
    * Solange das Bild wartet, ist es nur durchsichtig, nicht weggeschnitten: Ein ganz beschnittenes
    * Bild lädt der Browser nicht vor (loading="lazy"), es käme sonst erst beim Auftritt und spränge
    * dann mitten hinein (Entscheid 39). Der Rahmen ist so lange leer statt sandfarben: Das Foto
-   * steigt aus dem Papier auf, statt in einen Platzhalter zu fallen.
-   * Ohne Skript, bei reduzierter Bewegung und im Druck steht das Bild einfach da; die Sandfläche
-   * füllt dann den Rahmen, bis das Bild geladen ist.
+   * steigt aus dem Papier auf, statt in einen Platzhalter zu fallen. Ist es beim Auftritt noch
+   * nicht geladen, wartet reveal.ts kurz darauf; sonst steht es ohne Auftritt da (Entscheid 40).
+   * Ohne Skript, bei reduzierter Bewegung und ohne Auftritt steht das Bild einfach da; die
+   * Sandfläche füllt dann den Rahmen, bis das Bild geladen ist. Der Rahmen des Porträts behält
+   * seine eigene Papierfläche (Ueber.astro).
    */
   .enter-unveil {
     background-color: var(--sand);
@@ -540,7 +543,10 @@
     }
   }
 
-  /* Im Druck und bei angehaltener Bewegung wartet nichts, ein laufender Auftritt steht am Ziel. */
+  /*
+   * Im Druck und bei angehaltener Bewegung wartet nichts, ein laufender Auftritt steht am Ziel.
+   * (Vor dem Drucken lädt der Browser alle Bilder.)
+   */
   @media print {
     .enter-unveil[data-enter] img {
       opacity: 1;

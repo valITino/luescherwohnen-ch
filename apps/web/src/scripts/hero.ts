@@ -3,10 +3,11 @@
  *
  * Auf grossen Bildschirmen bleibt der Hero kurz stehen (CSS: sticky). Auf dieser Strecke tritt
  * die erste Zeile zurück, und das Bild rückt etwas näher. Auf kleinen Bildschirmen scrollt der
- * Hero normal. Bei reduzierter Bewegung hängt nichts am Scrollen. Alles hier ist Zugabe: Die
- * Inhalte stehen im Markup.
+ * Hero normal. Bei reduzierter Bewegung hängt nichts am Scrollen, ebenso, solange jemand die
+ * Bewegung angehalten hat (das Anpinnen bleibt, damit die Seite nicht springt). Alles hier ist
+ * Zugabe: Die Inhalte stehen im Markup.
  */
-import { motionAllowed, onceInView, onMotionPausedChange } from '@luescher/ui/motion';
+import { motionAllowed, motionPaused, onceInView, onMotionPausedChange } from '@luescher/ui/motion';
 import { hours } from '../config/hours.ts';
 import { statusAt, statusText } from '../lib/opening-hours.ts';
 import { startClock } from './clock.ts';
@@ -14,11 +15,13 @@ import { startClock } from './clock.ts';
 /**
  * «Geöffnet bis 18:30» bzw. «Geschlossen · öffnet morgen 10:00», jede Minute neu.
  * Ohne Skript bleibt die Anzeige verborgen; die Öffnungszeiten stehen daneben als Tabelle.
+ * Gibt eine Funktion zurück, die die Anzeige sofort zeigt (home.ts vor einem Sprung): Erscheint
+ * sie erst unterwegs, wird die Seite unter einem laufenden Sprung länger, und er endet zu tief.
  */
-export function initOpenStatus(element: HTMLElement): void {
+export function initOpenStatus(element: HTMLElement): () => void {
   const label = element.querySelector<HTMLElement>('[data-open-status-text]');
   const dot = element.querySelector<HTMLElement>('.dot');
-  if (!label) return;
+  if (!label) return () => undefined;
   const render = () => {
     const now = new Date();
     const status = statusAt(hours, now);
@@ -28,14 +31,20 @@ export function initOpenStatus(element: HTMLElement): void {
     dot?.classList.toggle('dot-off', !status.open);
     element.hidden = false;
   };
+  let started = false;
   const tick = () => {
+    started = true;
     render();
     const now = new Date();
     window.setTimeout(tick, 60_000 - (now.getSeconds() * 1000 + now.getMilliseconds()) + 50);
   };
+  const start = () => {
+    if (!started) tick();
+  };
   // Erst rechnen, wenn die Anzeige in die Nähe kommt (Zeitzonen-Daten kosten beim ersten Mal).
   // Beobachtet wird der Behälter: Die Anzeige selbst ist bis dahin verborgen und hat keine Fläche.
-  onceInView(element.parentElement ?? element, tick, { threshold: 0, rootMargin: '200px 0px' });
+  onceInView(element.parentElement ?? element, start, { threshold: 0, rootMargin: '200px 0px' });
+  return start;
 }
 
 export function initHero(root: HTMLElement): void {
@@ -64,6 +73,12 @@ export function initHero(root: HTMLElement): void {
   let ticking = false;
   const update = () => {
     ticking = false;
+    // Angehalten: Der Hero steht wie bei reduzierter Bewegung.
+    if (motionPaused()) {
+      root.style.removeProperty('--hero-p');
+      if (root.style.length === 0) root.removeAttribute('style');
+      return;
+    }
     const rect = track.getBoundingClientRect();
     if (rect.bottom < 0) return;
     // Angepinnt: die Strecke, auf der der Hero steht. Sonst: gut die halbe Höhe des Heros.
@@ -83,5 +98,6 @@ export function initHero(root: HTMLElement): void {
     { passive: true },
   );
   window.addEventListener('resize', update, { passive: true });
+  onMotionPausedChange(update);
   update();
 }

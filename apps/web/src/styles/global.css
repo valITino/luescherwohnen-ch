@@ -65,10 +65,15 @@ picture > source {
  * das kann (View Transitions zwischen Dokumenten, reines CSS, auch ohne Skript). Sonst ändert
  * sich nichts.
  * Der Header bleibt dabei stehen: Die Leiste oben trägt einen eigenen Namen (site-bar, siehe
- * Header.astro) und wird darum nicht mit der Seite überblendet. Stehen beide Seiten oben, hat
- * sie in jedem Bild dieselben Pixel. Die Kapsel trägt den Namen nicht, ebenso wenig die Leiste
- * einer Seite, die zu einer Marke oder durch den Verlauf verlassen wird (header.ts): Dann geht
- * der Header mit der alten Seite, und der neue blendet für sich ein (--dur-2, bremsend).
+ * Header.astro) und wird darum nicht mit der Seite überblendet. Stehen beide Seiten oben, bilden
+ * alte und neue Leiste ein Paar mit denselben Pixeln: Dann wird gar nicht überblendet, die neue
+ * steht vom ersten Bild an. (Zwei gleiche Bilder überzublenden, sieht man nicht, solange beide
+ * im Takt sind. Gerät die Überblendung im ersten Bild aus dem Takt, wird die Leiste für ein Bild
+ * grau; gemessen in Chromium, mit bremsender Kurve fast bei jedem Wechsel.)
+ * Die Kapsel trägt den Namen nicht, ebenso wenig die Leiste einer Seite, die zu einer Marke oder
+ * durch den Verlauf verlassen wird (header.ts): Dann geht der Header mit der alten Seite, und der
+ * neue blendet für sich ein (--dur-2, bremsend). Das gilt auch zurück und vor zwischen zwei
+ * Seiten, die oben stehen: Die alte Seite weiss nicht, wo die neue beginnt.
  * Darunter weicht die alte Seite schnell (--dur-1, bremsend, nur Deckkraft), die neue setzt sich
  * 40 ms später weich bremsend von leicht unten. Die beiden liegen so kaum übereinander, und der
  * Wechsel geht nur einen Augenblick durch das Papier statt durch eine Doppelbelichtung.
@@ -94,15 +99,35 @@ picture > source {
     animation-timing-function: var(--ease-in-out);
   }
 
+  /* Ein Paar: nicht überblenden. */
   ::view-transition-old(site-bar),
   ::view-transition-new(site-bar) {
-    animation-duration: var(--dur-2);
-    animation-timing-function: var(--ease-out);
+    animation: none;
+  }
+
+  ::view-transition-old(site-bar) {
+    opacity: 0;
+  }
+
+  /* Ohne Gegenstück: Die Leiste blendet für sich aus bzw. ein. */
+  ::view-transition-old(site-bar):only-child {
+    opacity: 1;
+    animation: var(--dur-2) var(--ease-out) both page-out;
+  }
+
+  ::view-transition-new(site-bar):only-child {
+    animation: var(--dur-2) var(--ease-out) both bar-in;
   }
 }
 
 @keyframes page-out {
   to {
+    opacity: 0;
+  }
+}
+
+@keyframes bar-in {
+  from {
     opacity: 0;
   }
 }

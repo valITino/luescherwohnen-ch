@@ -1,7 +1,7 @@
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
-import { motionAllowed } from './reduced.ts';
+import { motionAllowed, motionPaused, onMotionPausedChange } from './reduced.ts';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -11,7 +11,10 @@ export { gsap, ScrollTrigger };
 export { DUR, EASE, STAGGER } from './tokens.ts';
 
 export interface SmoothScroll {
-  /** Lenis-Instanz; `null` bei reduzierter Bewegung und auf Touch-Geräten (natives Scrollen) */
+  /**
+   * Lenis-Instanz; `null` bei reduzierter Bewegung, auf Touch-Geräten und solange die Bewegung
+   * angehalten ist (natives Scrollen). Immer frisch lesen, nicht zwischenspeichern.
+   */
   readonly lenis: Lenis | null;
   /** Scrollen sperren, z. B. solange ein Vollbild-Overlay offen ist */
   stop(): void;
@@ -31,6 +34,12 @@ const editable = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
   (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
 
+/** Bedienelemente, die die Leertaste auslösen, statt die Seite zu scrollen */
+const PRESSABLE =
+  'button, summary, [role="button"], [role="checkbox"], [role="switch"], [role="radio"], [role="tab"], [role="menuitem"], [role="option"]';
+const pressed = (event: KeyboardEvent) =>
+  event.key === ' ' && event.target instanceof Element && event.target.closest(PRESSABLE) !== null;
+
 /**
  * Lenis-Smooth-Scroll (lerp 0.1), synchron zu ScrollTrigger.
  * Bei `prefers-reduced-motion` wird Lenis gar nicht erst gestartet, ebenso auf Geräten, die man
@@ -44,6 +53,9 @@ const editable = (target: EventTarget | null) =>
  *
  * Overlays mit eigenem Scrollen (Menü) tragen `data-lenis-prevent`: Ein gestopptes
  * Lenis schluckt sonst jedes Rad- und Wischereignis, und das Overlay liesse sich nicht scrollen.
+ *
+ * Hält jemand die Bewegung an (Schalter, `data-motion="off"`), scrollt bis zum Fortsetzen der
+ * Browser selbst: kein Ausgleiten, Sprünge sind sofort am Ziel, wie bei reduzierter Bewegung.
  */
 export function initSmoothScroll(): SmoothScroll {
   const root = document.documentElement;
@@ -56,42 +68,59 @@ export function initSmoothScroll(): SmoothScroll {
     };
   }
 
-  const lenis = new Lenis({
-    lerp: 0.1,
-    autoRaf: false,
-    anchors: true,
-    stopInertiaOnNavigate: true,
-  });
-  // Ist schon ein Overlay offen (jemand war schneller als das Nachladen), bleibt die Seite stehen.
-  if (root.classList.contains(LOCKED)) lenis.stop();
+  let lenis: Lenis | null = null;
+
+  const create = () => {
+    if (lenis) return;
+    lenis = new Lenis({
+      lerp: 0.1,
+      autoRaf: false,
+      anchors: true,
+      stopInertiaOnNavigate: true,
+    });
+    // Ist schon ein Overlay offen (jemand war schneller als das Nachladen), bleibt die Seite stehen.
+    if (root.classList.contains(LOCKED)) lenis.stop();
+    lenis.on('scroll', ScrollTrigger.update);
+  };
+  // Mitten im Ausgleiten angehalten: Die Seite bleibt, wo sie gerade ist.
+  const destroy = () => {
+    lenis?.destroy();
+    lenis = null;
+  };
 
   /*
    * Scrollt jemand mit der Tastatur (Pos1, Ende, Bild auf/ab, Leertaste, Pfeile), während Lenis
    * noch vom Mausrad ausgleitet, hält Lenis an: Sonst zöge es die Seite nach der Taste zurück an
    * sein altes Ziel. Kurz anhalten und wieder starten setzt das Ziel auf die aktuelle Lage.
-   * Ein offenes Menü (gestopptes Lenis) bleibt gesperrt.
+   * Ein offenes Menü (gestopptes Lenis) bleibt gesperrt. Die Leertaste auf einem Knopf löst den
+   * Knopf aus und scrollt nicht: Dann gleitet die Seite weiter.
    */
   window.addEventListener('keydown', (event) => {
-    if (!SCROLL_KEYS.has(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
-    if (lenis.isStopped || lenis.isScrolling !== 'smooth' || editable(event.target)) return;
+    if (!lenis || !SCROLL_KEYS.has(event.key) || event.altKey || event.ctrlKey || event.metaKey)
+      return;
+    if (event.defaultPrevented || editable(event.target) || pressed(event)) return;
+    if (lenis.isStopped || lenis.isScrolling !== 'smooth') return;
     lenis.stop();
     lenis.start();
   });
 
-  lenis.on('scroll', ScrollTrigger.update);
-  const tick = (time: number) => lenis.raf(time * 1000);
-  gsap.ticker.add(tick);
+  gsap.ticker.add((time: number) => lenis?.raf(time * 1000));
   gsap.ticker.lagSmoothing(0);
 
+  if (!motionPaused()) create();
+  onMotionPausedChange((paused) => (paused ? destroy() : create()));
+
   return {
-    lenis,
+    get lenis() {
+      return lenis;
+    },
     stop() {
-      lenis.stop();
+      lenis?.stop();
       root.classList.add(LOCKED);
     },
     start() {
       root.classList.remove(LOCKED);
-      lenis.start();
+      lenis?.start();
     },
   };
 }

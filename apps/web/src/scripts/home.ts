@@ -27,8 +27,10 @@ initHeader(() => smooth);
 const hero = document.querySelector<HTMLElement>('[data-hero]');
 if (hero) initHero(hero);
 
-// Öffnungsstatus überall dort, wo er steht (Hero und Kontakt)
-document.querySelectorAll<HTMLElement>('[data-open-status]').forEach(initOpenStatus);
+// Öffnungsstatus überall dort, wo er steht (Hero, Besuch und Kontakt)
+const openStatus = [...document.querySelectorAll<HTMLElement>('[data-open-status]')].map(
+  initOpenStatus,
+);
 
 // --- Kontaktformular: erst laden, wenn es in Sicht kommt ---
 const contact = document.querySelector<HTMLFormElement>('[data-contact]');
@@ -130,6 +132,8 @@ const layOut = (element: HTMLElement) => {
 };
 
 const layOutNow = () => {
+  // Auch der Öffnungsstatus erscheint vor dem Sprung, nicht erst unterwegs (hero.ts).
+  for (const show of openStatus) show();
   if (lazy.length === 0) return;
   for (const element of lazy.splice(0)) layOut(element);
   // Das sanfte Scrollen kennt die Seitenlänge nur von früher: sofort neu vermessen,
