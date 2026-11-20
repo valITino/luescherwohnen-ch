@@ -1,0 +1,148 @@
+---
+/**
+ * Bühne unter dem Hero (an der Stelle des Klick-Simulators bei PSYber): das Wichtigste für einen
+ * Besuch auf einen Blick. Adresse, Öffnungszeiten mit Status, Termin ausserhalb der Zeiten.
+ * Texte: «Firmenstandorte», «Öffnungszeiten» und «Unternehmen» der bisherigen Website.
+ */
+import Button from '@luescher/ui/components/Button.astro';
+import Icon from '@luescher/ui/components/Icon.astro';
+import { company, hours, mapUrl } from '../../config/site.ts';
+import { clock } from '../../lib/opening-hours.ts';
+---
+
+<div class="stage dot-grid visit">
+  <div class="visit-col">
+    <p class="label-up visit-label">
+      <Icon name="store" size={18} />
+      Ausstellung
+    </p>
+    <p class="title visit-title">
+      {company.street}
+      <br />
+      {company.zip}
+      {company.city}
+    </p>
+    <p class="visit-text">Im Zentrum von {company.city}, auf 6 Etagen und rund 1200 m².</p>
+    <a class="btn-text" href={mapUrl} rel="noopener">
+      Route planen <span class="sr-only">(Karte bei OpenStreetMap)</span>
+      <Icon name="arrow-up-right" size={18} class="icon-shift" />
+    </a>
+  </div>
+
+  <div class="visit-col">
+    <p class="label-up visit-label">
+      <Icon name="clock" size={18} />
+      Öffnungszeiten
+    </p>
+    <ul class="visit-hours">
+      {hours.map((row) => (
+        <li>
+          <span>{row.label}</span>
+          <span class="mono">
+            {row.hours ? `${clock(row.hours.open)}–${clock(row.hours.close)}` : 'geschlossen'}
+          </span>
+        </li>
+      ))}
+    </ul>
+    <p class="visit-status" data-open-status hidden>
+      <i class="dot" aria-hidden="true"></i>
+      <span data-open-status-text></span>
+    </p>
+  </div>
+
+  <div class="visit-col visit-col-cta">
+    <p class="label-up visit-label">
+      <Icon name="calendar-clock" size={18} />
+      Termin
+    </p>
+    <p class="visit-text visit-text-strong">
+      Sehr gerne beraten oder besuchen wir Sie auch ausserhalb der Öffnungszeiten.
+    </p>
+    <p class="visit-text">Vereinbaren Sie einfach einen Termin mit uns.</p>
+    <Button href={`tel:${company.phone.tel}`} icon="phone" variant="secondary">
+      {company.phone.label}
+    </Button>
+  </div>
+</div>
+
+<style>
+  .visit {
+    display: grid;
+    gap: 2rem;
+    padding: clamp(1.5rem, 0.8rem + 3vw, 3.5rem);
+  }
+
+  .visit-col {
+    display: grid;
+    align-content: start;
+    justify-items: start;
+    gap: 0.875rem;
+  }
+
+  .visit-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .visit-label :global(.icon) {
+    color: var(--leaf-deep);
+  }
+
+  .visit-title {
+    font-size: var(--fs-h3);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+  }
+
+  .visit-text {
+    max-width: 24em;
+    color: var(--fg-muted);
+  }
+
+  .visit-text-strong {
+    color: var(--fg-strong);
+    font-weight: 600;
+  }
+
+  .visit-hours {
+    display: grid;
+    width: 100%;
+    border-top: 1px solid var(--border);
+  }
+
+  .visit-hours li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.25rem 1rem;
+    padding-block: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .visit-hours .mono {
+    color: var(--fg-muted);
+    font-family: var(--ff-mono);
+    letter-spacing: 0;
+  }
+
+  .visit-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-weight: 600;
+  }
+
+  @media (min-width: 56rem) {
+    .visit {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(2rem, 4vw, 4rem);
+    }
+
+    .visit-col + .visit-col {
+      padding-left: clamp(2rem, 4vw, 4rem);
+      border-left: 1px solid var(--border);
+    }
+  }
+</style>

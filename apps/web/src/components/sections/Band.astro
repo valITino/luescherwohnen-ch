@@ -1,0 +1,237 @@
+---
+/**
+ * Band: zwei gegenläufige Reihen aus Kacheln (Bereich plus Art) quer über die Seite.
+ * CSS-Animation über transform; die Kopie für den Loop ist aria-hidden.
+ * Pausiert bei Hover und über den Pause-Button. Reduced motion: statisch, umbrechend.
+ * Begriffe aus der Angebotsliste der bisherigen Website (docs/Homepage.docx).
+ */
+import Icon from '@luescher/ui/components/Icon.astro';
+
+const items = [
+  ['Möbel', 'Sortiment'],
+  ['Polstermöbel', 'Sortiment'],
+  ['Esstische und Stühle', 'Sortiment'],
+  ['Betten und Bettwaren', 'Sortiment'],
+  ['Teppiche', 'Sortiment'],
+  ['Vorhänge und Vorhangsysteme', 'Sortiment'],
+  ['Lampen und Beleuchtung', 'Sortiment'],
+  ['Parkett', 'Bodenbelag'],
+  ['Laminat', 'Bodenbelag'],
+  ['Kork', 'Bodenbelag'],
+  ['Innenarchitektur', 'Service'],
+  ['Bauführung', 'Service'],
+  ['Beratung bei Ihnen zu Hause', 'Service'],
+  ['Lieferung und Montage', 'Service'],
+] as const;
+
+const rows = [items.slice(0, 7), items.slice(7)];
+---
+
+<section data-lazy class="sheet ticker" aria-labelledby="ticker-title" data-ticker>
+  <div class="wrap ticker-head">
+    <div class="ticker-heading">
+      <p class="kicker">Sortiment und Service</p>
+      <h2 id="ticker-title" class="display h2 ticker-title">
+        Alle Bereiche der Inneneinrichtung.
+      </h2>
+    </div>
+    {/* Der Name sagt, was der Button tut; er wechselt mit dem Zustand (darum kein aria-pressed). */}
+    <button type="button" class="ticker-toggle" data-ticker-toggle>
+      <span class="ticker-icon ticker-icon-pause">
+        <Icon name="pause" size={16} />
+      </span>
+      <span class="ticker-icon ticker-icon-play">
+        <Icon name="play" size={16} />
+      </span>
+      <span data-ticker-label>Band anhalten</span>
+    </button>
+  </div>
+
+  <div class="ticker-rows">
+    {rows.map((row, rowIndex) => (
+      <div class:list={['ticker-row', { 'ticker-row-reverse': rowIndex === 1 }]}>
+        <ul class="ticker-list">
+          {row.map(([name, kind]) => (
+            <li class="pill">
+              <span class="pill-text">{name}</span>
+              <span class="pill-kind">{kind}</span>
+            </li>
+          ))}
+        </ul>
+        <ul class="ticker-list ticker-copy" aria-hidden="true">
+          {row.map(([name, kind]) => (
+            <li class="pill">
+              <span class="pill-text">{name}</span>
+              <span class="pill-kind">{kind}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+</section>
+
+<style>
+  .ticker {
+    overflow: clip;
+  }
+
+  .ticker-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+
+  .ticker-heading {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .ticker-title {
+    max-width: 14em;
+  }
+
+  .ticker-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-height: 2.75rem;
+    padding-inline: 1.125rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-pill);
+    color: var(--fg-strong);
+    font-size: var(--fs-micro);
+    font-weight: 600;
+    letter-spacing: var(--ls-label);
+    text-transform: uppercase;
+    transition: border-color var(--dur-2) var(--ease);
+  }
+
+  .ticker-toggle:hover {
+    border-color: var(--leaf-deep);
+  }
+
+  .ticker-icon {
+    display: grid;
+  }
+
+  .ticker-icon-play,
+  .ticker:global(.is-paused) .ticker-icon-pause {
+    display: none;
+  }
+
+  .ticker:global(.is-paused) .ticker-icon-play {
+    display: grid;
+  }
+
+  .ticker-rows {
+    display: grid;
+    gap: 0.875rem;
+    margin-top: clamp(2rem, 5vw, 4rem);
+  }
+
+  .ticker-row {
+    display: flex;
+    width: max-content;
+    animation: ticker 60s linear infinite;
+  }
+
+  .ticker-row-reverse {
+    animation-direction: reverse;
+    animation-duration: 68s;
+  }
+
+  .ticker-list {
+    display: flex;
+    flex: none;
+    gap: 0.875rem;
+    padding-right: 0.875rem;
+  }
+
+  /* Papierweisse Kachel auf Leinen */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    min-height: 4.5rem;
+    padding: 0.875rem 1.125rem 0.875rem 1.625rem;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-card);
+    background-color: var(--paper);
+    white-space: nowrap;
+  }
+
+  .pill-text {
+    color: var(--charcoal);
+    font-size: var(--fs-h4);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  .pill-kind {
+    padding: 0.3125rem 0.75rem;
+    border: 1px solid var(--leaf-edge);
+    border-radius: var(--r-pill);
+    color: var(--leaf-deep);
+    font-size: var(--fs-micro);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /*
+   * Pausiert bei Hover, bei Fokus im Band und wenn der Button es anhält. Der Fokus auf dem Button
+   * selbst zählt nicht: Sonst stünde das Band nach «Band fortsetzen» weiter still.
+   */
+  .ticker:global(.is-paused) .ticker-row,
+  .ticker-rows:focus-within .ticker-row {
+    animation-play-state: paused;
+  }
+
+  @media (hover: hover) {
+    .ticker-rows:hover .ticker-row {
+      animation-play-state: paused;
+    }
+  }
+
+  @keyframes ticker {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  /*
+   * Reduzierte Bewegung oder kein Skript (dann gäbe es keinen Knopf zum Anhalten, WCAG 2.2.2):
+   * statisch und umbrechend.
+   */
+  @media (prefers-reduced-motion: reduce), (scripting: none) {
+    /* Block statt Flex: Sonst behält die Liste ihre volle Breite und bricht nicht um. */
+    .ticker-row {
+      display: block;
+      width: auto;
+      animation: none;
+    }
+
+    .ticker-rows {
+      width: min(100% - 2 * var(--gutter), var(--container));
+      margin-inline: auto;
+    }
+
+    .ticker-list {
+      flex-wrap: wrap;
+      padding-right: 0;
+    }
+
+    .pill {
+      min-height: 3.5rem;
+      white-space: normal;
+    }
+
+    .ticker-copy,
+    .ticker-toggle {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,311 @@
+---
+/**
+ * Styleguide: alle Bausteine des Designsystems auf einer Seite (noindex).
+ * Quelle der Wahrheit bleiben die Tokens in packages/ui/src/styles/tokens.css und docs/DESIGN.md.
+ */
+import Button from '@luescher/ui/components/Button.astro';
+import Card from '@luescher/ui/components/Card.astro';
+import Icon from '@luescher/ui/components/Icon.astro';
+import Kicker from '@luescher/ui/components/Kicker.astro';
+import Logo from '@luescher/ui/components/Logo.astro';
+import Tag from '@luescher/ui/components/Tag.astro';
+import Page from '../layouts/Page.astro';
+
+const colors = [
+  { token: '--linen', hex: '#f6f3ec', use: 'Seitenhintergrund' },
+  { token: '--paper', hex: '#ffffff', use: 'Karten, Panels' },
+  { token: '--sand', hex: '#efeae0', use: 'erhöhte Fläche in Karten' },
+  { token: '--sage', hex: '#e9eed9', use: 'grünliche Bogen' },
+  { token: '--hairline', hex: '#e2dccf', use: 'Linien (nie Text)' },
+  { token: '--steel', hex: '#857e70', use: 'Rahmen von Bedienelementen, 3,6:1' },
+  { token: '--ash', hex: '#5c574d', use: 'Sekundärtext, 6,5:1' },
+  { token: '--charcoal', hex: '#272727', use: 'Text, 13,5:1' },
+  { token: '--leaf', hex: '#9cb703', use: 'Aktion (Fläche, mit Ink 7,2:1)' },
+  { token: '--leaf-deep', hex: '#4e5d00', use: 'grüne Schrift, Fokus, 6,6:1' },
+  { token: '--night', hex: '#23231f', use: 'dunkle Bühne (Footer)' },
+  { token: '--amber', hex: '#f9ad26', use: 'Hinweise (Fläche)' },
+];
+---
+
+<Page
+  title="Styleguide – Lüscher Wohnen"
+  description="Bausteine des Designsystems von Lüscher Wohnen."
+  path="/styleguide"
+  noindex
+>
+  <div class="wrap guide">
+    <header class="guide-head">
+      <Kicker num="00">Styleguide</Kicker>
+      <h1 class="display h1">Bausteine.</h1>
+      <p class="lead guide-lead">
+        Aufbau, Schrift und Bewegung nach dem PSYber-Designsystem, Farben hell und warm mit dem Grün
+        der bisherigen Website.
+      </p>
+    </header>
+
+    <section class="guide-block" aria-labelledby="sg-logo">
+      <h2 id="sg-logo" class="display h3">
+        Logo
+      </h2>
+      <div class="guide-row">
+        <Logo />
+        <div class="card guide-night on-night">
+          <Logo tone="light" />
+        </div>
+      </div>
+    </section>
+
+    <section class="guide-block" aria-labelledby="sg-farben">
+      <h2 id="sg-farben" class="display h3">
+        Farben
+      </h2>
+      <ul class="swatches">
+        {colors.map((color) => (
+          <li class="card card-flat swatch">
+            <span class="swatch-color" data-color={color.token}></span>
+            <span class="title">{color.token}</span>
+            <span class="mono meta">{color.hex}</span>
+            <span class="meta">{color.use}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="guide-block" aria-labelledby="sg-schrift">
+      <h2 id="sg-schrift" class="display h3">
+        Schrift
+      </h2>
+      <p class="display h1">Wohnen heisst leben.</p>
+      <p class="display h2">Alles für Ihr Zuhause.</p>
+      <p class="display h3">Betten und Bettwaren</p>
+      <p class="title">Titel in normaler Schreibweise</p>
+      <p class="lead">Einleitung: Wir nehmen uns Zeit für all Ihre Anliegen.</p>
+      <p class="measure">
+        Fliesstext in Manrope, 17 bis 19 Pixel, Zeilenhöhe 1,55, höchstens rund 68 Zeichen pro
+        Zeile. Nummern und Zeiten in Geist Mono: <span class="mono">10:00–18:30</span>.
+      </p>
+      <Kicker num="01">Kicker mit Abschnittsnummer</Kicker>
+    </section>
+
+    <section class="guide-block" aria-labelledby="sg-buttons">
+      <h2 id="sg-buttons" class="display h3">
+        Buttons und Links
+      </h2>
+      <div class="guide-row">
+        <Button icon>Beratung anfragen</Button>
+        <Button variant="secondary" icon="arrow-down-right">
+          Sortiment ansehen
+        </Button>
+        <Button size="sm" icon="phone">
+          Anrufen
+        </Button>
+        <Button disabled>Deaktiviert</Button>
+        <a class="btn-text" href="#sg-buttons">
+          Textlink <Icon name="arrow-right" size={18} class="icon-shift" />
+        </a>
+        <a class="link" href="#sg-buttons">
+          Link im Text
+        </a>
+      </div>
+    </section>
+
+    <section class="guide-block" aria-labelledby="sg-tags">
+      <h2 id="sg-tags" class="display h3">
+        Tags
+      </h2>
+      <div class="guide-row">
+        <Tag>Sortiment</Tag>
+        <Tag tone="solid">Neu</Tag>
+        <Tag tone="amber">Entwurf</Tag>
+      </div>
+    </section>
+
+    <section class="guide-block" aria-labelledby="sg-karten">
+      <h2 id="sg-karten" class="display h3">
+        Karten und Flächen
+      </h2>
+      <div class="guide-grid">
+        <Card hover>
+          <p class="title">Karte</p>
+          <p class="meta">Radius 22 px, 1 px Rahmen, kein Schatten.</p>
+        </Card>
+        <div class="stage guide-stage">
+          <p class="title">Bühne</p>
+          <p class="meta">Grosser Radius, grüner Schein in der Ecke.</p>
+        </div>
+        <div class="on-sage guide-sage">
+          <p class="title">Sage</p>
+          <p class="meta">Fläche der grünlichen Bogen.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="guide-block" aria-labelledby="sg-form">
+      <h2 id="sg-form" class="display h3">
+        Formularfelder
+      </h2>
+      <form class="guide-form" method="post" action="#sg-form">
+        <div class="field">
+          <label class="label" for="sg-name">
+            Name
+          </label>
+          <input class="input" id="sg-name" name="name" type="text" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label class="label" for="sg-error">
+            Mit Fehler
+          </label>
+          <input
+            class="input"
+            id="sg-error"
+            name="error"
+            type="text"
+            aria-invalid="true"
+            aria-describedby="sg-error-text"
+            autocomplete="off"
+          />
+          <p class="field-error" id="sg-error-text">
+            <Icon name="circle-alert" size={18} />
+            <span>Bitte geben Sie Ihren Namen an.</span>
+          </p>
+        </div>
+        <label class="check">
+          <input class="checkbox" type="checkbox" name="ok" />
+          <span>Checkbox mit Text</span>
+        </label>
+      </form>
+    </section>
+  </div>
+</Page>
+
+<style>
+  .guide {
+    display: grid;
+    gap: clamp(3rem, 6vw, 5rem);
+    padding-block: calc(var(--header-h) + clamp(2rem, 6vw, 5rem)) var(--section-y);
+  }
+
+  .guide-head {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .guide-lead {
+    color: var(--fg-muted);
+  }
+
+  .guide-block {
+    display: grid;
+    gap: 1.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .guide-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .guide-night {
+    padding: 1.25rem 1.5rem;
+    background-color: var(--night);
+  }
+
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    gap: 1rem;
+  }
+
+  .swatch {
+    display: grid;
+    gap: 0.25rem;
+    padding: 1rem;
+  }
+
+  .swatch-color {
+    height: 4rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--r-input);
+  }
+
+  .swatch-color[data-color='--linen'] {
+    background-color: var(--linen);
+  }
+
+  .swatch-color[data-color='--paper'] {
+    background-color: var(--paper);
+  }
+
+  .swatch-color[data-color='--sand'] {
+    background-color: var(--sand);
+  }
+
+  .swatch-color[data-color='--sage'] {
+    background-color: var(--sage);
+  }
+
+  .swatch-color[data-color='--hairline'] {
+    background-color: var(--hairline);
+  }
+
+  .swatch-color[data-color='--steel'] {
+    background-color: var(--steel);
+  }
+
+  .swatch-color[data-color='--ash'] {
+    background-color: var(--ash);
+  }
+
+  .swatch-color[data-color='--charcoal'] {
+    background-color: var(--charcoal);
+  }
+
+  .swatch-color[data-color='--leaf'] {
+    background-color: var(--leaf);
+  }
+
+  .swatch-color[data-color='--leaf-deep'] {
+    background-color: var(--leaf-deep);
+  }
+
+  .swatch-color[data-color='--night'] {
+    background-color: var(--night);
+  }
+
+  .swatch-color[data-color='--amber'] {
+    background-color: var(--amber);
+  }
+
+  .guide-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .guide-stage,
+  .guide-sage {
+    display: grid;
+    gap: 0.5rem;
+    padding: 1.5rem;
+  }
+
+  .guide-sage {
+    border-radius: var(--r-panel);
+    background-color: var(--sage);
+  }
+
+  .guide-form {
+    display: grid;
+    gap: 1.25rem;
+    max-width: 32rem;
+  }
+
+  @media (min-width: 48rem) {
+    .guide-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+</style>

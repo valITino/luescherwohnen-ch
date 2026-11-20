@@ -1,0 +1,86 @@
+---
+import Legal from '../components/Legal.astro';
+import { company } from '../config/site.ts';
+import Page from '../layouts/Page.astro';
+---
+
+<Page
+  title="Impressum – Lüscher Wohnen"
+  description="Angaben zur Lüscher Wohnen AG in Baden: Adresse, Kontakt, Handelsregister und Mehrwertsteuernummer."
+  path="/impressum"
+  crumb="Impressum"
+>
+  <Legal kicker="Rechtliches" title="Impressum" stand="November 2026">
+    <h2>Verantwortlich für diese Website</h2>
+    <dl>
+      <div>
+        <dt>Firma</dt>
+        <dd>{company.name}</dd>
+      </div>
+      <div>
+        <dt>Adresse</dt>
+        <dd>
+          {company.street}, {company.zip}
+          {company.city}, {company.country}
+        </dd>
+      </div>
+      <div>
+        <dt>Telefon</dt>
+        <dd>
+          <a class="link" href={`tel:${company.phone.tel}`}>
+            {company.phone.label}
+          </a>
+        </dd>
+      </div>
+      <div>
+        <dt>Fax</dt>
+        <dd>{company.fax}</dd>
+      </div>
+      <div>
+        <dt>E-Mail</dt>
+        <dd>
+          <a class="link" href={`mailto:${company.email}`}>
+            {company.email}
+          </a>
+        </dd>
+      </div>
+      <div>
+        <dt>Geschäftsleiter</dt>
+        <dd>{company.management}</dd>
+      </div>
+      <div>
+        <dt>Handelsregister</dt>
+        <dd>Aufgeführt im {company.register}</dd>
+      </div>
+      <div>
+        <dt>MwSt-Nr.</dt>
+        <dd>{company.vat}</dd>
+      </div>
+    </dl>
+
+    <h2>Bilder</h2>
+    <p>
+      Fotos, Bilder und Videos auf dieser Website sind von {company.name} oder zur Verfügung
+      gestellt von Lieferanten.
+    </p>
+
+    <h2>Haftung für Inhalte</h2>
+    <p>
+      Wir erstellen die Inhalte dieser Website sorgfältig und halten sie aktuell. Trotzdem können
+      wir keine Gewähr für Richtigkeit, Vollständigkeit und Aktualität übernehmen.
+    </p>
+
+    <h2>Links auf andere Websites</h2>
+    <p>
+      Diese Website verweist auf Angebote von Dritten, zum Beispiel auf die Karte von OpenStreetMap.
+      Für deren Inhalte sind allein die jeweiligen Betreiber verantwortlich.
+    </p>
+
+    <h2>Urheberrecht</h2>
+    <p>
+      Texte, Gestaltung und Bilder dieser Website gehören {company.name} oder den jeweiligen
+      Rechteinhabern. Schriften: Manrope und Geist Mono (SIL Open Font License). Icons: Lucide (ISC
+      License).
+    </p>
+  </Legal>
+</Page>
