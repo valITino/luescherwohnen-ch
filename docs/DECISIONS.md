@@ -79,7 +79,8 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
 - **28.** **Formular-Regeln strenger:** Anliegen nur aus der eigenen Liste (`Object.hasOwn`, nicht
   `in`), Telefonnummer mit mindestens sechs Ziffern. Honeypot und Bestätigung reisen im Payload mit.
 - **29.** **Dispatcher:** Änderungen an `_web.yml`/`_container.yml` lösen ihre Module aus, `ci.yml`
-  alles; `docker-up.sh` zählt zum Container. Auf `main` werden CI-Läufe nicht mehr abgebrochen.
+  alles; `docker-up.sh` zählt zum Container. Auf `main` prüft die CI immer den ganzen Stand, weil
+  Pages ihn veröffentlicht; laufende Läufe werden dort nicht abgebrochen.
 - **30.** **Pages nur nach erfolgreicher CI** (`workflow_run`), mit Prüfung des Artefakts vor der
   Veröffentlichung. Ausgecheckt wird nur `main` selbst und nur, wenn die CI genau diesen Commit
   geprüft hat; von Hand nur auf `main` (CodeQL-Befunde im ersten PR-Lauf auf GitHub).

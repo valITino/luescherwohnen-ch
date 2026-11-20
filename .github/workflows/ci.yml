@@ -17,8 +17,9 @@ on:
 permissions:
   contents: read
 
-# Nur Pull Requests brechen ältere Läufe ab. Auf main läuft jeder Push zu Ende: Sonst entginge
-# einem abgebrochenen Lauf die Prüfung seiner Änderungen (der nächste vergleicht nur sich selbst).
+# Nur Pull Requests brechen laufende Läufe ab. Auf main läuft ein gestarteter Lauf zu Ende; einen
+# wartenden ersetzt GitHub durch den neuesten. Das ist unbedenklich, weil die CI auf main immer den
+# ganzen Stand prüft (siehe Dispatcher).
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -48,16 +49,16 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
-          PUSH_BEFORE: ${{ github.event.before }}
           HEAD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
+          # Nur Pull Requests prüfen gezielt die betroffenen Module. Ein Push auf main, ein manueller
+          # Start oder eine unbekannte Basis prüft alles: Pages veröffentlicht den ganzen Stand von
+          # main. Sonst würde nach einem roten Website-Push ein reiner Doku-Push grün, und Pages
+          # veröffentlichte ungeprüften Code.
           base=""
           if [ "$EVENT" = "pull_request" ]; then base="$PR_BASE"; fi
-          if [ "$EVENT" = "push" ]; then base="$PUSH_BEFORE"; fi
-          # Neuer Branch, manueller Start oder unbekannte Basis: alles prüfen.
-          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] \
-            || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+          if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
             node scripts/ci-changes.mjs --all
           else
             git diff --name-only "$base" "$HEAD_SHA" | node scripts/ci-changes.mjs

@@ -13,15 +13,20 @@ bleibt die bisherige Vorschau stehen.
 
 Ausgecheckt wird immer der neueste Commit auf `main`, nie ein Commit aus dem auslösenden
 Ereignis. Der Lauf baut nur, wenn dieser Commit genau der ist, den die CI eben geprüft hat. Ist
-`main` inzwischen weiter, veröffentlicht erst der Lauf nach der nächsten grünen CI.
+`main` inzwischen weiter, veröffentlicht erst der Lauf nach der nächsten grünen CI. Auf `main`
+prüft die CI immer den ganzen Stand, nicht nur den letzten Push. Ein Start von Hand baut die
+Spitze von `main` ohne Blick auf den CI-Status; er ist für Rollback und Nachziehen gedacht.
 
 - Adresse: `https://<owner>.github.io/<repo>/`, für den Fork
   `https://valitino.github.io/luescherwohnen-ch/`.
 - Einmalig im Repository: Settings → Pages → Source «GitHub Actions».
 - In der Vorschau: Hinweisleiste oben, alle Seiten `noindex`, robots.txt sperrt alles, das
   Formular antwortet simuliert (nichts wird gesendet), der Bereich «Projekte» ist sichtbar.
-- Das Environment `github-pages` erlaubt standardmässig nur den Default-Branch. Änderungen auf
-  einem Feature-Branch erscheinen darum erst nach dem Merge in `main`.
+- Einmalig im Repository: Settings → Environments → `github-pages` → «Deployment branches and
+  tags» auf `main` beschränken. GitHub legt das Environment ohne diese Regel an und empfiehlt sie
+  nur ([Doku](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site#creating-a-custom-github-actions-workflow-to-publish-your-site),
+  abgerufen am 20.11.2026). Erst sie verhindert, dass jemand mit Schreibrecht einen geänderten
+  Workflow auf einem anderen Branch startet und von dort veröffentlicht.
 
 Lokal ansehen:
 

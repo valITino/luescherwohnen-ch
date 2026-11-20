@@ -15,8 +15,17 @@ on:
 permissions:
   contents: read
 
+# Nur Läufe, die wirklich veröffentlichen, teilen sich die Gruppe (gleiche Bedingung wie
+# build.if). Sonst könnte ein Lauf, der danach übersprungen wird, einen wartenden, gültigen
+# Deploy verdrängen. Wartende gültige Läufe ersetzt GitHub durch den neuesten: gewollt.
 concurrency:
-  group: pages
+  group: >-
+    ${{ ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+    (github.event_name == 'workflow_run' &&
+    github.event.workflow_run.conclusion == 'success' &&
+    github.event.workflow_run.event == 'push' &&
+    github.event.workflow_run.head_sha == github.sha)) && 'pages' ||
+    format('pages-skip-{0}', github.run_id) }}
   cancel-in-progress: false
 
 env:
@@ -74,9 +83,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Nur dieser Job darf veröffentlichen; er checkt nichts aus und führt keinen Projektcode aus.
     permissions:
-      pages: write
-      id-token: write
+      pages: write # Pages-Deployment anlegen
+      id-token: write # OIDC-Token, mit dem deploy-pages sich bei Pages ausweist
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
