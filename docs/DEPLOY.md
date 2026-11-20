@@ -7,9 +7,13 @@ geprüftes Container-Image, das ohne Push gebaut wird.
 ## 1. Vorschau auf GitHub Pages (Demo)
 
 Workflow `.github/workflows/pages.yml`: Nach jeder **erfolgreichen CI** eines Pushs auf `main`
-(oder von Hand unter Actions → «Vorschau auf GitHub Pages» → Run workflow) wird genau der
-geprüfte Stand mit `pnpm build:pages` gebaut, kurz geprüft und veröffentlicht. Schlägt die CI
-fehl, bleibt die bisherige Vorschau stehen.
+(oder von Hand auf `main` unter Actions → «Vorschau auf GitHub Pages» → Run workflow) wird der
+Stand mit `pnpm build:pages` gebaut, kurz geprüft und veröffentlicht. Schlägt die CI fehl,
+bleibt die bisherige Vorschau stehen.
+
+Ausgecheckt wird immer der neueste Commit auf `main`, nie ein Commit aus dem auslösenden
+Ereignis. Der Lauf baut nur, wenn dieser Commit genau der ist, den die CI eben geprüft hat. Ist
+`main` inzwischen weiter, veröffentlicht erst der Lauf nach der nächsten grünen CI.
 
 - Adresse: `https://<owner>.github.io/<repo>/`, für den Fork
   `https://valitino.github.io/luescherwohnen-ch/`.

@@ -24,18 +24,22 @@ env:
 
 jobs:
   build:
-    # Nur nach erfolgreicher CI eines Pushs auf main (nie für Pull Requests aus Forks).
+    # Gebaut wird nur der aktuelle Stand von main, nie ein Commit aus dem Ereignis (CodeQL:
+    # untrusted checkout, cache poisoning). Bei workflow_run ist github.sha der neueste Commit auf
+    # main; er muss genau der Commit sein, den die CI eben erfolgreich für einen Push geprüft hat.
+    # Ist main inzwischen weiter, übernimmt der Lauf nach der nächsten CI. Von Hand nur auf main.
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push')
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_sha == github.sha)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      # Ohne ref: Checkout von github.sha auf main, also genau des geprüften Commits (siehe oben)
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Genau der Stand, den die CI geprüft hat
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0

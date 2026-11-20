@@ -81,7 +81,8 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
 - **29.** **Dispatcher:** Änderungen an `_web.yml`/`_container.yml` lösen ihre Module aus, `ci.yml`
   alles; `docker-up.sh` zählt zum Container. Auf `main` werden CI-Läufe nicht mehr abgebrochen.
 - **30.** **Pages nur nach erfolgreicher CI** (`workflow_run`), mit Prüfung des Artefakts vor der
-  Veröffentlichung.
+  Veröffentlichung. Ausgecheckt wird nur `main` selbst und nur, wenn die CI genau diesen Commit
+  geprüft hat; von Hand nur auf `main` (CodeQL-Befunde im ersten PR-Lauf auf GitHub).
 - **31.** **Security-Header auf allen Antworten** des Containers (auch 301, 400, 405), Zugriffslog
   ohne IP und User-Agent, nginx-Konfiguration root-eigen.
 - **32.** **HSTS vorsichtig:** ein Tag ohne Subdomains; ein Jahr mit Subdomains und Preload nur mit
