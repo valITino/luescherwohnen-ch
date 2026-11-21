@@ -117,6 +117,11 @@ Ein Abruf von `https://luescherwohnen.ch/` am 12.09.2026 lieferte dieser
 Arbeitsumgebung HTTP 403 von einer Web Application Firewall. Daraus wird weder
 der Produktionsinhalt noch die Hosting-Konfiguration abgeleitet.
 
+Ein Abruf am 21.11.2026 lieferte HTTP 200. Die aktuelle Website zeigt einen
+Abschnitt «Unser Team» (vier Personen mit Aufgabe, zwei Fotos) und nennt
+«Samstag 9:00 bis 16:00 Uhr». Übernommen wurden nur diese Angaben und die zwei
+Fotos (`docs/DECISIONS.md` 46 und 47, `docs/ressources/website-2026/QUELLE.md`).
+
 ## 7a. Inventur der bisherigen Website (20.11.2026)
 
 Quelle: Bildschirmfotos und Text in `docs/Homepage.docx` sowie 148 Originalbilder in
@@ -133,7 +138,7 @@ Widersprüche im Bestand (Auswahl, vollständige Liste in `docs/TODO.md`):
 
 | ID | Widerspruch | Frage an den Auftraggeber |
 |---|---|---|
-| W1 | Samstag 9:00 (frühere Website) gegenüber 10:00 Uhr (`docs/index.html`) | Welche Zeit gilt? (`D-004`) |
+| W1 | Samstag 9:00 (frühere Website) gegenüber 10:00 Uhr (`docs/index.html`) | Entschieden am 21.11.2026: 9:00 Uhr, wie die aktuelle Website (`docs/DECISIONS.md` 47) |
 | W2 | «in 3. Generation» gegenüber «in zweiter Generation» | Welche Zählung gilt? |
 | W3 | Michael Längle als Geschäftsführer, Geschäftsleiter oder Inhaber | Welche Bezeichnung? (`D-001`) |
 | W9 | Mobilnummer 079 303 76 83 nur auf einer Unterseite; Fax noch aktiv? | Welche Nummern veröffentlichen? |

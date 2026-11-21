@@ -55,9 +55,11 @@ Vor jeder Arbeit:
 ```text
 apps/web          Astro-Website: One-Pager, /impressum, /datenschutz, /styleguide, 404
 packages/ui       Designsystem: Tokens, Schrift, Logo-Kit, Buttons, Karten, Motion-Helfer
-packages/config   ESLint- und TypeScript-Basis, Sites (Basis-Pfad), CSP- und Header-Helfer
+packages/config   ESLint- und TypeScript-Basis, Sites (Basis-Pfad), CSP- und Header-Helfer,
+                  Build-Schritt «Skript vor dem ersten Bild» (early-script)
 scripts/          Pages-Build, Server, Budgets, Docker, Header-Check, CI-Dispatcher, Assets
-e2e/              Playwright: Funktion, Layout, SEO, axe (WCAG 2.2 AA)
+e2e/              Playwright: Funktion, Layout, SEO, axe (WCAG 2.2 AA); Projekte desktop,
+                  mobile und html (rohes HTML, einmal)
 docker/           nginx-Konfiguration; Dockerfile und compose.yaml im Wurzelverzeichnis
 ```
 
@@ -82,6 +84,10 @@ Nach jeder Änderung an der Website: obige Prüfungen, dann Screenshots in
   Kurz, aktiv, konkret, freundlich; keine Gendersternchen.
 - Texte nur aus belegten Quellen; Kürzungen in `docs/DECISIONS.md` vermerken,
   Fehlendes in `docs/TODO.md` sammeln, nie erfinden.
+- Wenig Text, jede Angabe einmal, ein Gedanke je Bildschirm: Vertiefendes steht
+  hinter «Mehr lesen» (`.more`, natives `<details>`, bleibt im HTML). Index mit
+  Bühne über `choice.ts` (Sortiment, Firmengeschichte); gewechselt wird nur durch
+  eine Wahl, nie durch Scrollen. Nummern tragen nur die Ziele des Menüs.
 - Farben nur aus den Tokens; Grün `--leaf` nur als Fläche mit dunkler Schrift,
   grüne Schrift und Fokus nur in `--leaf-deep`. Schrift Manrope, Nummern und
   Zeiten in Geist Mono, Telefonnummern mit `.tabular`.
@@ -94,11 +100,19 @@ Nach jeder Änderung an der Website: obige Prüfungen, dann Screenshots in
   Interne Links über `href()` (Basis-Pfad der Pages-Vorschau).
 - Satzzeichen direkt nach einem Link: auf eine Zeile mit `{/* prettier-ignore */}`.
   Formulare immer `method="post"`; Overlays mit eigenem Scrollen `data-lenis-prevent`.
-- Nichts ragt über den Bildrand, kein Wort bricht mitten im Wort um (Tests
-  `cutOff`, `brokenWords`); angepinnte Flächen passen in 1366×650.
+- Nichts ragt über den Bildrand oder aus seinem Kasten, kein Wort bricht mitten
+  im Wort um (Tests `cutOff`, `boxOverflow`, `brokenWords`, auf Vorschau und
+  Produktion); Flächen schneiden ihre Inhalte nicht ab (Dekoration in eigener
+  Ebene); angepinnte Flächen passen in 1366×650.
 - Keine Cookies, kein Web-Speicher, keine Requests an Dritte, keine Zählung.
 - Aus `docs/ressources/` nur Bilddateien über `pnpm images` übernehmen; nie ZIP-,
   PHP- oder HTML-Dateien (Schadcode im Bestand, `docs/TODO.md`).
+- Suchmaschinen: Lighthouse 100 in allen vier Kategorien auf den Seiten im Index
+  halten (`docs/DESIGN.md`, Abschnitt 8); die robots.txt enthält nur `User-agent`,
+  `Allow` und `Sitemap`.
+- Kein e2e-Test wird übersprungen (kein `skip`, `fixme` oder `only`; Wächter
+  `scripts/e2e-guard.test.ts`): Jeder Test läuft auf Desktop und Handy und prüft
+  dort, was das Gerät tut; Prüfungen am rohen HTML laufen einmal im Projekt `html`.
 
 ## 3. Team und Delegation
 

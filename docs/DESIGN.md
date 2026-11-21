@@ -114,7 +114,7 @@ acht Breiten). E-Mail-Adressen dürfen nur am «@» umbrechen (`<wbr>`).
   Cookie-Knopf (erklärt, warum es keinen Banner gibt), «Bewegung pausieren» (nur wo sich etwas
   dauerhaft bewegt: das Band auf der Startseite).
 - **Öffnungsstatus**: «Geöffnet bis 18:30» bzw. «Geschlossen · öffnet morgen 10:00», in der Zeitzone
-  von Baden, jede Minute neu. Ohne JavaScript steht nur die Tabelle.
+  von Baden, jede Minute neu. Ohne JavaScript stehen nur die Öffnungszeiten als Liste (im Kontakt).
 - **Fokus-Ring**: 3 px dunkles Grün mit 3 px Abstand, auf der dunklen Bühne Lüscher-Grün.
 - **Eins wählen, eins sehen** (`choice.ts`): eine Liste mit Kopf und Tafel je Eintrag wird zum
   Index mit einer Bühne (Muster «Accordion» der APG, eine Tafel offen, «Weiter» auf der Bühne,

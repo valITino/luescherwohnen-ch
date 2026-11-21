@@ -81,6 +81,14 @@ Unser Team (`docs/DECISIONS.md` 46): vier Personen mit Aufgabe in «Über uns»,
 Längle und Iris Längle von der aktuellen Website (neu kodiert), für die anderen beiden die
 Initialen. Ein neuer e2e-Test.
 
+Samstag ab 9:00 Uhr und Einwilligung des Teams (`docs/DECISIONS.md` 47, Entscheide des
+Repository-Inhabers): W1 gelöst; Tabelle, Menü, Live-Status und strukturierte Daten aus einer
+Quelle. Ein Wächter (`scripts/e2e-guard.test.ts`) hält fest, dass kein e2e-Test übersprungen wird.
+Vor dem Zusammenführen gefunden und behoben: Die Öffnungszeiten ragten auf schmalen Handys aus
+ihrem Feld (jetzt eine Liste, deren Zeilen selbst umbrechen); neuer Wächter `boxOverflow`, und
+die Layout-Tests prüfen auch die Startseite der Produktion. Drei neue e2e-Tests, vier neue
+Unit-Tests, die Prüfung der strukturierten Daten erweitert.
+
 ## 20.11.2026: Demo nach dem PSYber-System
 
 Auftrag des Repository-Inhabers: Stil, Design, Format und Logik von `valITino/PsySec`

@@ -65,6 +65,7 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
   - «Haltung», «Service», «Über uns», «Aktuell» aus den jeweiligen Seiten, gekürzt.
 - **22.** **Samstag 10:00–16:00 Uhr** nach `docs/index.html` (neuester Stand im Repository); die
   frühere Website nannte 9:00 Uhr (W1). «Sonntag geschlossen» von der früheren Website.
+  (Ersetzt durch Entscheid 47: Samstag ab 9:00 Uhr.)
 - **23.** **Keine Generationenzählung, keine Funktion «Inhaber»/«Geschäftsführer»** (W2, W3):
   Michael Längle steht als «Geschäftsleiter» wie im Impressum.
 - **24.** **Projekte ohne Ortsangaben**, nur in der Vorschau sichtbar (WEB-F-006); in Produktion erst mit
@@ -452,3 +453,34 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
   (Entscheid 23), obwohl die Website «Geschäftsführer» sagt (W3, `docs/TODO.md`). Die Website
   nennt Samstag 9:00 bis 16:00 Uhr (W1, die Demo zeigt weiter 10:00, Entscheid beim
   Auftraggeber).
+- **47.** **Samstag ab 9:00 Uhr, Einwilligung des Teams** (Entscheide des Repository-Inhabers vom
+  21.11.2026):
+  - **Samstag 9:00 bis 16:00 Uhr.** Der Widerspruch W1 ist gelöst: Es gilt 9:00 Uhr, wie auf der
+    aktuellen Website (abgerufen am 21.11.2026). Das ersetzt Entscheid 22 (10:00 Uhr nach der
+    Übergangsseite `docs/index.html`). Die Zeit steht einmal in `apps/web/src/config/hours.ts`;
+    die Öffnungszeiten im Kontakt, das Menü, der Live-Status und die strukturierten Daten folgen
+    daraus. Neue Tests, die mit 10:00 Uhr fehlschlagen: Unit (8:59 geschlossen, 9:00 geöffnet,
+    unter der Woche weiter 10:00 Uhr), e2e (Status am Samstag um 9:30 Uhr, Liste und Menü),
+    strukturierte Daten (Samstag `opens` 09:00).
+  - **Einwilligung des Teams.** Laut Repository-Inhaber sind Michael Längle, Iris Längle,
+    Christina Stahl und Vlavono Macoso mit Name, Aufgabe und Foto auf der neuen Website
+    einverstanden (zu Entscheid 46, Teil von D-005). Offen bleiben die Fotos von Christina Stahl
+    und Vlavono Macoso (bis dahin die Initialen) und die Bezeichnung der Funktion von Michael
+    Längle (W3). Für die Produktion werden die Einwilligungen belegbar abgelegt (`docs/TODO.md`).
+  - **Öffnungszeiten passen in ihr Feld** (Fehler aus Entscheid 45, vor dem Zusammenführen
+    gefunden): Als Tabelle im Feld der direkten Wege konnten sie nicht schmaler werden als ihr
+    längstes Wort plus die Zeit. Gemessen: Bei 360 px frass die Tabelle den rechten Innenabstand
+    der Bühne, bei 320 px ragte das Feld 36 px über den Bildrand, und «Dienstag bis Freitag»
+    brach bis 390 px in drei Zeilen. Zwei Ursachen blieben verborgen: Die Layout-Tests liefen nur
+    auf der Vorschau (dort hat der Kontakt ein Formular), und die Bühne schnitt wegen der Scheibe
+    ab (`overflow: clip`), so dass `cutOff` den Kontakt übersprang. Jetzt: eine Beschreibungsliste,
+    deren Zeilen selbst umbrechen (Zeit unter dem Tag, rechts, wenn der Platz fehlt), für jede
+    Länge der Bezeichnung; die Scheibe liegt in einer eigenen Ebene, die Bühne schneidet nichts
+    mehr ab. Neue Wächter: `boxOverflow` (nichts ragt aus seinem Kasten) in allen Layout-Tests,
+    die Startseite der Produktion bei allen acht Breiten, und ein Test für die Öffnungszeiten
+    von 320 bis 1440 px. Gegengeprüft: Mit der alten Tabelle meldet `boxOverflow` bei 320 px das
+    Feld und den E-Mail-Link, mit der Liste nichts.
+  - **Kein übersprungener Test, als Regel.** `scripts/e2e-guard.test.ts` (Teil von `pnpm test`)
+    schlägt fehl, sobald ein e2e-Test `skip`, `fixme` oder `only` verwendet; die Regel steht
+    jetzt auch in `CLAUDE.md` (Abschnitt 2b), zusammen mit «jede Angabe einmal» und den Regeln
+    für Suchmaschinen aus Entscheid 45.

@@ -34,13 +34,12 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
 - [ ] D-002 Sprache: nur Deutsch (Schweiz)? Die Website ist einsprachig gebaut.
 - [ ] D-003 Kontaktweg: Formular, E-Mail oder beides; Empfänger, Pflichtfelder, Aufbewahrung,
       Löschung. Danach Empfänger bauen (serverseitige Prüfung, Spam-Schutz, Rate Limit).
-- [ ] D-004 Öffnungszeiten bestätigen, besonders Samstag 9:00 oder 10:00 Uhr (W1; die aktuelle
-      Website nennt am 21.11.2026 «Samstag 9:00 bis 16:00 Uhr», die Demo zeigt 10:00); Feiertage und
-      Betriebsferien; Kartenlösung (derzeit Link zu OpenStreetMap).
-- [ ] D-005 Team (Entscheid 46): Einwilligung von Michael Längle, Iris Längle, Christina Stahl und
-      Vlavono Macoso für Name, Aufgabe und Foto auf der neuen Website; Fotos von Christina Stahl
-      und Vlavono Macoso (bis dahin Initialen); Funktion von Michael Längle (W3: Impressum
-      «Geschäftsleiter», aktuelle Website «Geschäftsführer»).
+- [ ] D-004 Feiertage und Betriebsferien; Kartenlösung (derzeit Link zu OpenStreetMap). Samstag
+      ab 9:00 Uhr ist entschieden (W1 gelöst, Entscheid 47).
+- [ ] D-005 Team (Entscheide 46 und 47): Fotos von Christina Stahl und Vlavono Macoso (bis dahin
+      Initialen); Funktion von Michael Längle (W3: Impressum «Geschäftsleiter», aktuelle Website
+      «Geschäftsführer»). Die Einwilligung aller vier für Name, Aufgabe und Foto liegt laut
+      Repository-Inhaber vor (21.11.2026); für die Produktion belegbar ablegen (wer, wann, wofür).
 - [ ] D-005 Bildrechte: Herstellerbilder (Slider, Creation Baumann, Baltensweiler,
       Klangboxen-Fotograf), eigene Referenzfotos (Einwilligung der Kundschaft), Porträts von Hans
       Lüscher, Bruno Längle und Michael Längle; Freigabe des Favicons «L».
@@ -64,13 +63,14 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
       Interview bei «Über uns», der gestrichene Satz zum Schlafen, Lieferung als ein Satz.
 - [ ] SEO zum Start (Entscheid 45): Weiterleitungen der alten WordPress-Adressen und von
       `www.luescherwohnen.ch` auf `luescherwohnen.ch` (D-011, D-007); Google Business Profile
-      übernehmen, Name, Adresse, Telefon und Öffnungszeiten wie auf der Seite (W1: Samstag);
+      übernehmen, Name, Adresse, Telefon und Öffnungszeiten wie auf der Seite (Samstag ab 9:00
+      Uhr, Entscheid 47);
       Koordinaten der Weiten Gasse 9 aus amtlicher Quelle (swisstopo, mindestens fünf
       Nachkommastellen) für die strukturierten Daten; Fotos des Geschäfts in 1:1, 4:3 und 16:9
       (Rechte, D-005); Haltung zu KI-Crawlern (Training sperren oder nicht, Entscheid beim
       Auftraggeber); nach dem Start Search Console bestätigen und die Sitemap einreichen.
 - [ ] `ANNAHME - ZU BESTAETIGEN`: security.txt nennt vorerst `info@luescherwohnen.ch` als Kontakt.
-- [ ] `ANNAHME - ZU BESTAETIGEN`: Tage ohne Zeile in der Öffnungszeiten-Tabelle gelten als
+- [ ] `ANNAHME - ZU BESTAETIGEN`: Tage ohne Zeile in der Liste der Öffnungszeiten gelten als
       geschlossen (betrifft nur den Live-Status).
 
 ## Prüfungen, die noch Menschen brauchen
