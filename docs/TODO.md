@@ -34,8 +34,13 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
 - [ ] D-002 Sprache: nur Deutsch (Schweiz)? Die Website ist einsprachig gebaut.
 - [ ] D-003 Kontaktweg: Formular, E-Mail oder beides; Empfänger, Pflichtfelder, Aufbewahrung,
       Löschung. Danach Empfänger bauen (serverseitige Prüfung, Spam-Schutz, Rate Limit).
-- [ ] D-004 Öffnungszeiten bestätigen, besonders Samstag 9:00 oder 10:00 Uhr (W1); Feiertage und
+- [ ] D-004 Öffnungszeiten bestätigen, besonders Samstag 9:00 oder 10:00 Uhr (W1; die aktuelle
+      Website nennt am 21.11.2026 «Samstag 9:00 bis 16:00 Uhr», die Demo zeigt 10:00); Feiertage und
       Betriebsferien; Kartenlösung (derzeit Link zu OpenStreetMap).
+- [ ] D-005 Team (Entscheid 46): Einwilligung von Michael Längle, Iris Längle, Christina Stahl und
+      Vlavono Macoso für Name, Aufgabe und Foto auf der neuen Website; Fotos von Christina Stahl
+      und Vlavono Macoso (bis dahin Initialen); Funktion von Michael Längle (W3: Impressum
+      «Geschäftsleiter», aktuelle Website «Geschäftsführer»).
 - [ ] D-005 Bildrechte: Herstellerbilder (Slider, Creation Baumann, Baltensweiler,
       Klangboxen-Fotograf), eigene Referenzfotos (Einwilligung der Kundschaft), Porträts von Hans
       Lüscher, Bruno Längle und Michael Längle; Freigabe des Favicons «L».

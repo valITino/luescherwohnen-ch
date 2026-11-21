@@ -77,6 +77,10 @@ Text rund 980 → 560 Wörter; Lighthouse auf allen Seiten 100 in allen vier Kat
 neue e2e-Tests (Raum für Raum mit Tastatur und Direktlink, ohne Skript, Jahr für Jahr, Mehr
 lesen, Nummern, Kontakt, Titel und H1).
 
+Unser Team (`docs/DECISIONS.md` 46): vier Personen mit Aufgabe in «Über uns», Fotos von Michael
+Längle und Iris Längle von der aktuellen Website (neu kodiert), für die anderen beiden die
+Initialen. Ein neuer e2e-Test.
+
 ## 20.11.2026: Demo nach dem PSYber-System
 
 Auftrag des Repository-Inhabers: Stil, Design, Format und Logik von `valITino/PsySec`

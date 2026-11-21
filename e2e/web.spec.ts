@@ -249,6 +249,49 @@ test.describe('Raum für Raum, Jahr für Jahr, Mehr lesen', () => {
     await expect(more.locator('summary')).toContainText('Weniger');
   });
 
+  test('Unser Team: vier Menschen, Fotos öffnen sich, Initialen statt Platzhalterbildern', async ({
+    page,
+  }) => {
+    await openHome(page);
+    const team = page.locator('.team');
+    await expect(team.locator('.member')).toHaveCount(4);
+    await expect(team.locator('.member-name')).toHaveText([
+      'Michael Längle',
+      'Christina Stahl',
+      'Iris Längle',
+      'Vlavono Macoso',
+    ]);
+    // Fotos nur, wo es echte gibt; sonst die Initialen, für Screenreader stumm (der Name folgt).
+    await expect(team.locator('img')).toHaveCount(2);
+    await expect(team.locator('img').first()).toHaveAttribute('alt', 'Porträt von Michael Längle');
+    await expect(team.locator('.member-initials')).toHaveText(['CS', 'VM']);
+    await expect(team.locator('.member-initials').first()).toHaveAttribute('aria-hidden', 'true');
+    // Die Fotos öffnen sich beim Hereinscrollen und stehen danach.
+    await page.mouse.wheel(0, 200);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    await team.evaluate((element) =>
+      window.scrollTo({ top: element.getBoundingClientRect().top + window.scrollY - 200 }),
+    );
+    await expect(team.locator('.team-list')).toHaveAttribute('data-enter', 'in');
+    await expect
+      .poll(() =>
+        team.evaluate(
+          (element) =>
+            element.getAnimations({ subtree: true }).filter((a) => a.playState === 'running')
+              .length,
+        ),
+      )
+      .toBe(0);
+    expect(
+      await team
+        .locator('img')
+        .first()
+        .evaluate((img) => getComputedStyle(img).opacity),
+    ).toBe('1');
+  });
+
   test('Nummern der Abschnitte wie im Menü (01 bis 05)', async ({ page }) => {
     await openHome(page);
     const kickers = await page

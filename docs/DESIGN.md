@@ -126,6 +126,9 @@ acht Breiten). E-Mail-Adressen dürfen nur am «@» umbrechen (`<wbr>`).
 - **Mehr lesen** (`.more`, natives `<details>`): Was nicht jeder lesen muss, steht hinter einer
   leisen Zeile mit Plus, das zum Minus wird. Der Text steht im HTML (für Suchmaschinen
   gleichwertig) und erscheint beim Öffnen sofort, ohne Einblenden.
+- **Unser Team** (Über uns): runde Fotos mit Name und Aufgabe; wo es noch kein Foto gibt, die
+  Initialen auf Salbei statt eines Platzhalterbildes. Die Fotos öffnen sich beim Hereinscrollen
+  wie die Blende im Hero, nacheinander im Abstand `--stagger`; Namen stehen sofort da.
 - **Besuchszeile** (unter dem Hero): Live-Status, Adresse, «Route planen» und der Weg zu
   Öffnungszeiten und Termin in einer Zeile zwischen Haarlinien.
 

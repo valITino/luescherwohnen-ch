@@ -1,8 +1,9 @@
 ---
 /**
  * 04 Über uns: Porträt im Sucher-Rahmen, daneben Überschrift, Lead und das Zitat des Mannes im
- * Porträt (Gesicht und Stimme); Haltung und «Wir stehen für» hinter «Mehr über uns». Darunter die
- * Firmengeschichte «Jahr für Jahr» (choice.ts). Die Standorte stehen im Kontakt (Entscheid 45).
+ * Porträt (Gesicht und Stimme); Haltung und «Wir stehen für» hinter «Mehr über uns». Darunter das
+ * Team (Fotos und Aufgaben von der aktuellen Website, Entscheid 46) und die Firmengeschichte
+ * «Jahr für Jahr» (choice.ts). Die Standorte stehen im Kontakt (Entscheid 45).
  * Texte und Jahreszahlen: «Unternehmen», «Firmengeschichte», «Firmenstandorte» der bisherigen
  * Website (docs/Homepage.docx). Widersprüchliche Angaben (Generation, Funktion) bleiben weg.
  */
@@ -11,6 +12,8 @@ import Icon from '@luescher/ui/components/Icon.astro';
 import bruno from '../../assets/photos/portrait-bruno-laengle.jpg';
 import hans from '../../assets/photos/portrait-hans-luescher.jpg';
 import michael from '../../assets/photos/portrait-michael-laengle.jpg';
+import teamIris from '../../assets/photos/team-iris-laengle.jpg';
+import teamMichael from '../../assets/photos/team-michael-laengle.jpg';
 import { company } from '../../config/site.ts';
 import SectionHead from '../SectionHead.astro';
 
@@ -21,6 +24,24 @@ const values = [
   'Ein Umfeld, in dem Sie in Ruhe und ohne Zeitdruck Ihr Zuhause einrichten können.',
   'Qualitativ beste Arbeit, Pünktlichkeit und Zuverlässigkeit.',
 ];
+
+/*
+ * Unser Team: Namen, Aufgaben und Fotos aus dem Abschnitt «Unser Team» der aktuellen Website
+ * (luescherwohnen.ch, abgerufen am 21.11.2026; docs/ressources/website-2026/QUELLE.md). Michael
+ * Längle als «Geschäftsleiter» wie im Impressum (Entscheid 23; die Website sagt «Geschäftsführer»,
+ * W3). Ohne Foto auf der Website: die Initialen statt eines Bildes.
+ */
+const team = [
+  { name: company.management, role: 'Geschäftsleiter', photo: teamMichael },
+  { name: 'Christina Stahl', role: 'Verkauf' },
+  { name: 'Iris Längle', role: 'Administration, Buchhaltung, Finanzen', photo: teamIris },
+  { name: 'Vlavono Macoso', role: 'Lieferung und Montage' },
+];
+const initials = (name: string) =>
+  name
+    .split(' ')
+    .map((part) => part[0])
+    .join('');
 
 const history = [
   {
@@ -135,6 +156,37 @@ const history = [
           </div>
         </details>
       </div>
+    </div>
+
+    {/* Unser Team: die Menschen hinter «Wir nehmen uns Zeit». Die Fotos öffnen sich wie die Blende
+        im Hero, einer nach dem anderen (reveal.ts setzt data-enter). */}
+    <div class="team">
+      <h3 class="display h3 team-title">Unser Team</h3>
+      <ul class="team-list" data-enter>
+        {team.map((member) => (
+          <li class="member">
+            <div class="member-photo">
+              {member.photo ? (
+                <Picture
+                  src={member.photo}
+                  formats={['avif', 'webp']}
+                  widths={[240, 480]}
+                  sizes="(min-width: 48rem) 8rem, 6.5rem"
+                  alt={`Porträt von ${member.name}`}
+                  class="member-img"
+                  loading="lazy"
+                />
+              ) : (
+                <span class="member-initials" aria-hidden="true">
+                  {initials(member.name)}
+                </span>
+              )}
+            </div>
+            <p class="member-name">{member.name}</p>
+            <p class="member-role">{member.role}</p>
+          </li>
+        ))}
+      </ul>
     </div>
 
     <div class="history">
@@ -468,6 +520,132 @@ const history = [
   }
 
   /* ---------- Firmengeschichte ---------- */
+
+  /* ---------- Unser Team ---------- */
+
+  .team {
+    display: grid;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+    margin-top: clamp(4rem, 9vw, 8rem);
+  }
+
+  .team-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem 1.25rem;
+  }
+
+  .member {
+    display: grid;
+    align-content: start;
+    justify-items: start;
+    gap: 0.25rem;
+  }
+
+  .member-photo {
+    display: grid;
+    place-items: center;
+    width: clamp(6.5rem, 5rem + 4vw, 8rem);
+    aspect-ratio: 1;
+    margin-bottom: 0.75rem;
+    border-radius: 50%;
+    box-shadow:
+      0 0 0 1px var(--leaf-edge),
+      0 0 0 0.375rem rgb(var(--leaf-rgb) / 0.12);
+  }
+
+  .member-photo :global(picture),
+  .member-photo :global(.member-img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .member-photo :global(.member-img) {
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  /* Ohne Foto: die Initialen auf Salbei, ruhig und ohne Platzhalterbild. */
+  .member-initials {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: var(--sage);
+    color: var(--moss);
+    font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .member-name {
+    color: var(--charcoal);
+    font-size: var(--fs-h4);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+  }
+
+  .member-role {
+    color: var(--fg-muted);
+    font-size: var(--fs-small);
+  }
+
+  /*
+   * Auftritt: Jedes Foto öffnet sich aus der Mitte wie die Blende im Hero (Clip und Zoom auf dem
+   * Bild), im Abstand --stagger; die Initialen setzen sich aus einem leichten Zoom. Namen und
+   * Aufgaben stehen vom ersten Bild an da (Text blendet nicht ein). Endet nach 800 ms plus drei
+   * Versätzen, innerhalb der Grenze für jeden Auftritt.
+   */
+  .team-list[data-enter='wait'] .member-photo > * {
+    opacity: 0;
+  }
+
+  .team-list[data-enter='in'] .member-photo > * {
+    animation: member-open var(--dur-4) var(--ease-out) backwards;
+  }
+
+  .team-list[data-enter='in'] .member:nth-child(2) .member-photo > * {
+    animation-delay: var(--stagger);
+  }
+
+  .team-list[data-enter='in'] .member:nth-child(3) .member-photo > * {
+    animation-delay: calc(2 * var(--stagger));
+  }
+
+  .team-list[data-enter='in'] .member:nth-child(4) .member-photo > * {
+    animation-delay: calc(3 * var(--stagger));
+  }
+
+  @keyframes member-open {
+    from {
+      clip-path: circle(30% at 50% 50%);
+      transform: scale(1.1);
+    }
+
+    to {
+      clip-path: circle(50% at 50% 50%);
+    }
+  }
+
+  :global(html[data-motion='off']) .team-list[data-enter] .member-photo > * {
+    opacity: 1;
+    animation: none;
+  }
+
+  @media print {
+    .team-list[data-enter] .member-photo > * {
+      opacity: 1;
+    }
+  }
+
+  @media (min-width: 48rem) {
+    .team-list {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
 
   .history {
     display: grid;
@@ -852,7 +1030,8 @@ const history = [
   }
 
   @media (min-width: 64rem) {
-    .history {
+    .history,
+    .team {
       grid-template-columns: minmax(0, 3fr) minmax(0, 9fr);
       align-items: start;
     }

@@ -438,3 +438,17 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
     Firefox ohne Wirkung), Kapitelnummer an der Fortschritts-Schiene (wenig Reichweite, nur
     Desktop), Text über den Fotos der Räume (verletzt die Regel «kein Text auf Bildern», wird bei
     200 % Text abgeschnitten).
+- **46.** **Unser Team mit Fotos** (Auftrag des Repository-Inhabers vom 21.11.2026: die Fotos
+  des Teams von luescherwohnen.ch übernehmen, wo es passt). Der Bestand der alten Website
+  (`docs/ressources`) enthält kein Foto des Teams bei der Arbeit (Montage-Bild nur mit Werkzeug,
+  «Kompetenz»-Bilder ohne Menschen, die Zunftwein-Bilder zeigen einen anderen Anlass und sind
+  180 × 120 px). Die aktuelle Website (abgerufen am 21.11.2026) zeigt «Unser Team» mit vier
+  Personen, Fotos von Michael Längle und Iris Längle, für Christina Stahl und Vlavono Macoso
+  Platzhalter. Übernommen: Namen, Aufgaben und die zwei Fotos, neu kodiert (die alte Website war
+  kompromittiert) und über `pnpm images` (Quelle `docs/ressources/website-2026/QUELLE.md`). Ort:
+  «Über uns», zwischen Porträt und Firmengeschichte, als ruhige Reihe; ohne Foto die Initialen.
+  Das grosse Porträt (Michael Längle bei der Arbeit vor Vorhangstoffen) bleibt: Es erzählt vom
+  Geschäft, die Reihe von den Menschen. Michael Längle bleibt «Geschäftsleiter» wie im Impressum
+  (Entscheid 23), obwohl die Website «Geschäftsführer» sagt (W3, `docs/TODO.md`). Die Website
+  nennt Samstag 9:00 bis 16:00 Uhr (W1, die Demo zeigt weiter 10:00, Entscheid beim
+  Auftraggeber).
