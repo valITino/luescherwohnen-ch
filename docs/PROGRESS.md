@@ -69,6 +69,14 @@ Layoutverschiebung beim Laden 0, erstes Bild früher). Bewegungsschalter faltet 
 `clip-path`, Fokus bleibt im Formwechsel sichtbar, Taste während des Ausgleitens ohne neues
 Layout. Drei neue e2e-Tests, drei neue Unit-Tests.
 
+Weniger Text, mehr Neugier (`docs/DECISIONS.md` 45): Sortiment «Raum für Raum», Firmengeschichte
+«Jahr für Jahr», Besuchszeile, Kontakt mit jeder Angabe einmal, Aktuell und Über uns mit «Mehr
+lesen», Band als Wörter, Haltung als drei Sätze, die Klammer aus atmendem Status und Blende,
+Nummern wie im Menü, SEO (H1, Titel, Beschreibung, strukturierte Daten, robots.txt). Sichtbarer
+Text rund 980 → 560 Wörter; Lighthouse auf allen Seiten 100 in allen vier Kategorien. Sieben
+neue e2e-Tests (Raum für Raum mit Tastatur und Direktlink, ohne Skript, Jahr für Jahr, Mehr
+lesen, Nummern, Kontakt, Titel und H1).
+
 ## 20.11.2026: Demo nach dem PSYber-System
 
 Auftrag des Repository-Inhabers: Stil, Design, Format und Logik von `valITino/PsySec`

@@ -116,6 +116,27 @@ acht Breiten). E-Mail-Adressen dürfen nur am «@» umbrechen (`<wbr>`).
 - **Öffnungsstatus**: «Geöffnet bis 18:30» bzw. «Geschlossen · öffnet morgen 10:00», in der Zeitzone
   von Baden, jede Minute neu. Ohne JavaScript steht nur die Tabelle.
 - **Fokus-Ring**: 3 px dunkles Grün mit 3 px Abstand, auf der dunklen Bühne Lüscher-Grün.
+- **Eins wählen, eins sehen** (`choice.ts`): eine Liste mit Kopf und Tafel je Eintrag wird zum
+  Index mit einer Bühne (Muster «Accordion» der APG, eine Tafel offen, «Weiter» auf der Bühne,
+  Pfeiltasten, Direktlink über die Marke des Eintrags). Ohne Skript bleibt es eine Liste, alle
+  Texte und Bilder stehen im HTML. Genutzt im Sortiment («Raum für Raum», Index links, Foto mit
+  Text rechts; mit feinem Zeiger zeigt schon kurzes Verweilen den Raum) und in der
+  Firmengeschichte («Jahr für Jahr», Achse mit sechs Jahren, eine grüne Linie wächst bis zum
+  gewählten Jahr). Gewechselt wird nur durch eine Wahl, nie durch Scrollen.
+- **Mehr lesen** (`.more`, natives `<details>`): Was nicht jeder lesen muss, steht hinter einer
+  leisen Zeile mit Plus, das zum Minus wird. Der Text steht im HTML (für Suchmaschinen
+  gleichwertig) und erscheint beim Öffnen sofort, ohne Einblenden.
+- **Besuchszeile** (unter dem Hero): Live-Status, Adresse, «Route planen» und der Weg zu
+  Öffnungszeiten und Termin in einer Zeile zwischen Haarlinien.
+
+### Text und Rhythmus
+
+- **Jede Angabe einmal.** Adresse, Telefon, Öffnungszeiten und Kontaktwege stehen vollständig im
+  Kontakt (und im Footer); oben nur, was man für den Besuch zuerst braucht.
+- **Ein Gedanke je Bildschirm.** Grosse Wörter, ein Satz, ein Bild; was vertieft, steht hinter
+  «Mehr lesen». Gekürzt wird nur Belegtes, nie erfunden; Kürzungen in `docs/DECISIONS.md`.
+- **Nummern wie im Menü.** Nummeriert sind nur die Ziele des Menüs (01 Sortiment bis 05
+  Kontakt); Zwischenspiele (Haltung, das Band, Projekte in der Vorschau) tragen keine Nummer.
 
 ## 6. Motion
 
@@ -239,7 +260,9 @@ Alles andere ist leise:
 5. **Haltung**: Die Wörter werden beim Scrollen dunkel, jedes mit weichem Ein- und Auslauf
    (angehalten: volle Deckkraft).
 6. **Service**: Die Überschrift bleibt am Desktop stehen, die Schritte ziehen vorbei.
-7. **Band**: Sortiment und Service als Endlosband (pausiert bei Hover, Fokus und über den Knopf).
+7. **Band**: Die Wörter aus Sortiment und Service als zwei gegenläufige Reihen grosser Schrift,
+   ohne Überschrift und Etiketten, die Enden laufen weich aus (statische Maske). Pausiert bei
+   Hover, Fokus und über den runden Knopf; reduziert steht es still und bricht um.
 8. **Seitenwechsel** (View Transitions zwischen Dokumenten, reines CSS): Der Header steht still,
    weil die Leiste oben als eigene Ebene `site-bar` übergeben wird. Die Kapsel trägt diesen Namen
    nie: Sonst zöge der Browser sie auf die Grösse der Leiste (verzerrt), und ihr Milchglas bliebe
@@ -258,13 +281,23 @@ Alles andere ist leise:
    ersten Bild aus dem Takt geraten, dann wird die Leiste für ein Bild grau). Die alte Seite weicht schnell (`--dur-1`,
    `--ease-out`), die neue setzt sich 40 ms später von leicht unten (480 ms, `--ease-expo`); so
    liegen die beiden kaum übereinander.
-9. **Kleinigkeiten**: Der Bewegungsschalter faltet sich am Desktop beim Scrollen (und auf den
-   Unterseiten) zu seinem runden Ende und mit Zeiger oder Fokus wieder auf, nur über den
-   Ausschnitt (`clip-path`, `--dur-3`, `--ease-expo`): Nichts verschiebt sich, ein Klick trifft
-   nur, was zu sehen ist. Der Hover-Schein der Buttons liegt auf einer eigenen Ebene (`::after`) und
-   blendet nur über; die Lichtkante des sekundären Buttons wächst aus der Mitte (`scaleX`,
-   `--dur-3`). Fotos zoomen bei Hover fein (nur feiner Pointer). Der Cookie-Hinweis wächst aus
-   seinem Knopf ohne Überschwingen, die «404» rückt einmal von leicht unten an ihren Platz.
+9. **Eins wählen, eins sehen**: Im Sortiment steigt beim Wechsel das neue Foto in der Sprache der
+   Bild-Enthüllung über das alte (`unveil`, `--dur-4`, `--ease-expo`), das alte bleibt stehen,
+   bis es gedeckt ist; der Text ist sofort lesbar und rückt nur 4 px nach (`--dur-3`). Der
+   gewählte Name wird dunkel und rückt 6 px ein. In der Firmengeschichte steigt die grosse
+   Jahreszahl aus ihrer Maske, das Foto öffnet sich, die grüne Linie wächst (`scaleX`, `--dur-4`).
+   Bei reduzierter oder angehaltener Bewegung wechselt alles sofort.
+10. **Der Kreis schliesst sich**: Kommt der Kontakt ins Bild, öffnet sich oben rechts einmal eine
+    grüne Scheibe wie die Blende des Fotos im Hero (`clip-path` und `scale`, `--dur-5`, ab
+    64rem), und der Punkt des Öffnungsstatus atmet wie oben im Hero: Die Seite endet mit dem
+    Signal, mit dem sie beginnt.
+11. **Kleinigkeiten**: Der Bewegungsschalter faltet sich am Desktop beim Scrollen (und auf den
+    Unterseiten) zu seinem runden Ende und mit Zeiger oder Fokus wieder auf, nur über den
+    Ausschnitt (`clip-path`, `--dur-3`, `--ease-expo`): Nichts verschiebt sich, ein Klick trifft
+    nur, was zu sehen ist. Der Hover-Schein der Buttons liegt auf einer eigenen Ebene (`::after`) und
+    blendet nur über; die Lichtkante des sekundären Buttons wächst aus der Mitte (`scaleX`,
+    `--dur-3`). Fotos zoomen bei Hover fein (nur feiner Pointer). Der Cookie-Hinweis wächst aus
+    seinem Knopf ohne Überschwingen, die «404» rückt einmal von leicht unten an ihren Platz.
 
 ### Regeln
 
@@ -280,7 +313,9 @@ Alles andere ist leise:
 - **Dauern und Versätze aus den Tokens.** Ein Einzelwert braucht einen Kommentar mit Grund.
 - **Alles endet**: Jeder Auftritt beim Scrollen ist spätestens nach 1410 ms fertig (die Linie im
   Sucher nach 1250 ms, Bilder nach 800 ms plus drei Versätzen), der Hero ruht nach 1,5 s (beides
-  prüft `e2e/web.spec.ts`).
+  prüft `e2e/web.spec.ts`). Einzige Ausnahme ist ein Signal, kein Auftritt: Der grüne Punkt des
+  Öffnungsstatus atmet, wenn geöffnet ist, zweimal ruhig aus (2 × 2 s, unter den 5 s von
+  WCAG 2.2.2), im Hero beim Laden, im Kontakt mit dessen Auftritt.
 - **Das grösste Element zuerst**: Foto und Lead im Hero sind ab dem ersten Bild sichtbar (LCP,
   geprüft in `e2e/web.spec.ts`).
 - **Das Skript vor dem ersten Bild**: Das Modul jeder Seite steht im `<head>` und hält das erste
@@ -344,10 +379,22 @@ an einer alten Grenze oder zu tief).
 
 ## 8. Suchmaschinen
 
-Wie bei PSYber: Titel «Thema – Lüscher Wohnen», Canonical nur auf Seiten im Index, `noindex`
-nie zusätzlich in der robots.txt, strukturierte Daten aus der Konfiguration (Organisation,
-`FurnitureStore` mit Adresse und Öffnungszeiten, Website, Seite, Pfad). Keine Bewertungen, keine
-Preise. Die Vorschau auf GitHub Pages ist vollständig `noindex`, ihre robots.txt sperrt alles.
+Wie bei PSYber: Titel «Thema – Lüscher Wohnen» (höchstens rund 60 Zeichen, damit er ganz im
+Treffer steht; die Startseite: «Möbel, Betten und Innenarchitektur in Baden – Lüscher Wohnen»),
+Beschreibung unter rund 140 Zeichen mit Angebot und Ort, die H1 der Startseite trägt Angebot und
+Ort («Inneneinrichtung in Baden seit 1946» über dem Slogan). Canonical nur auf Seiten im Index,
+`noindex` nie zusätzlich in der robots.txt. Strukturierte Daten aus der Konfiguration, nur mit
+Angaben, die auf der Seite stehen: Organisation (mit Gründung 1946 und den Gründern),
+Geschäft als `FurnitureStore` und `HomeGoodsStore` mit Adresse (Kanton AG), Karte und
+Öffnungszeiten, Website (Namen ohne Wiederholung), Seite, Pfad. Keine Bewertungen, keine Preise.
+Text hinter «Mehr lesen» und in nicht gewählten Tafeln steht im HTML und wird gelesen.
+
+Die robots.txt enthält nur, was Suchmaschinen auswerten: `User-agent: *`, `Allow: /` und die
+Sitemap (Begründungen im Code, `packages/ui/src/lib/well-known.ts`). Kein Crawl-delay, kein Host,
+keine Sperre für `/_astro/`. Die Vorschau auf GitHub Pages ist vollständig `noindex` (Meta und
+Header); ihre robots.txt liegt unter dem Basis-Pfad und wird darum von Crawlern nicht gelesen.
+Kein `llms.txt`: Google braucht dafür keine eigene Datei, und eine zweite Fassung der Inhalte
+veraltet.
 
 ## 9. Keine Zählung
 

@@ -136,9 +136,15 @@ export async function imageCollisions(page: Page): Promise<string[]> {
         found.push(`<source> belegt ${Math.round(rect.width)}×${Math.round(rect.height)} px`);
       }
     }
+    // Zu sehen: ausgelegt, nicht verborgen (visibility) und nicht in einem zugeklappten Bereich
+    // (<details>, content-visibility). Text in verborgenen Tafeln liegt nie über einem Bild.
     const visible = (element: Element) => {
       const rect = element.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0 && getComputedStyle(element).visibility !== 'hidden';
+      return (
+        rect.width > 0 &&
+        rect.height > 0 &&
+        element.checkVisibility({ visibilityProperty: true, opacityProperty: false })
+      );
     };
     const images = [...document.querySelectorAll<HTMLImageElement>('main img')].filter(
       (img) => visible(img) && img.getBoundingClientRect().width > 40,
@@ -158,6 +164,7 @@ export async function imageCollisions(page: Page): Promise<string[]> {
         const lines: DOMRect[] = [];
         for (let node = walker.nextNode(); node; node = walker.nextNode()) {
           if (!node.textContent?.trim()) continue;
+          if (node.parentElement && !visible(node.parentElement)) continue;
           const range = document.createRange();
           range.selectNodeContents(node);
           lines.push(...range.getClientRects());

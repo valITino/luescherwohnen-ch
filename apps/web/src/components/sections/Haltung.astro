@@ -1,39 +1,27 @@
 ---
 /**
- * 02 Haltung: drei grosse Aussagen. Beim Scrollen werden die Wörter von 25 % auf 100 %
+ * Haltung (ohne Nummer): drei grosse Aussagen. Beim Scrollen werden die Wörter von 25 % auf 100 %
  * Deckkraft dunkel (SplitText, siehe src/scripts/haltung.ts). Ohne JS stehen sie einfach da.
  * Zentriert auf Papierweiss mit grünem Schein; die Punkte darunter zählen die Aussagen mit.
+ * Nur die drei Sätze, jeder mit seinem eigenen Bildschirm (Entscheid 45: die Erläuterungen
+ * darunter wiederholten Hero, Service und Lieferung).
  *
  * Texte: sinngemäss und grösstenteils wörtlich von der bisherigen Website («Services – Unsere
  * Kompetenzen», «Services – Lieferung und Montage», docs/Homepage.docx).
  */
 
 const statements = [
-  {
-    text: 'Wir nehmen uns Zeit für all Ihre Anliegen.',
-    note: 'Wann und wo Sie es wünschen: bei uns im Geschäft oder bei Ihnen zu Hause.',
-  },
-  {
-    text: 'Egal, wie gross Ihr Anliegen ist.',
-    note: 'Unser Ziel ist es, die für Sie richtige Lösung zu finden.',
-  },
-  {
-    text: 'Pünktlich, sauber und sorgfältig.',
-    note: 'Bei Lieferung und Montage stehen Pünktlichkeit, Sauberkeit, Sorgfalt und Ihre Zufriedenheit an oberster Stelle.',
-  },
+  'Wir nehmen uns Zeit für all Ihre Anliegen.',
+  'Egal, wie gross Ihr Anliegen ist.',
+  'Pünktlich, sauber und sorgfältig.',
 ];
 ---
 
 <section data-lazy class="sheet sheet-paper haltung" aria-labelledby="haltung-title" data-haltung>
   <div class="wrap">
     <header class="haltung-head">
+      {/* Ein Zwischenspiel ohne Nummer: Nummeriert sind nur die Ziele des Menüs (01 bis 05). */}
       <h2 id="haltung-title" class="kicker">
-        <span class="secnum" aria-hidden="true">
-          02
-        </span>
-        <span class="kicker-sep" aria-hidden="true">
-          {' / '}
-        </span>
         Unsere Haltung
       </h2>
     </header>
@@ -42,14 +30,13 @@ const statements = [
       {statements.map((statement, index) => (
         <li class="statement">
           <p class="statement-text" data-reveal-words>
-            {statement.text}
+            {statement}
           </p>
           <span class="statement-dots" aria-hidden="true">
             {statements.map((_, dot) => (
               <i class:list={['dot', { 'dot-off': dot > index }]} />
             ))}
           </span>
-          <p class="statement-note">{statement.note}</p>
         </li>
       ))}
     </ol>
@@ -76,7 +63,7 @@ const statements = [
     align-content: center;
     justify-items: center;
     gap: clamp(1.25rem, 3vw, 2rem);
-    min-height: min(64svh, 46rem);
+    min-height: min(52svh, 38rem);
     padding-block: clamp(2.5rem, 8vw, 6rem);
   }
 
@@ -112,14 +99,5 @@ const statements = [
   .statement-dots {
     display: inline-flex;
     gap: 0.75rem;
-  }
-
-  .statement-note {
-    max-width: 26em;
-    color: var(--ash);
-    font-size: var(--fs-lead);
-    letter-spacing: -0.015em;
-    line-height: 1.36;
-    text-wrap: balance;
   }
 </style>

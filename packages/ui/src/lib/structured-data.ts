@@ -27,6 +27,10 @@ export interface BrandInput {
   telephone?: string | undefined;
   /** Profile auf anderen Plattformen */
   sameAs?: readonly string[] | undefined;
+  /** Gründungsjahr (ISO 8601, z. B. «1946») */
+  foundingDate?: string | undefined;
+  /** Gründerinnen und Gründer (Namen) */
+  founders?: readonly string[] | undefined;
 }
 
 export const organizationId = (home: string) => `${home}#organization`;
@@ -64,14 +68,16 @@ export function organization(brand: BrandInput): JsonLdNode {
     email: brand.email,
     telephone: brand.telephone,
     sameAs: brand.sameAs ? [...brand.sameAs] : undefined,
+    foundingDate: brand.foundingDate,
+    founder: brand.founders?.map((name) => ({ '@type': 'Person', name })),
   });
 }
 
 export interface StoreInput {
   /** `home` der Organisation */
   home: string;
-  /** schema.org-Typ, z. B. «FurnitureStore» */
-  type: string;
+  /** schema.org-Typ, z. B. «FurnitureStore», oder mehrere (Google erlaubt eine Liste) */
+  type: string | readonly string[];
   name: string;
   url: string;
   image?: string | undefined;
@@ -82,7 +88,11 @@ export interface StoreInput {
     zip: string;
     city: string;
     countryCode: string;
+    /** Kanton, z. B. «AG» */
+    region?: string | undefined;
   };
+  /** Karte zum Geschäft (Link) */
+  hasMap?: string | undefined;
   /** Öffnungszeiten je Tag, nur Tage mit Zeiten. `days` als schema.org-Namen («Tuesday»). */
   hours?: readonly { days: readonly string[]; opens: string; closes: string }[] | undefined;
 }
@@ -93,7 +103,7 @@ export interface StoreInput {
  */
 export function store(input: StoreInput): JsonLdNode {
   return compact({
-    '@type': input.type,
+    '@type': typeof input.type === 'string' ? input.type : [...input.type],
     '@id': `${input.home}#store`,
     name: input.name,
     url: input.url,
@@ -105,8 +115,10 @@ export function store(input: StoreInput): JsonLdNode {
       streetAddress: input.address.street,
       postalCode: input.address.zip,
       addressLocality: input.address.city,
+      addressRegion: input.address.region,
       addressCountry: input.address.countryCode,
     },
+    hasMap: input.hasMap,
     openingHoursSpecification: input.hours?.length
       ? input.hours.map((entry) => ({
           '@type': 'OpeningHoursSpecification',

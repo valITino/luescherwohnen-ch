@@ -9,6 +9,7 @@ import { motionAllowed, onceInView, onMotionPausedChange } from '@luescher/ui/mo
 import type { SmoothScroll } from '@luescher/ui/motion/smooth';
 import { initMotionToggle, initProgress } from './chrome.ts';
 import { initHeader } from './header.ts';
+import { initChoice } from './choice.ts';
 import { initHero, initOpenStatus } from './hero.ts';
 import { rememberView, scrollTopFor, storedView } from './position.ts';
 
@@ -59,6 +60,34 @@ onMotionPausedChange((paused) => {
 
 const hero = document.querySelector<HTMLElement>('[data-hero]');
 if (hero) initHero(hero);
+
+// «Raum für Raum» und «Jahr für Jahr» (choice.ts): vor dem ersten Bild, damit nichts umspringt.
+const rooms = document.querySelector<HTMLElement>('[data-rooms]');
+if (rooms) {
+  initChoice(rooms, {
+    orientation: 'vertical',
+    preview: true,
+    next: (to) => ({ text: 'Nächster Raum', label: `Nächster Raum: ${to.name}` }),
+  });
+}
+const years = document.querySelector<HTMLElement>('[data-years]');
+if (years) {
+  initChoice(years, {
+    orientation: 'horizontal',
+    next: (to, wraps) => {
+      const text = wraps ? `Zurück zu ${to.name}` : `Weiter: ${to.name}`;
+      return { text, label: text };
+    },
+    // Frühere Jahre sind erledigt (Punkt grün), die Linie wächst bis zum gewählten.
+    changed: (index, items) => {
+      items.forEach((item, at) => {
+        if (at < index) item.element.dataset.past = '';
+        else delete item.element.dataset.past;
+      });
+      years.style.setProperty('--yr-p', String(index / Math.max(1, items.length - 1)));
+    },
+  });
+}
 
 // Öffnungsstatus überall dort, wo er steht (Hero, Besuch und Kontakt)
 const openStatus = [...document.querySelectorAll<HTMLElement>('[data-open-status]')].map(

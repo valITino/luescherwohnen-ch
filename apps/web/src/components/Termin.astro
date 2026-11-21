@@ -1,0 +1,44 @@
+---
+/**
+ * Termin ausserhalb der Öffnungszeiten: wörtlich von der bisherigen Website (D-006). Steht im
+ * Kontakt, im Feld der direkten Wege oder (mit Formular) unter den Öffnungszeiten.
+ */
+import Icon from '@luescher/ui/components/Icon.astro';
+---
+
+<div class="termin">
+  <p class="termin-lead">
+    <Icon name="calendar-clock" size={20} />
+    <span>Sehr gerne beraten oder besuchen wir Sie auch ausserhalb der Öffnungszeiten.</span>
+  </p>
+  <p class="termin-text">Vereinbaren Sie einfach einen Termin mit uns.</p>
+</div>
+
+<style>
+  .termin {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .termin-lead {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 0.75rem;
+    color: var(--fg-strong);
+    font-size: var(--fs-lead);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+  }
+
+  .termin-lead :global(.icon) {
+    margin-top: 0.25em;
+    color: var(--leaf-deep);
+  }
+
+  .termin-text {
+    padding-left: calc(20px + 0.75rem);
+    color: var(--fg-muted);
+  }
+</style>

@@ -1,0 +1,67 @@
+---
+/**
+ * Öffnungszeiten als Tabelle (Kontakt). Ohne Formular stehen sie neben den Kontaktwegen im Feld
+ * der direkten Wege, mit Formular in der Spalte der Kontaktwege (Kontakt.astro).
+ */
+import Icon from '@luescher/ui/components/Icon.astro';
+import { hours } from '../config/site.ts';
+import { clock } from '../lib/opening-hours.ts';
+---
+
+<div class="kontakt-hours">
+  <h3 class="label-up hours-title">
+    <Icon name="clock" size={16} />
+    Öffnungszeiten
+  </h3>
+  <table class="hours-table">
+    <tbody>
+      {hours.map((row) => (
+        <tr>
+          <th scope="row">{row.label}</th>
+          <td class="mono">
+            {row.hours ? `${clock(row.hours.open)}–${clock(row.hours.close)} Uhr` : 'geschlossen'}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+  <slot />
+</div>
+
+<style>
+  .kontakt-hours {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .hours-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .hours-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--fs-body);
+  }
+
+  .hours-table th,
+  .hours-table td {
+    padding-block: 0.625rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: baseline;
+  }
+
+  .hours-table th {
+    padding-right: 1rem;
+    font-weight: 600;
+  }
+
+  .hours-table td {
+    color: var(--fg-muted);
+    text-align: right;
+    white-space: nowrap;
+  }
+</style>

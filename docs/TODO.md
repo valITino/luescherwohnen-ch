@@ -55,6 +55,15 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
 - [ ] Aktualität der Beiträge unter «Aktuell» (3D-Druck-Möbel, Klangboxen, Interview Ausgabe 125).
 - [ ] Projekte (Referenzen): Titel und Freigabe; in Produktion `PUBLIC_SHOW_PROJECTS=true` (W16).
 - [ ] Fläche und Etagen «6 Etagen, rund 1200 m²» bestätigen (W19).
+- [ ] Kürzungen und Verschiebungen der Texte freigeben (Entscheid 45), besonders: Zitat aus dem
+      Interview bei «Über uns», der gestrichene Satz zum Schlafen, Lieferung als ein Satz.
+- [ ] SEO zum Start (Entscheid 45): Weiterleitungen der alten WordPress-Adressen und von
+      `www.luescherwohnen.ch` auf `luescherwohnen.ch` (D-011, D-007); Google Business Profile
+      übernehmen, Name, Adresse, Telefon und Öffnungszeiten wie auf der Seite (W1: Samstag);
+      Koordinaten der Weiten Gasse 9 aus amtlicher Quelle (swisstopo, mindestens fünf
+      Nachkommastellen) für die strukturierten Daten; Fotos des Geschäfts in 1:1, 4:3 und 16:9
+      (Rechte, D-005); Haltung zu KI-Crawlern (Training sperren oder nicht, Entscheid beim
+      Auftraggeber); nach dem Start Search Console bestätigen und die Sitemap einreichen.
 - [ ] `ANNAHME - ZU BESTAETIGEN`: security.txt nennt vorerst `info@luescherwohnen.ch` als Kontakt.
 - [ ] `ANNAHME - ZU BESTAETIGEN`: Tage ohne Zeile in der Öffnungszeiten-Tabelle gelten als
       geschlossen (betrifft nur den Live-Status).

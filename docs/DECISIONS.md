@@ -375,3 +375,66 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
     als kleine Verschiebung (sonst ein sichtbares Blinken), die Lage nach dem Fortsetzen im Hero
     (gestaltet, sie gleitet), der Absturz von Chromium bei einem bestimmten
     `getComputedStyle()` (nur in Testsonden, Fehlerbericht an Chromium).
+- **45.** **Weniger Text, mehr Neugier, SEO 100** (Auftrag des Repository-Inhabers vom 21.11.2026:
+  minimalistischer, elegant, kreativ, die Leute bei der Stange halten, 100 % SEO, saubere
+  robots.txt). Vier Blickwinkel (Redaktion, Engagement, SEO, Bewegung) schlugen unabhängig
+  dasselbe Prinzip vor: alles einmal sagen, eins zeigen, Neugier öffnet den Rest. Gemessen:
+  sichtbarer Text der Startseite rund 980 → rund 560 Wörter, Seite auf dem Handy 13 337 →
+  10 608 px, am Desktop 13 074 → 11 767 px; Lighthouse auf allen Seiten 100/100/100/100 (Handy
+  und Desktop, CLS 0). Kein Wort erfunden; alle Kürzungen und Verschiebungen hier:
+  - **Sortiment «Raum für Raum»**: Index der sieben Bereiche und eine Bühne mit einem Foto und
+    seinem Text, «Nächster Raum», Direktlinks `#raum-…`. Texte unverändert; weiche Trennstriche
+    in vier Namen (nur Anzeige).
+  - **Firmengeschichte «Jahr für Jahr»**: Achse mit sechs Jahren, ein Moment, «Weiter: …» und am
+    Ende «Zurück zu 1946», Direktlinks `#jahr-…`. Texte unverändert; die grosse Jahreszahl ist
+    CSS (kein zweiter Text).
+  - **Besuchszeile** statt Besuchs-Bühne: Status, Adresse, «Route planen», «Öffnungszeiten und
+    Termin» (neuer Linktext). Gestrichen dort: «Im Zentrum von Baden, auf 6 Etagen und rund
+    1200 m².» (steht im Hero und in der Firmengeschichte), die Öffnungszeiten (stehen im
+    Kontakt), der Telefon-Knopf. Die beiden Sätze zum Termin wandern wörtlich in den Kontakt.
+  - **Kontakt**: Status unter der Überschrift; ohne Formular stehen Termin, Öffnungszeiten und
+    «Anrufen» im Feld der direkten Wege. Gestrichen: «Am schnellsten erreichen Sie uns direkt.»,
+    «Rufen Sie an, schreiben Sie uns eine E-Mail oder besuchen Sie uns im Geschäft in Baden.»
+    und die Knöpfe «E-Mail schreiben» und «Route planen» (beides steht in den Kontaktwegen
+    daneben). Das Lager (Ringstrasse 13, 5432 Neuenhof) wandert aus «Über uns» in die
+    Kontaktwege.
+  - **Band**: ohne Kicker «Sortiment und Service» (bleibt als Name der Region) und ohne
+    Überschrift «Alle Bereiche der Inneneinrichtung.» (steht im Lead des Sortiments), ohne die
+    Etiketten «Sortiment», «Bodenbelag», «Service»; der Knopf ist rund (Name für Screenreader).
+  - **Haltung**: nur die drei Sätze. Gestrichen: «Wann und wo Sie es wünschen: bei uns im
+    Geschäft oder bei Ihnen zu Hause.», «Unser Ziel ist es, die für Sie richtige Lösung zu
+    finden.», «Bei Lieferung und Montage stehen Pünktlichkeit, Sauberkeit, Sorgfalt und Ihre
+    Zufriedenheit an oberster Stelle.» (wiederholten Hero, Service und Lieferung).
+  - **Service**: Schritt «Beratung» endet nach «Wir hören zu.» (gestrichen: «und nehmen uns Zeit
+    für Ihre Anliegen», sagt die Haltung). Lieferung als eine Aussage: «Sie bestimmen den exakten
+    Lieferzeitpunkt, auch an einer Randzeit oder am Wochenende.» (zwei Punkte verbunden).
+    Gestrichen: «Anstatt Ihr Wochenprogramm auf den Kopf zu stellen …», «Eigene Mitarbeiter
+    liefern und montieren.» (steht im Schritt «Lieferung»), «Pünktlich, sauber und sorgfältig.»
+    (ist ein Satz der Haltung). «Nebst Ersteinrichtungen …» wandert zu «Mehr über uns».
+  - **Aktuell**: zwei Bildgeschichten, je ein Satz sichtbar, der Rest hinter «Mehr lesen» (im
+    HTML). Beim 3D-Druck steht «Neu im Sortiment …» jetzt zuerst. Gestrichen: «Schauen Sie sich
+    die Produkte in der Ausstellung an, berühren Sie sie und sitzen Sie Probe.» (sagt der Lead
+    des Sortiments). Das Interview wandert zu «Über uns».
+  - **Über uns «Gesicht und Stimme»**: neben dem Porträt Lead und das Zitat von Michael Längle
+    (mit Quelle, Entscheid 25); Absatz, «Nebst Ersteinrichtungen …» und «Wir stehen für» hinter
+    «Mehr über uns». Gestrichen: «Worauf es für einen guten und gesunden Schlaf wirklich ankommt,
+    erklären wir Ihnen gerne persönlich in der Ausstellung.»
+  - **Klammer**: Der Punkt des Öffnungsstatus atmet zweimal (Hero beim Laden, Kontakt mit dessen
+    Auftritt); im Kontakt öffnet sich einmal eine grüne Scheibe wie die Blende im Hero.
+  - **Nummern**: nur die Ziele des Menüs (01 Sortiment, 02 Service, 03 Aktuell, 04 Über uns,
+    05 Kontakt), wie im Menü; Haltung und Projekte ohne Nummer. Vorher übersprang die Produktion
+    die 04, und das Menü zählte anders als die Abschnitte.
+  - **SEO**: H1 mit «Inneneinrichtung in Baden seit 1946» (aus dem Kicker im Footer
+    «Inneneinrichtung in Baden» und «seit 1946»; vorher «Familienunternehmen in Baden seit 1946»
+    ausserhalb der H1, «Familienunternehmen» steht weiter in der Überschrift von «Über uns»).
+    Titel und Beschreibung passen ganz in den Treffer, «Teppiche» ist neu darin. Strukturierte
+    Daten: Website ohne Wiederholung ihres Namens (Fehler), Geschäft als `FurnitureStore` und
+    `HomeGoodsStore`, Kanton AG, Karte, Gründung 1946 und Gründer, «Teppiche und Heimtextilien»
+    und «Innenarchitektur und Bauführung». Logo: Der Linkname steht im alt-Text (Linktext für
+    Suchmaschinen). robots.txt nur mit `User-agent`, `Allow` und `Sitemap`. Nicht gemacht, weil
+    Angaben fehlen: Koordinaten, Profile (sameAs), Bilder des Geschäfts in drei Formaten
+    (`docs/TODO.md`). Kein `llms.txt`.
+  - **Verworfen**: Haltung als CSS-Scroll-Zeitleiste (kein Gewinn auf echten Geräten belegt,
+    Firefox ohne Wirkung), Kapitelnummer an der Fortschritts-Schiene (wenig Reichweite, nur
+    Desktop), Text über den Fotos der Räume (verletzt die Regel «kein Text auf Bildern», wird bei
+    200 % Text abgeschnitten).

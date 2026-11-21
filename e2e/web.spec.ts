@@ -67,11 +67,15 @@ async function expectLanded(page: Page, target: string) {
         .filter(inView)
         .map((element) => element.className),
       kicker: getComputedStyle(section.querySelector('.section-head .kicker')!).clipPath,
-      // Nur Auftritte (CSS-Animationen): Ein Hover-Übergang unter dem ruhenden Zeiger zählt nicht.
+      // Nur Auftritte (CSS-Animationen): Ein Hover-Übergang unter dem ruhenden Zeiger zählt nicht,
+      // ebenso wenig der Atem des Öffnungsstatus (ein Signal, kein Auftritt, components.css).
       running: section
         .getAnimations({ subtree: true })
         .filter(
-          (animation) => animation instanceof CSSAnimation && animation.playState === 'running',
+          (animation) =>
+            animation instanceof CSSAnimation &&
+            animation.playState === 'running' &&
+            animation.animationName !== 'dot-breath',
         )
         .map((animation) => (animation as CSSAnimation).animationName),
     };
@@ -101,7 +105,10 @@ test.describe('Startseite', () => {
 
   test('Sortiment: alle Bereiche aus dem Briefing (WEB-F-002)', async ({ page }) => {
     await openHome(page);
-    const titles = await page.locator('#sortiment h3').allTextContents();
+    // Weiche Trennstriche (für schmale Bildschirme) zählen nicht zum Wort.
+    const titles = (await page.locator('#sortiment h3').allTextContents()).map((title) =>
+      title.replace(/\u00AD/g, ''),
+    );
     for (const area of [
       'Möbel',
       'Polstermöbel',
@@ -145,6 +152,141 @@ test.describe('Startseite', () => {
     await expect(page.locator('#projekte')).toHaveCount(0);
     await openHome(page, PREVIEW);
     await expect(page.locator('#projekte h2')).toBeVisible();
+  });
+});
+
+test.describe('Raum für Raum, Jahr für Jahr, Mehr lesen', () => {
+  test('Sortiment: ein Raum nach dem anderen, mit Tastatur und Direktlink', async ({ page }) => {
+    await openHome(page);
+    const rooms = page.locator('[data-rooms]');
+    await expect(rooms).toHaveAttribute('data-ready', '');
+    const buttons = rooms.locator('.room-btn');
+    await expect(buttons).toHaveCount(7);
+    // Alle Texte und Bilder stehen im HTML, sichtbar ist eine Tafel.
+    await expect(rooms.locator('figcaption')).toHaveCount(7);
+    await expect(rooms.locator('img')).toHaveCount(7);
+    const open = () =>
+      rooms.evaluate((root) =>
+        [...root.querySelectorAll<HTMLElement>('.room-panel')]
+          .filter((panel) => getComputedStyle(panel).visibility === 'visible')
+          .map((panel) => panel.id),
+      );
+    expect(await open()).toEqual(['raum-moebel-tafel']);
+    await expect(buttons.first()).toHaveAttribute('aria-expanded', 'true');
+    // Tastatur: Pfeil nach unten führt den Fokus weiter, Enter öffnet.
+    await buttons.first().focus();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await expect(buttons.nth(2)).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(buttons.nth(2)).toHaveAttribute('aria-expanded', 'true');
+    await expect(rooms.locator('[aria-expanded="true"]')).toHaveCount(1);
+    await expect.poll(open).toEqual(['raum-betten-tafel']);
+    // «Nächster Raum» geht weiter und sagt, wohin.
+    const next = rooms.locator('[data-choice-next]');
+    await expect(next).toHaveAttribute('aria-label', 'Nächster Raum: Bodenbeläge');
+    await next.click();
+    await expect(buttons.nth(3)).toHaveAttribute('aria-expanded', 'true');
+    await expect.poll(open).toEqual(['raum-bodenbelaege-tafel']);
+    // Direktlink auf einen Raum
+    await page.goto(`${PROD}/#raum-teppiche`);
+    await expect(page.locator('#raum-teppiche .room-btn')).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  test('Sortiment ohne Skript: alle Bereiche als Liste, keine toten Knöpfe', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto(`${PROD}/`);
+    await expect(page.locator('#sortiment .room-panel')).toHaveCount(7);
+    for (const panel of await page.locator('#sortiment .room-panel').all()) {
+      await expect(panel).toBeVisible();
+    }
+    // «Nächster Raum» steht im HTML, ist ohne Skript aber verborgen (hidden).
+    await expect(page.locator('#sortiment button:visible')).toHaveCount(0);
+    await context.close();
+  });
+
+  test('Firmengeschichte: Jahr für Jahr, die Linie wächst bis zum gewählten Jahr', async ({
+    page,
+  }) => {
+    await openHome(page);
+    const years = page.locator('[data-years]');
+    await expect(years).toHaveAttribute('data-ready', '');
+    const buttons = years.locator('.yr-btn');
+    await expect(buttons).toHaveCount(6);
+    await expect(buttons.first()).toHaveAttribute('aria-expanded', 'true');
+    const next = years.locator('[data-choice-next]');
+    await expect(next).toHaveText(/Weiter: 1949/);
+    await buttons.nth(2).click();
+    await expect(buttons.nth(2)).toHaveAttribute('aria-expanded', 'true');
+    expect(await years.evaluate((root) => root.style.getPropertyValue('--yr-p'))).toBe('0.4');
+    await expect(years.locator('#jahr-1946')).toHaveAttribute('data-past', '');
+    // Am Ende führt «Weiter» zurück zum Anfang.
+    await buttons.last().click();
+    await expect(next).toHaveText(/Zurück zu 1946/);
+    // Tastatur: Pfeile nach links und rechts
+    await buttons.last().focus();
+    await page.keyboard.press('Home');
+    await expect(buttons.first()).toBeFocused();
+    // Die grosse Jahreszahl ist Gestaltung, kein zweiter Text.
+    expect(
+      await years.locator('#jahr-1959 .yr-big').evaluate((element) => element.textContent),
+    ).toBe('');
+  });
+
+  test('Mehr lesen: Der Text steht im HTML und öffnet mit der Tastatur', async ({ page }) => {
+    await openHome(page);
+    const more = page.locator('#aktuell details.more').first();
+    await expect(more).not.toHaveAttribute('open');
+    await expect(more.locator('.more-body p')).toBeAttached();
+    await expect(more.locator('.more-body p')).toBeHidden();
+    await more.locator('summary').focus();
+    await page.keyboard.press('Enter');
+    await expect(more).toHaveAttribute('open', '');
+    await expect(more.locator('.more-body p')).toBeVisible();
+    await expect(more.locator('summary')).toContainText('Weniger');
+  });
+
+  test('Nummern der Abschnitte wie im Menü (01 bis 05)', async ({ page }) => {
+    await openHome(page);
+    const kickers = await page
+      .locator('main .section-head .secnum')
+      .evaluateAll((elements) => elements.map((element) => element.textContent?.trim()));
+    expect(kickers).toEqual(['01', '02', '03', '04', '05']);
+    const menu = await page
+      .locator('[data-menu] .menu-links .secnum')
+      .evaluateAll((elements) => elements.map((element) => element.textContent?.trim()));
+    expect(menu).toEqual(kickers);
+  });
+
+  test('Kontakt: Der Kreis schliesst sich, der Status atmet, wenn man ihn sieht', async ({
+    page,
+    isMobile,
+  }) => {
+    await openHome(page);
+    await page.mouse.wheel(0, 200);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    const stage = page.locator('#kontakt .kontakt-grid');
+    await expect(stage).toHaveAttribute('data-enter', 'wait');
+    await stage.evaluate((element) =>
+      window.scrollTo({ top: element.getBoundingClientRect().top + window.scrollY - 200 }),
+    );
+    await expect(stage).toHaveAttribute('data-enter', 'in');
+    const names = await stage.evaluate((element) =>
+      element
+        .getAnimations({ subtree: true })
+        .map((animation) => (animation as CSSAnimation).animationName),
+    );
+    // Die Scheibe nur ab 64rem; der Atem nur, wenn geöffnet ist.
+    if (!isMobile) expect(names).toContain('kontakt-aperture');
+    const open = await page
+      .locator('#kontakt .hours-status .dot')
+      .evaluate((dot) => dot.matches('.dot-ok'));
+    if (open) expect(names).toContain('dot-breath');
   });
 });
 
@@ -607,8 +749,11 @@ test.describe('Öffnungszeiten', () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     await page.goto(`${PROD}/`);
-    await expect(page.locator('.visit-hours li')).toHaveCount(4);
+    // Die Öffnungszeiten stehen als Tabelle im Kontakt; die Besuchszeile zeigt Adresse und Wege.
+    await expect(page.locator('#kontakt .hours-table tr')).toHaveCount(4);
     await expect(page.locator('.visit [data-open-status]')).toBeHidden();
+    await expect(page.locator('#kontakt [data-open-status]')).toBeHidden();
+    await expect(page.locator('.visit')).toContainText('Weite Gasse 9, 5400 Baden');
     await context.close();
   });
 });
@@ -749,7 +894,11 @@ test.describe('Bewegung und Chrome', () => {
       })),
     );
     expect(timings.length).toBeGreaterThan(0);
-    for (const { name, end } of timings) expect(end, name).toBeLessThanOrEqual(1500);
+    // Der Atem des Öffnungsstatus ist ein Signal, kein Auftakt: zwei Atemzüge, 4 s, dann Ruhe
+    // (unter den 5 s von WCAG 2.2.2). Alles andere ruht nach 1,5 s.
+    for (const { name, end } of timings) {
+      expect(end, name).toBeLessThanOrEqual(name === 'dot-breath' ? 4000 : 1500);
+    }
     // Gemessen ab dem Start des Auftakts auf der Zeitachse des Dokuments, nicht ab dem Laden:
     // So prüft der Test die Choreografie und hängt nicht davon ab, wie schnell die Seite lädt.
     const start = await hero.evaluate(async (root) => {
@@ -764,7 +913,8 @@ test.describe('Bewegung und Chrome', () => {
         .filter((animation) => animation.playState === 'running')
         .map((animation) => (animation as CSSAnimation).animationName),
     );
-    expect(running).toEqual([]);
+    // Nur der Atem des Öffnungsstatus darf noch laufen (ein Signal, endet nach 4 s, siehe oben).
+    expect(running.filter((name) => name !== 'dot-breath')).toEqual([]);
   });
 
   test('Kapsel: nach dem Wechsel voll sichtbar', async ({ page }) => {
@@ -1106,7 +1256,11 @@ test.describe('Bewegung und Chrome', () => {
     // Auftritte gab es wirklich (auch die Bilder), und jeder endet spätestens nach 1410 ms: Die
     // Linie im Sucher endet nach 1250 ms, Bilder nach 800 ms plus höchstens drei Versätze von 70 ms.
     expect(seen.map(({ name }) => name)).toContain('unveil');
-    for (const { name, end } of seen) expect(end, name).toBeLessThanOrEqual(1200 + 3 * 70);
+    // Ausnahme: der Atem des Öffnungsstatus im Kontakt (ein Signal, 0,6 s nach dem Auftritt
+    // zwei Atemzüge von 2 s, unter den 5 s von WCAG 2.2.2).
+    for (const { name, end } of seen) {
+      expect(end, name).toBeLessThanOrEqual(name === 'dot-breath' ? 4600 : 1200 + 3 * 70);
+    }
   });
 
   test('Überschriften: Beim Auftritt dieselben Zeilen wie danach', async ({ page }) => {

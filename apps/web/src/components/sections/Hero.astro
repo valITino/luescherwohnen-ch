@@ -48,7 +48,7 @@ const cta = primaryCta(true);
               </span>
             </span>
             <span class="hud-rule" aria-hidden="true"></span>
-            <span class="hud-key" data-open-status hidden>
+            <span class="hud-key" data-open-status data-breathe hidden>
               <i class="dot" aria-hidden="true"></i>
               <span data-open-status-text></span>
             </span>
@@ -57,8 +57,11 @@ const cta = primaryCta(true);
         </ul>
 
         <div class="hero-head">
-          <Kicker>Familienunternehmen in {company.city} seit 1946</Kicker>
+          {/* Die Zeile über dem Slogan gehört zur H1: Angebot und Ort für Suchmaschinen. */}
           <h1 id="hero-title" class="display hero-title">
+            <Kicker as="span" class="hero-kicker">
+              Inneneinrichtung in {company.city} seit 1946
+            </Kicker>{' '}
             <span class="q q1">
               <span class="mask">
                 <span class="mask-line">Wohnen heisst leben.</span>
@@ -102,7 +105,7 @@ const cta = primaryCta(true);
   .hero {
     --hero-p: 0;
     position: relative;
-    padding-bottom: calc(var(--section-y) * 0.75 + var(--r-sheet));
+    padding-bottom: calc(var(--section-y) * 0.5 + var(--r-sheet));
     background-color: var(--linen);
   }
 
@@ -234,6 +237,12 @@ const cta = primaryCta(true);
     line-height: 0.98;
   }
 
+  .hero-title :global(.hero-kicker) {
+    display: block;
+    margin-bottom: clamp(1rem, 2.5svh, 1.5rem);
+    letter-spacing: var(--ls-label);
+  }
+
   .q {
     display: block;
   }
@@ -326,6 +335,11 @@ const cta = primaryCta(true);
     animation: none;
   }
 
+  /* Auch der Atem des Öffnungsstatus (components.css) ist nach dem Anhalten vorbei. */
+  .hero[data-rested] :global(.dot-ok)::after {
+    animation: none;
+  }
+
   /*
    * Nach dem Fortsetzen (hero.ts, data-settling): Was das Scrollen am Hero verändert, gleitet kurz
    * an seinen Platz, statt in einem Bild zu springen. Angehalten gelten keine Übergänge (base.css).
@@ -342,7 +356,7 @@ const cta = primaryCta(true);
 
   .hero-demo {
     position: relative;
-    margin-top: clamp(1rem, 4vw, 3rem);
+    margin-top: clamp(0.5rem, 2vw, 1.5rem);
   }
 
   @media (min-width: 64rem) {

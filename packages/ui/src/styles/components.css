@@ -581,6 +581,104 @@
     animation: none;
   }
 
+  /* ---------- Mehr lesen (details) ---------- */
+
+  /*
+   * Was nicht jeder lesen muss, steht hinter einer leisen Zeile «Mehr lesen» (natives <details>):
+   * ohne Skript bedienbar, mit Tastatur und Screenreader, und der Text steht im HTML (für
+   * Suchmaschinen gleichwertig). Fliesstext blendet nie ein: Er steht beim Öffnen sofort da. Nur
+   * das Pluszeichen wird zum Minus (der senkrechte Strich schrumpft, keine Drehung).
+   * Markup: <details class="more"><summary><span class="more-icon" aria-hidden="true"></span>
+   * <span class="more-closed">Mehr lesen</span><span class="more-opened">Weniger</span>
+   * <span class="sr-only">: Thema</span></summary><div class="more-body">…</div></details>
+   */
+  .more > summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 2.75rem;
+    border-radius: var(--r-pill);
+    color: var(--charcoal);
+    font-size: var(--fs-meta);
+    font-weight: 700;
+    letter-spacing: var(--ls-label);
+    list-style: none;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .more > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .more-icon {
+    position: relative;
+    display: inline-block;
+    flex: none;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 1px solid var(--leaf-edge);
+    border-radius: 50%;
+    transition: border-color var(--dur-2) var(--ease);
+  }
+
+  .more-icon::before,
+  .more-icon::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0.75rem;
+    height: 1.5px;
+    margin: -0.75px 0 0 -0.375rem;
+    border-radius: 1px;
+    background-color: var(--leaf-deep);
+    content: '';
+  }
+
+  /* Der senkrechte Strich des Plus: schrumpft beim Öffnen, dann bleibt ein Minus. */
+  .more-icon::after {
+    width: 1.5px;
+    height: 0.75rem;
+    margin: -0.375rem 0 0 -0.75px;
+    transition: transform var(--dur-2) var(--ease-out);
+  }
+
+  .more[open] .more-icon::after {
+    transform: scaleY(0);
+  }
+
+  .more-opened,
+  .more[open] .more-closed {
+    display: none;
+  }
+
+  .more[open] .more-opened {
+    display: inline;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .more > summary:hover .more-icon {
+      border-color: var(--leaf-deep);
+    }
+  }
+
+  .more-body {
+    display: grid;
+    gap: 1rem;
+    padding-top: 0.75rem;
+  }
+
+  /* Im Druck steht alles da. */
+  @media print {
+    .more > summary {
+      display: none;
+    }
+
+    .more::details-content {
+      content-visibility: visible;
+    }
+  }
+
   /* ---------- Tags ---------- */
 
   .tag {
@@ -772,8 +870,42 @@
 
   /* Status «geöffnet»: immer zusammen mit Text */
   .dot-ok {
+    position: relative;
     background-color: var(--ok);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 20%, transparent);
+  }
+
+  /*
+   * Geöffnet: Der Punkt atmet zweimal ruhig aus (ein Ring wächst und vergeht) und ruht dann. Ein
+   * Atemzug 2 s, ruhiger als --dur-5; zusammen 4 s, also unter den 5 s, ab denen Bewegung
+   * anhaltbar sein muss (WCAG 2.2.2). Ein Signal, kein Auftritt: die einzige Bewegung, die
+   * länger als ein Auftritt dauern darf (DESIGN.md). Wo er atmet, sagt `data-breathe` (Hero und
+   * Besuchszeile beim Laden) bzw. der Auftritt des Kontakts. Neu beginnt er nur, wenn aus
+   * «geschlossen» «geöffnet» wird, nicht beim Nachführen jede Minute (die Klasse bleibt stehen).
+   */
+  .dot-ok::after {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background-color: var(--ok);
+    content: '';
+    opacity: 0;
+  }
+
+  [data-breathe] .dot-ok::after {
+    animation: dot-breath 2s var(--ease-out) 2;
+  }
+
+  @keyframes dot-breath {
+    from {
+      opacity: 0.45;
+      transform: scale(1);
+    }
+
+    to {
+      opacity: 0;
+      transform: scale(2.6);
+    }
   }
 
   .dot-off {
