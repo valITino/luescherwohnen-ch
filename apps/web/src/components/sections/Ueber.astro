@@ -519,8 +519,6 @@ const history = [
     animation: none;
   }
 
-  /* ---------- Firmengeschichte ---------- */
-
   /* ---------- Unser Team ---------- */
 
   .team {
@@ -646,6 +644,8 @@ const history = [
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
+
+  /* ---------- Firmengeschichte ---------- */
 
   .history {
     display: grid;
@@ -1011,7 +1011,9 @@ const history = [
       visibility: visible;
     }
 
+    /* Die grosse Jahreszahl stünde im Druck neben dem Jahr des Kopfs ein zweites Mal. */
     .years[data-ready] .yr-track,
+    .years[data-ready] .yr-big,
     .years[data-ready] .yr-next:not([hidden]) {
       display: none;
     }

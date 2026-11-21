@@ -11,8 +11,16 @@
  * Gewechselt wird nur durch eine Wahl: Klick, Tippen, Tasten oder, mit feinem Zeiger, kurzes
  * Verweilen. Nie durch Scrollen (das wäre eine gescrubbte Galerie, DESIGN.md «Bewusst nicht»).
  * Die neue Tafel erscheint in der Sprache der Bild-Enthüllung (`data-anim`, CSS); die alte bleibt
- * sichtbar (`data-leaving`), bis die neue sie deckt. Bei reduzierter oder angehaltener Bewegung
- * wechselt sie sofort. Eine Adresse mit der Marke eines Eintrags (#raum-betten) öffnet ihn.
+ * sichtbar (`data-leaving`), bis alle Auftritte der neuen zu Ende sind und sie die alte ganz
+ * deckt. Bei reduzierter oder angehaltener Bewegung wechselt sie sofort. Eine Adresse mit der
+ * Marke eines Eintrags (#raum-betten) öffnet ihn.
+ *
+ * Die neue Tafel liegt über der alten (z-index am Element). Liegen Tafeln übereinander, braucht
+ * ihre Liste darum einen eigenen Stapel (CSS: `isolation: isolate`): Sonst geriete nach vielen
+ * Wechseln ein Bedienelement auf der Bühne («Weiter») unter die Tafeln.
+ *
+ * «Weiter» wechselt die Tafel, ohne dass der Fokus den Knopf verlässt. Für Screenreader sagt eine
+ * leise Meldung (role="status"), was jetzt zu sehen ist: «Polstermöbel, 2 von 7».
  */
 import { motionAllowed, motionPaused, onMotionPausedChange } from '@luescher/ui/motion';
 
@@ -65,6 +73,16 @@ export function initChoice(root: HTMLElement, options: ChoiceOptions): ChoiceIte
   let current: ChoiceItem | null = null;
   let layer = 1;
 
+  // Meldung für Screenreader, nur mit «Weiter»: Bei einer Wahl am Kopf sagt es schon dessen Knopf
+  // (aria-expanded). Entsteht hier, ohne Skript gibt es nichts zu melden.
+  let status: HTMLElement | null = null;
+  if (next) {
+    status = document.createElement('p');
+    status.className = 'sr-only';
+    status.setAttribute('role', 'status');
+    root.append(status);
+  }
+
   /*
    * Die erste Tafel tritt beim Hereinscrollen auf wie jedes Bild (reveal.ts, data-enter). Mit
    * dem ersten Wechsel gibt sie diesen Auftritt ab: Sonst fände die Regel für den Auftritt beim
@@ -80,12 +98,25 @@ export function initChoice(root: HTMLElement, options: ChoiceOptions): ChoiceIte
     }
   };
 
-  /** Was beim Wechsel noch die alte Tafel zeigt, ist erledigt, sobald die neue steht. */
+  /**
+   * Was beim Wechsel noch die alte Tafel zeigt, ist erledigt, sobald die neue steht. Der Stapel
+   * beginnt dann wieder unten: Nur die offene Tafel behält eine Ebene.
+   */
   const settle = () => {
-    for (const item of items) if (item !== current) delete item.element.dataset.leaving;
+    layer = 1;
+    for (const item of items) {
+      if (item === current) {
+        item.panel.style.setProperty('z-index', '1');
+        continue;
+      }
+      delete item.element.dataset.leaving;
+      item.panel.style.removeProperty('z-index');
+      if (item.panel.style.length === 0) item.panel.removeAttribute('style');
+    }
   };
 
-  const activate = (item: ChoiceItem, animate = true) => {
+  /** `announce`: Die Wahl kam von «Weiter», die Meldung für Screenreader sagt, was jetzt steht. */
+  const activate = (item: ChoiceItem, animate = true, announce = false) => {
     if (item === current) return;
     const previous = current;
     current = item;
@@ -96,6 +127,9 @@ export function initChoice(root: HTMLElement, options: ChoiceOptions): ChoiceIte
       delete previous.element.dataset.anim;
       previous.element.dataset.leaving = '';
     }
+    // Wer zurückkommt, während er noch als alte Tafel galt (schnell hin und zurück), ist wieder
+    // die neue: Sonst bliebe sein Text verborgen.
+    delete item.element.dataset.leaving;
     item.button.setAttribute('aria-expanded', 'true');
     // Die neue Tafel liegt über der alten (element.style ist erlaubt, CSP: keine style-Attribute
     // im Markup).
@@ -111,20 +145,23 @@ export function initChoice(root: HTMLElement, options: ChoiceOptions): ChoiceIte
       nextText.textContent = label.text;
       next.setAttribute('aria-label', label.label);
     }
+    if (status) {
+      status.textContent = announce ? `${item.name}, ${index + 1} von ${items.length}` : '';
+    }
     options.changed?.(index, items);
-    if (!moving) {
+    if (!moving || typeof item.panel.getAnimations !== 'function') {
       settle();
       return;
     }
-    // Erledigt, wenn die Enthüllung der neuen Tafel endet (oder abbricht).
-    const done = (event: AnimationEvent) => {
-      if (event.target instanceof Element && !item.panel.contains(event.target)) return;
-      item.panel.removeEventListener('animationend', done);
-      item.panel.removeEventListener('animationcancel', done);
+    // Erledigt, wenn alle Auftritte der neuen Tafel zu Ende sind (oder abbrechen): Erst dann deckt
+    // das neue Foto das alte ganz. Der Text ist früher fertig als das Foto; nach dem ersten Ende
+    // verschwände das alte Foto, während oben noch ein Streifen des neuen fehlt.
+    const entrances = item.panel
+      .getAnimations({ subtree: true })
+      .filter((animation) => animation instanceof CSSAnimation);
+    void Promise.allSettled(entrances.map((animation) => animation.finished)).then(() => {
       if (item === current) settle();
-    };
-    item.panel.addEventListener('animationend', done);
-    item.panel.addEventListener('animationcancel', done);
+    });
   };
 
   const keys: Record<string, (index: number) => number> =
@@ -154,7 +191,7 @@ export function initChoice(root: HTMLElement, options: ChoiceOptions): ChoiceIte
   }
   next?.addEventListener('click', () => {
     const index = current ? items.indexOf(current) : -1;
-    activate(items[(index + 1) % items.length]!);
+    activate(items[(index + 1) % items.length]!, true, true);
   });
 
   // Eine Marke in der Adresse (Direktlink, Verlauf, Link auf der Seite) öffnet ihren Eintrag.

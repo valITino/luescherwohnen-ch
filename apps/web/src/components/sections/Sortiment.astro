@@ -272,6 +272,14 @@ const total = pad(areas.length - 1);
     grid-template-rows: subgrid;
   }
 
+  /*
+   * Eigener Stapel für die Tafeln: Die neue liegt jeweils über der alten (z-index aus choice.ts).
+   * Ohne ihn stiege eine Tafel nach vielen Wechseln über «Nächster Raum» und verdeckte den Knopf.
+   */
+  .rooms[data-ready] .room-list {
+    isolation: isolate;
+  }
+
   /* Die <li> liegen übereinander: Nur ihre Inhalte nehmen den Zeiger an. */
   .rooms[data-ready] .room {
     pointer-events: none;
@@ -426,10 +434,11 @@ const total = pad(areas.length - 1);
     }
   }
 
-  /* «Nächster Raum»: liegt über allen Tafeln und bleibt beim Wechsel stehen (der Fokus auch). */
+  /* «Nächster Raum»: liegt über dem Stapel der Tafeln und bleibt beim Wechsel stehen (der Fokus
+     auch). */
   .rooms[data-ready] .room-next:not([hidden]) {
     position: relative;
-    z-index: 20;
+    z-index: 1;
     display: inline-flex;
     grid-column: 1;
     grid-row: 1;
@@ -531,7 +540,7 @@ const total = pad(areas.length - 1);
     }
   }
 
-  /* Im Druck: alle Bereiche untereinander. */
+  /* Im Druck: alle Bereiche untereinander, ohne «Nächster Raum». */
   @media print {
     .rooms[data-ready],
     .rooms[data-ready] .room-list,
@@ -541,6 +550,10 @@ const total = pad(areas.length - 1);
 
     .rooms[data-ready] .room-panel {
       visibility: visible;
+    }
+
+    .rooms[data-ready] .room-next:not([hidden]) {
+      display: none;
     }
   }
 </style>

@@ -189,9 +189,98 @@ test.describe('Raum für Raum, Jahr für Jahr, Mehr lesen', () => {
     await next.click();
     await expect(buttons.nth(3)).toHaveAttribute('aria-expanded', 'true');
     await expect.poll(open).toEqual(['raum-bodenbelaege-tafel']);
+    // Der Fokus bleibt auf «Nächster Raum»: Eine leise Meldung sagt, was jetzt zu sehen ist. Bei
+    // einer Wahl am Kopf sagt es dessen Knopf selbst, die Meldung ist dann leer (nichts Veraltetes).
+    const status = rooms.getByRole('status');
+    await expect(next).toBeFocused();
+    await expect(status).toHaveText('Bodenbeläge, 4 von 7');
+    await buttons.first().click();
+    await expect(status).toHaveText('');
     // Direktlink auf einen Raum
     await page.goto(`${PROD}/#raum-teppiche`);
     await expect(page.locator('#raum-teppiche .room-btn')).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  test('Sortiment: schnell hin und zurück, Foto und Text des Raums bleiben', async ({ page }) => {
+    await openHome(page);
+    const rooms = page.locator('[data-rooms]');
+    await expect(rooms).toHaveAttribute('data-ready', '');
+    await rooms.scrollIntoViewIfNeeded();
+    // Zweiter Raum, und zurück zum ersten, während das zweite Foto noch aufsteigt (mit dem Zeiger
+    // über die Liste passiert das von selbst). Beide Klicks in der Seite, damit der Abstand stimmt.
+    await rooms.evaluate(
+      (root) =>
+        new Promise<void>((resolve) => {
+          const buttons = root.querySelectorAll<HTMLElement>('.room-btn');
+          buttons[1]!.click();
+          setTimeout(() => {
+            buttons[0]!.click();
+            resolve();
+          }, 150);
+        }),
+    );
+    await expect(rooms.locator('.room-btn').first()).toHaveAttribute('aria-expanded', 'true');
+    // Am Ende gilt keine Tafel mehr als «alt», und der erste Raum zeigt Foto und Text.
+    await expect(rooms.locator('[data-leaving]')).toHaveCount(0);
+    await expect(rooms.locator('#raum-moebel .room-photo')).toBeVisible();
+    await expect(rooms.locator('#raum-moebel figcaption')).toBeVisible();
+    await expect(rooms.locator('#raum-polstermoebel .room-panel')).toBeHidden();
+  });
+
+  test('Sortiment: Das alte Foto bleibt, bis das neue es ganz deckt', async ({ page }) => {
+    await openHome(page);
+    const rooms = page.locator('[data-rooms]');
+    await expect(rooms).toHaveAttribute('data-ready', '');
+    await rooms.scrollIntoViewIfNeeded();
+    // Im Moment, in dem die alte Tafel verschwindet: Wie weit ist das neue Foto offen?
+    const clip = await rooms.evaluate(
+      (root) =>
+        new Promise<string>((resolve) => {
+          const [first, second] = root.querySelectorAll<HTMLElement>('.room');
+          let left = false;
+          new MutationObserver((_, observer) => {
+            if ('leaving' in first!.dataset) {
+              left = true;
+              return;
+            }
+            if (!left) return;
+            observer.disconnect();
+            resolve(getComputedStyle(second!.querySelector('.room-photo')!).clipPath);
+          }).observe(first!, { attributes: true, attributeFilter: ['data-leaving'] });
+          second!.querySelector<HTMLElement>('.room-btn')!.click();
+        }),
+    );
+    // Oben fehlt nichts mehr: inset(0 …) oder gar kein Ausschnitt.
+    const top = clip === 'none' ? 0 : Number.parseFloat(clip.replace('inset(', ''));
+    expect(top, `Ausschnitt des neuen Fotos: ${clip}`).toBeLessThan(0.01);
+  });
+
+  test('Sortiment: «Nächster Raum» bleibt auch nach vielen Wechseln bedienbar', async ({
+    page,
+  }) => {
+    await openHome(page);
+    const rooms = page.locator('[data-rooms]');
+    await expect(rooms).toHaveAttribute('data-ready', '');
+    const next = rooms.locator('[data-choice-next]');
+    // Jede neue Tafel liegt über der alten. 24 Wechsel in einem Zug (ohne dass je einer zur Ruhe
+    // kommt): Der Knopf muss trotzdem über den Tafeln liegen.
+    await rooms.evaluate((root) => {
+      const button = root.querySelector<HTMLElement>('[data-choice-next]')!;
+      for (let i = 0; i < 24; i += 1) button.click();
+    });
+    // Ein echter Klick trifft den Knopf (läge ein Foto darüber, träfe er das Foto).
+    await next.click({ timeout: 5_000 });
+    await expect(rooms.locator('.room-btn').nth(25 % 7)).toHaveAttribute('aria-expanded', 'true');
+    // Zur Ruhe gekommen, behält nur die offene Tafel eine Ebene.
+    await expect(rooms.locator('[data-leaving]')).toHaveCount(0);
+    expect(
+      await rooms.evaluate(
+        (root) =>
+          [...root.querySelectorAll<HTMLElement>('.room-panel')].filter(
+            (panel) => panel.style.zIndex,
+          ).length,
+      ),
+    ).toBe(1);
   });
 
   test('Sortiment ohne Skript: alle Bereiche als Liste, keine toten Knöpfe', async ({
@@ -227,6 +316,10 @@ test.describe('Raum für Raum, Jahr für Jahr, Mehr lesen', () => {
     // Am Ende führt «Weiter» zurück zum Anfang.
     await buttons.last().click();
     await expect(next).toHaveText(/Zurück zu 1946/);
+    await next.click();
+    await expect(buttons.first()).toHaveAttribute('aria-expanded', 'true');
+    await expect(years.getByRole('status')).toHaveText('1946, 1 von 6');
+    await expect(next).toHaveText(/Weiter: 1949/);
     // Tastatur: Pfeile nach links und rechts
     await buttons.last().focus();
     await page.keyboard.press('Home');
