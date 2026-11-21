@@ -71,9 +71,10 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
       Vorhang und Bild-Enthüllung beim Wischen, Wischen ohne Lenis (Entscheid 39), gelegentliche
       Stockung von 83 ms beim Wischen. In der Cloud-Umgebung ohne Grafikchip lief der Vorhang am
       Desktop mit halber Bildrate; das sagt über echte Geräte wenig aus.
-- [ ] Auf einem iPhone prüfen: Bild-Enthüllung ab einem Viertel (Entscheid 40) fühlt sich beim
-      Lesen ruhig an; das offene Menü sperrt den Hintergrund (ohne Lenis nur über
-      `overflow: hidden` am `<html>`; iOS vor 16 beachtet das beim Wischen nicht, nicht prüfbar).
+- [ ] Auf einem iPhone prüfen: Bild-Enthüllung ab einem Viertel bzw. 12 % der Fensterhöhe
+      (Entscheide 40 und 41) fühlt sich beim Lesen ruhig an; das offene Menü sperrt den
+      Hintergrund (ohne Lenis nur über `overflow: hidden` am `<html>`; iOS vor 16 beachtet das
+      beim Wischen nicht, nicht prüfbar).
 - [ ] Kontrast des Knopfs «Beratung anfragen» in der Kapsel von Hand bestätigen: axe kann ihn wegen
       der Ebene für den Hover-Schein (`::after`) nicht mehr berechnen. Gemessen 7,2:1 (berechnet)
       und 7,3:1 (Pixel), Hover 9,2:1; erfüllt AA. Die Farben sind unverändert.
@@ -101,7 +102,18 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
 - [ ] Bei reduzierter und angehaltener Bewegung wechselt der Header sofort die Form; das zählt
       als Layoutverschiebung (CLS 0,031 je Wechsel, gemessen am Desktop beim Scrollen mit dem
       Rad). Bewusst so belassen: Die Leiste dafür ein Bild lang zu verbergen, wie beim animierten
-      Wechsel, wäre ohne Abtauchen ein sichtbares Blinken.
+      Wechsel, wäre ohne Abtauchen ein sichtbares Blinken. Dasselbe beim Laden mit Direktlink
+      (`/#kontakt`, `/#ueber`), wenn das Skript erst nach dem ersten Bild läuft (in rund der
+      Hälfte der Läufe); selten (2 von 12) zeigt das erste Bild beim Neuladen noch die
+      Wiederherstellung des Browsers (CLS 0,41), bevor `home.ts` die gemerkte Ansicht ansteuert.
+      Möglich: `history.scrollRestoration = 'manual'` in einem frühen Skript mit Hash.
+- [ ] Chromium (153) stürzt ab, wenn ein Skript während eines Seitenübergangs mit
+      `getComputedStyle()` den Stil einer nicht beteiligten Ebene liest, für die eine Regel mit
+      `:only-child` gilt (etwa `::view-transition-new(site-bar)`). Die Website liest ihn nie,
+      Tests nutzen `getAnimations()`. Kleinstes Beispiel bei Bedarf als Fehlerbericht an Chromium.
+- [ ] Am Desktop liegt die Leiste auf einem halben Pixel (zentriert, 1440 px: links 50,24 px);
+      während eines Seitenübergangs wirkt sie darum minimal weich und wird am Ende scharf. Kaum
+      sichtbar; bei Bedarf die Breite so runden, dass die Lage ganzzahlig ist.
 - [ ] Eine Taste zum Scrollen während eines Ausgleitens von Lenis kostet einmal 3 bis 12 ms
       (Lenis setzt beim Anhalten kurz `overflow: clip` am `<html>`, mit klassischen Bildlaufleisten
       rechnet der Browser das Layout neu). Nicht sichtbar; bei Bedarf ohne Anhalten zurücksetzen.

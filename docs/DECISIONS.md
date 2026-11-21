@@ -229,3 +229,47 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
     beginnt; ein blockierendes Skript im Kopf dafür lohnt sich nicht). Der sofortige Formwechsel
     bei reduzierter und angehaltener Bewegung zählt als kleine Layoutverschiebung. Eine Taste
     während des Ausgleitens kostet einmal ein Layout.
+- **41.** **Vierte Prüfrunde** gegen `f1173cc` und `3bcbbd6` (fünf Blickwinkel; jeder Befund ab
+  «mittel» von zwei Gegenprüfungen bestätigt; die neuen Tests aus Entscheid 40 schlagen auf
+  `f1173cc` alle aus dem beabsichtigten Grund fehl).
+  - **Leere Rahmen kürzer** (zwei Befunde «mittel», neu in `87af9ac`): Ein Rahmen, der knapp
+    unter der Schwelle stand, wartete 700 ms und stieg dann ebenso verdeckt auf wie vorher
+    (leer gemessen 830 bis 960 ms statt 150 bis 230 ms, auf dem Handy rund jeder vierte
+    Auftritt). Das Porträt (948 px hoch) wartete auf ein Viertel seiner ganzen Höhe und stand
+    bis zu einer Sekunde als weisse Fläche im Bild. Jetzt: Wartezeit am Rand 250 ms (mehr zeigt
+    vom Aufsteigen nicht mehr), und die Schwelle ist höchstens 12 % der Fensterhöhe (feine
+    Stufen des Observers, gemessen an der sichtbaren Höhe). Gegengeprüft: So bleibt fast der
+    ganze Gewinn an sichtbarem Aufsteigen, die leere Zeit halbiert sich. Verworfen: den Zeitgeber
+    bei jedem Scrollen neu starten (das Ausgleiten von Lenis und Wischen meldet bis zu einer
+    Sekunde lang Scrollen, das Bild käme später als heute).
+  - **Spätes Foto blendet ein** (klein): Statt leer, dann hart Sand, dann das Foto, bleibt der
+    Rahmen leer und das Foto blendet ein, sobald es da ist (`late`, `loaded`, nur Deckkraft).
+  - **Anhalten mitten im Sprung** (klein, neu in `87af9ac`): Lenis endete, und die Seite blieb
+    mitten auf der Strecke stehen, die Adresse zeigte schon die Marke. Jetzt kommt der Sprung
+    vorher sofort an der Marke an. (Lenis führt bei einem Sprung `targetScroll` mit dem Gleiten
+    nach, das Ziel ist darum die Marke der Adresse.)
+  - **Angehalten kein stiller Hero** (klein, neu in `87af9ac`): Der Hero blieb angepinnt, und die
+    ersten 490 bis 810 px Scrollen bewegten nichts. Angehalten gibt er das Anpinnen auf, beim
+    Fortsetzen nimmt er es wieder; die Scrollposition gleicht aus, was im Bild ist, bleibt.
+    Gemessen wird am Abschnitt darunter: Chromium gleicht mit Scroll Anchoring manchmal selbst
+    aus, eine feste Rechnung verschob dann doppelt.
+  - **Header beim Seitenwechsel** (klein, Bestand): Die neue Seite stellt ihre Form schon in
+    `pagereveal` ein; ein Link zu einer Marke zeigte sonst vier Bilder lang oben die Leiste, dann
+    sprang die Kapsel auf. Zurück und vor zu einer Seite, die oben beginnt, steht ihre Leiste
+    sofort (Übergangstyp `stand`), statt einige Bilder lang grau überzublenden (damit erledigt,
+    was Entscheid 40 bewusst offen liess). Ohne Navigation API (pageswap ohne `activation`) gilt
+    die sichere Annahme wie bei einer Marke. Die Absage des Übergangs bei angehaltener Bewegung
+    meldet keinen unbehandelten Fehler mehr.
+  - **Kleinere:** Rahmen, die gemeinsam knapp unter der Schwelle warten, öffnen sich als Folge
+    im Abstand `--stagger`; Ecken und Linie im Sucher starten 60 bzw. 50 ms später (420 und
+    450 ms), genau mit dem Foto; Screenreader hören während des Auftritts den Namen der
+    Überschrift ohne den sichtbar gesetzten Trennstrich; mit Tastaturfokus stehen im Header nur
+    Deckkraft und Lage sofort, die Farben beim Hover gleiten weiter; der Öffnungsstatus im
+    Besuch rechnet eine Bildschirmhöhe vorher (er erschien auf dem Handy im Bild und schob die
+    Knöpfe 40 px nach unten); der e2e-Test zur Landung nach einem Sprung läuft bei 1280 px, wo ein
+    Fehler 35 px statt 3 px ausmacht.
+  - **Bewusst nicht geändert** (`docs/TODO.md`): Chromium stürzt ab, wenn ein Skript während
+    eines Übergangs den Stil einer nicht beteiligten Ebene mit `:only-child` liest (nur in
+    Tests, die Website liest ihn nie); die Leiste liegt am Desktop auf einem halben Pixel und
+    wirkt während des Übergangs minimal weich; beim Laden mit Direktlink zählt der sofortige
+    Formwechsel mitunter als Layoutverschiebung.

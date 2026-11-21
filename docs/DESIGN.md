@@ -201,27 +201,32 @@ Alles andere ist leise:
    Navigation, sonst das nächste Bedienelement der Leiste (Tab führt so in der gewohnten
    Reihenfolge weiter). Ist beim Umkehren nichts zu sehen, wechselt die Form sofort. Bei einem Sprung
    (Direktlink, wiederhergestellte Position) und bei angehaltener Bewegung steht die Form sofort,
-   samt Glasfläche.
+   samt Glasfläche. Mit Tastaturfokus stehen nur Deckkraft und Lage sofort; die Farben beim Hover
+   gleiten weiter.
 2. **Überschriften**: Der Kicker zeichnet sich ein (`clip-path`, `--dur-4`), 60 ms später steigen
    die Zeilen aus ihrer Maske (GSAP SplitText, `--dur-4`, `expo.out`, `--stagger`). Die Zeilen
    sind dabei genau die, die der Browser setzt: Jeder Umbruch wird vorher gemessen und bis zum
    Ende fest gesetzt (sonst bräche SplitText ausgewogene Überschriften und weiche Trennstriche
-   anders um, und am Ende spränge der Umbruch). Danach ist das Markup wieder wie zuvor.
+   anders um, und am Ende spränge der Umbruch). Screenreader hören dabei den Namen ohne den
+   sichtbar gesetzten Trennstrich. Danach ist das Markup wieder wie zuvor.
 3. **Bild-Enthüllung** (`.enter-unveil`: Sortiment, Aktuell, Projekte, Porträt): Das Foto steigt
    vom unteren Rand seines Rahmens auf und setzt sich aus einem leichten Zoom zur Mitte hin
    (`clip-path` und `scale` am Bild selbst, `--dur-4`, `--ease-expo`). Am Bild statt am Rahmen,
    weil der Browser dann nur eine Ebene bewegt: Beim Wischen auf dem Handy fielen so gemessen
-   halb so viele Bilder aus. Es beginnt, sobald ein Viertel des Rahmens zu sehen ist (bleibt der
-   Rahmen knapp darunter stehen, nach 700 ms): So ist das Aufsteigen zu sehen, statt grösstenteils
-   unter dem Rand zu geschehen. Solange es wartet, ist das Bild nur durchsichtig (nicht
-   beschnitten, sonst lädt der Browser es nicht vor), und der Rahmen ist leer statt sandfarben.
-   Lädt das Foto beim Auftritt noch (langsames Netz), wartet die Enthüllung bis zu 500 ms; danach
-   steht der Rahmen ohne Auftritt auf Sand, und das Foto erscheint, sobald es da ist. Bilder, die
-   zusammen ankommen, folgen einander im Abstand `--stagger` (höchstens drei Versätze).
-4. **Über uns**: Der Sucher beginnt mit dem Foto. Die unteren Ecken rücken sofort weich an ihren
-   Platz (`--dur-4`, `--ease-expo`), die oberen erst nach 360 ms, wenn das aufsteigende Foto sie
-   erreicht (vorher wären sie hell auf hellem Rahmen); ab 400 ms tastet eine grüne Linie das Bild
-   einmal ab (nur `transform`, `--dur-4`). Die Werte erscheinen im Abstand `--stagger`.
+   halb so viele Bilder aus. Es beginnt, sobald ein Viertel des Rahmens zu sehen ist, bei hohen
+   Rahmen (Porträt) schon bei 12 % der Fensterhöhe; bleibt der Rahmen knapp darunter stehen,
+   nach 250 ms. So ist das Aufsteigen zu sehen, statt grösstenteils unter dem Rand zu geschehen,
+   und kein Rahmen steht lange leer im Bild. Solange es wartet, ist das Bild nur durchsichtig
+   (nicht beschnitten, sonst lädt der Browser es nicht vor), und der Rahmen ist leer statt
+   sandfarben. Lädt das Foto beim Auftritt noch (langsames Netz), wartet die Enthüllung bis zu
+   500 ms; danach verzichtet sie darauf, der Rahmen bleibt leer, und das Foto blendet ein, sobald
+   es da ist (`--dur-3`, nur Deckkraft). Bilder, die zusammen ankommen, folgen einander im Abstand
+   `--stagger` (höchstens drei Versätze), auch wenn sie zusammen knapp unter der Schwelle warten.
+4. **Über uns**: Der Sucher beginnt mit dem Foto. Die unteren Ecken rücken nach 140 ms weich an
+   ihren Platz (`--dur-4`, `--ease-expo`), die oberen erst nach 420 ms, wenn das aufsteigende Foto
+   sie erreicht (vorher wären sie hell auf hellem Rahmen); ab 450 ms tastet eine grüne Linie das
+   Bild einmal ab (nur `transform`, `--dur-4`), knapp hinter der Oberkante des Fotos. Die Werte
+   erscheinen im Abstand `--stagger`.
 5. **Haltung**: Die Wörter werden beim Scrollen dunkel, jedes mit weichem Ein- und Auslauf
    (angehalten: volle Deckkraft).
 6. **Service**: Die Überschrift bleibt am Desktop stehen, die Schritte ziehen vorbei.
@@ -230,10 +235,13 @@ Alles andere ist leise:
    weil die Leiste oben als eigene Ebene `site-bar` übergeben wird. Die Kapsel trägt diesen Namen
    nie: Sonst zöge der Browser sie auf die Grösse der Leiste (verzerrt), und ihr Milchglas bliebe
    klar (ein benanntes Element begrenzt die Unschärfe seiner Kinder). Verlässt man die Seite aus
-   der Kapsel, zu einer Marke (`/#kontakt`) oder durch den Verlauf, geht der Header mit der alten
-   Seite (`header.ts`, `is-leaving`), und der neue blendet für sich ein (`--dur-2`). Das gilt
-   auch zurück und vor zwischen zwei Seiten, die oben stehen (die alte Seite weiss nicht, wo die
-   neue beginnt). Stehen beide oben, werden alte und neue Leiste nicht überblendet: Die neue
+   der Kapsel, zu einer Marke (`/#kontakt`), durch den Verlauf oder ohne Navigation API (Ziel
+   unbekannt), geht der Header mit der alten Seite (`header.ts`, `is-leaving`), und der neue
+   blendet für sich ein (`--dur-2`). Die neue Seite stellt ihre Form schon im ersten Bild ein
+   (`pagereveal`): Beginnt sie unten, kommt die Kapsel mit der Seite, statt dass oben kurz die
+   Leiste erscheint. Zurück und vor zu einer Seite, die oben beginnt, setzt sie den Übergangstyp
+   `stand`: Ihre Leiste steht sofort, die alte weicht darunter (überblendet würde der Header
+   einige Bilder lang grau). Stehen beide oben, werden alte und neue Leiste nicht überblendet: Die neue
    steht vom ersten Bild an (eine Überblendung gleicher Bilder kann im ersten Bild aus dem Takt
    geraten, dann wird die Leiste für ein Bild grau). Die alte Seite weicht schnell (`--dur-1`,
    `--ease-out`), die neue setzt sich 40 ms später von leicht unten (480 ms, `--ease-expo`); so
@@ -254,8 +262,9 @@ Alles andere ist leise:
   keine mit einem y-Wert unter 0 oder über 1; keine Keyframe-Animation dreht etwas. Auch das
   prüft der Wächter (`linear` erkennt er noch nicht, siehe `docs/TODO.md`).
 - **Dauern und Versätze aus den Tokens.** Ein Einzelwert braucht einen Kommentar mit Grund.
-- **Alles endet**: Jeder Auftritt beim Scrollen ist spätestens nach 1200 ms plus drei Versätzen
-  fertig, der Hero ruht nach 1,5 s (beides prüft `e2e/web.spec.ts`).
+- **Alles endet**: Jeder Auftritt beim Scrollen ist spätestens nach 1410 ms fertig (die Linie im
+  Sucher nach 1250 ms, Bilder nach 800 ms plus drei Versätzen), der Hero ruht nach 1,5 s (beides
+  prüft `e2e/web.spec.ts`).
 - **Das grösste Element zuerst**: Foto und Lead im Hero sind ab dem ersten Bild sichtbar (LCP,
   geprüft in `e2e/web.spec.ts`).
 - **Reduzierte Bewegung**: `base.css` schaltet jede Animation ab (`none`, auch eine winzige
@@ -263,9 +272,11 @@ Alles andere ist leise:
   Anpinnen, keine Auftritte, kein Seitenübergang, das Band bricht um.
 - **Pause** (`html[data-motion="off"]`): `base.css` hält jede Animation an und setzt jeden
   Übergang auf 0 (Menü-Vorhang, Hover-Zoom); `header.ts` wechselt die Form ohne Abtauchen und
-  überspringt den Seitenübergang; `smooth.ts` beendet Lenis, der Browser scrollt selbst;
-  `hero.ts` beendet den Auftakt (`data-rested`) und nimmt den Scroll-Verlauf weg (das Anpinnen
-  bleibt, damit nichts springt); `haltung.ts` zeigt alle Wörter ganz; `reveal.ts` löst alle
+  überspringt den Seitenübergang; `smooth.ts` beendet Lenis, der Browser scrollt selbst (ein
+  gleitender Sprung kommt vorher sofort am Ziel an, `home.ts`); `hero.ts` beendet den Auftakt
+  (`data-rested`), nimmt den Scroll-Verlauf weg und gibt das Anpinnen auf, sonst stünde der Hero
+  eine Dreiviertel-Bildschirmhöhe lang still (die Scrollposition gleicht die kürzere Seite aus,
+  was im Bild ist, bleibt); `haltung.ts` zeigt alle Wörter ganz; `reveal.ts` löst alle
   wartenden und erfolgten Auftritte auf (`data-enter=""`); Komponenten setzen ihre laufenden
   Auftritte ans Ende (Rückfall in CSS). Beim Fortsetzen laufen Dauerbewegung, Lenis und die
   Effekte am Scrollen wieder, Auftritte spielen nicht ein zweites Mal (geprüft in

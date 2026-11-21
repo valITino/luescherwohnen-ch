@@ -41,6 +41,13 @@ ab einem Viertel, kein Aufsteigen über ein fehlendes Foto, Überschriften ohne 
 genaue Landung nach Sprüngen aus der Leiste, Fokus in der Navigation. Acht neue e2e-Tests (fünf
 auf Desktop und Handy, drei nur am Desktop), zwei bestehende geschärft.
 
+Vierte Prüfrunde gegen `3bcbbd6` (fünf Blickwinkel, `docs/DECISIONS.md` 41). Die neuen Tests der
+dritten Runde schlagen auf `f1173cc` alle aus dem beabsichtigten Grund fehl. Behoben: zwei
+Befunde «mittel» zur Bild-Enthüllung (Wartezeit am Rand 700 → 250 ms, hohe Rahmen ab 12 % der
+Fensterhöhe), dazu Anhalten mitten im Sprung, stiller Hero bei angehaltener Bewegung, Header beim
+Seitenwechsel zu einer Marke und zurück, spätes Foto blendet ein und weitere kleine Punkte. Vier
+neue e2e-Tests (einer auf Desktop und Handy, drei nur am Desktop), fünf bestehende geschärft.
+
 ## 20.11.2026: Demo nach dem PSYber-System
 
 Auftrag des Repository-Inhabers: Stil, Design, Format und Logik von `valITino/PsySec`
