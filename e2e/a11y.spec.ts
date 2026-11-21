@@ -37,11 +37,42 @@ for (const [label, origin] of [
   }
 }
 
+test('Nach einer Wahl: anderer Raum, anderes Jahr und geöffnetes «Mehr lesen» sind zugänglich', async ({
+  browser,
+}, testInfo) => {
+  const context = await browser.newContext({ ...testInfo.project.use, reducedMotion: 'reduce' });
+  const page = await context.newPage();
+  await page.goto(`${PREVIEW}/`);
+  await page.evaluate(() => document.fonts.ready);
+  await layOutAll(page);
+  // Was erst nach einer Wahl zu sehen ist, misst axe sonst nie: Text und Kontrast der anderen
+  // Tafeln und der aufgeklappten Absätze.
+  await page.locator('[data-rooms] .room-btn').nth(3).click();
+  await page.locator('[data-years] .yr-btn').nth(3).click();
+  await page.evaluate(() => {
+    for (const details of document.querySelectorAll('details')) details.open = true;
+  });
+  await expect(page.locator('#raum-bodenbelaege figcaption')).toBeVisible();
+  await expect(page.locator('#jahr-1983 .moment-body')).toBeVisible();
+  const result = await new AxeBuilder({ page }).withTags(TAGS).analyze();
+  expect(
+    result.violations.map((violation) => `${violation.id}: ${violation.nodes[0]?.target}`),
+  ).toEqual([]);
+  await context.close();
+});
+
 test('Menü offen: auch das Overlay ist zugänglich', async ({ page }) => {
   await page.goto(`${PROD}/impressum`);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('[data-menu-toggle]').click();
   await expect(page.locator('#mobile-menu')).toBeVisible();
+  // Gemessen wird der Endzustand: erst, wenn Vorhang und Auftritte im Menü fertig sind.
+  await page.waitForFunction(() =>
+    document
+      .querySelector('#mobile-menu')!
+      .getAnimations({ subtree: true })
+      .every((animation) => animation.playState === 'finished'),
+  );
   const result = await new AxeBuilder({ page }).include('#mobile-menu').withTags(TAGS).analyze();
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });

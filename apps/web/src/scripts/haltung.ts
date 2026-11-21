@@ -1,5 +1,5 @@
 /**
- * 02 Haltung: Wörter werden beim Scrollen von 25 % auf 100 % Deckkraft hell.
+ * Haltung (ohne Nummer): Wörter werden beim Scrollen von 25 % auf 100 % Deckkraft dunkel.
  *
  * Gedimmt sind die Wörter nur, solange der Satz durch den Bildschirm läuft. Davor und danach
  * (und ohne dieses Skript) steht der Text in voller Deckkraft: lesbar für alle, die per
@@ -7,8 +7,11 @@
  *
  * Der Fortschritt kommt direkt aus der Lage des Satzes im Bildschirm (kein vorab berechneter
  * Auslöser): So stimmt er auch, wenn sich die Höhe der Seite oberhalb noch ändert.
+ *
+ * Solange jemand die Bewegung angehalten hat (Schalter), steht der Satz in voller Deckkraft, wie
+ * bei reduzierter Bewegung.
  */
-import { whileInView } from '@luescher/ui/motion';
+import { motionPaused, onMotionPausedChange, whileInView } from '@luescher/ui/motion';
 import { gsap } from '@luescher/ui/motion/smooth';
 import { SplitText } from 'gsap/SplitText';
 
@@ -44,8 +47,10 @@ export function initHaltung(root: HTMLElement): void {
   /** progress 0 = der Satz erreicht den unteren Rand, 1 = er steht auf 38 % der Höhe */
   const update = () => {
     const height = window.innerHeight;
+    const paused = motionPaused();
     for (const item of statements) {
-      const top = item.statement.getBoundingClientRect().top;
+      // Angehalten: wie ausserhalb der Strecke, also volle Deckkraft.
+      const top = paused ? -height : item.statement.getBoundingClientRect().top;
       const progress = Math.max(0, Math.min(1, (height - top) / (height * (1 - END))));
       if (progress === item.last) continue;
       item.last = progress;
@@ -56,7 +61,10 @@ export function initHaltung(root: HTMLElement): void {
           word.style.opacity = '';
           return;
         }
-        const local = Math.min(1, Math.max(0, (time - STAGGER * index) / WORD));
+        const linear = Math.min(1, Math.max(0, (time - STAGGER * index) / WORD));
+        // Smoothstep: Jedes Wort läuft weich an und gleitet in die volle Deckkraft, statt
+        // gleichmässig hochzuzählen und abrupt anzuhalten.
+        const local = linear * linear * (3 - 2 * linear);
         word.style.opacity = String(DIM + (1 - DIM) * local);
       });
     }
@@ -72,6 +80,7 @@ export function initHaltung(root: HTMLElement): void {
       update();
     });
   };
+  onMotionPausedChange(update);
   whileInView(root, (inView) => {
     if (inView) {
       window.addEventListener('scroll', onScroll, { passive: true });

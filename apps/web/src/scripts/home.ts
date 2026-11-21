@@ -5,10 +5,11 @@
  * erst, wenn jemand die Seite benutzt.
  * Das Kontaktformular lädt erst, wenn es in Sicht kommt.
  */
-import { motionAllowed, onceInView } from '@luescher/ui/motion';
+import { motionAllowed, onceInView, onMotionPausedChange } from '@luescher/ui/motion';
 import type { SmoothScroll } from '@luescher/ui/motion/smooth';
 import { initMotionToggle, initProgress } from './chrome.ts';
 import { initHeader } from './header.ts';
+import { initChoice } from './choice.ts';
 import { initHero, initOpenStatus } from './hero.ts';
 import { rememberView, scrollTopFor, storedView } from './position.ts';
 
@@ -24,11 +25,74 @@ const idle = (callback: () => void) => {
 
 initHeader(() => smooth);
 
+/*
+ * Hält jemand die Bewegung an, während ein Sprung zu einer Marke noch gleitet, kommt er sofort
+ * am Ziel an, statt mitten auf der Strecke stehen zu bleiben (die Adresse zeigt die Marke schon).
+ * Vor allen anderen angemeldet: vor dem Hero, der danach sein Anpinnen aufgibt, und vor
+ * smooth.ts, das Lenis beendet. Ein ausgleitendes Rad hält dagegen an, wo es gerade ist, auch
+ * wenn es einen Sprung übernommen hat: Dann gilt, wohin die Person selbst scrollt.
+ */
+const jumping = () => 'jump' in document.documentElement.dataset;
+/** Das Element einer Marke (#kontakt) oder null; die Adresse kann Zeichen kodiert enthalten. */
+const markOf = (hash: string) => {
+  try {
+    return document.getElementById(decodeURIComponent(hash.slice(1)));
+  } catch {
+    return null;
+  }
+};
+let jumpTakenOver = false;
+window.addEventListener(
+  'wheel',
+  () => {
+    if (jumping()) jumpTakenOver = true;
+  },
+  { passive: true },
+);
+onMotionPausedChange((paused) => {
+  const lenis = smooth?.lenis;
+  if (!paused || !jumping() || jumpTakenOver || !lenis) return;
+  if (lenis.isScrolling !== 'smooth') return;
+  // Ziel ist die Marke der Adresse (targetScroll folgt bei Lenis dem Gleiten, nicht dem Ziel).
+  const mark = markOf(window.location.hash);
+  if (mark) lenis.scrollTo(mark, { immediate: true, force: true });
+});
+
 const hero = document.querySelector<HTMLElement>('[data-hero]');
 if (hero) initHero(hero);
 
-// Öffnungsstatus überall dort, wo er steht (Hero und Kontakt)
-document.querySelectorAll<HTMLElement>('[data-open-status]').forEach(initOpenStatus);
+// «Raum für Raum» und «Jahr für Jahr» (choice.ts): vor dem ersten Bild, damit nichts umspringt.
+const rooms = document.querySelector<HTMLElement>('[data-rooms]');
+if (rooms) {
+  initChoice(rooms, {
+    orientation: 'vertical',
+    preview: true,
+    next: (to) => ({ text: 'Nächster Raum', label: `Nächster Raum: ${to.name}` }),
+  });
+}
+const years = document.querySelector<HTMLElement>('[data-years]');
+if (years) {
+  initChoice(years, {
+    orientation: 'horizontal',
+    next: (to, wraps) => {
+      const text = wraps ? `Zurück zu ${to.name}` : `Weiter: ${to.name}`;
+      return { text, label: text };
+    },
+    // Frühere Jahre sind erledigt (Punkt grün), die Linie wächst bis zum gewählten.
+    changed: (index, items) => {
+      items.forEach((item, at) => {
+        if (at < index) item.element.dataset.past = '';
+        else delete item.element.dataset.past;
+      });
+      years.style.setProperty('--yr-p', String(index / Math.max(1, items.length - 1)));
+    },
+  });
+}
+
+// Öffnungsstatus überall dort, wo er steht (Hero, Besuch und Kontakt)
+const openStatus = [...document.querySelectorAll<HTMLElement>('[data-open-status]')].map(
+  initOpenStatus,
+);
 
 // --- Kontaktformular: erst laden, wenn es in Sicht kommt ---
 const contact = document.querySelector<HTMLFormElement>('[data-contact]');
@@ -130,6 +194,8 @@ const layOut = (element: HTMLElement) => {
 };
 
 const layOutNow = () => {
+  // Auch der Öffnungsstatus erscheint vor dem Sprung, nicht erst unterwegs (hero.ts).
+  for (const show of openStatus) show();
   if (lazy.length === 0) return;
   for (const element of lazy.splice(0)) layOut(element);
   // Das sanfte Scrollen kennt die Seitenlänge nur von früher: sofort neu vermessen,
@@ -152,6 +218,53 @@ const layOutSoon = () => {
 };
 
 /*
+ * Sprung zu einer Marke (Link, Adresse mit #, wiederhergestellte Position): Solange die Seite
+ * dorthin unterwegs ist, trägt <html> `data-jump`. reveal.ts spielt dann keine Auftritte und
+ * teilt keine Überschriften, so landet der Sprung auf fertigem Inhalt. Die Marke fällt, sobald
+ * Lenis nicht mehr gleitet und zehn Bilder lang kein Scrollen kam, spätestens nach vier Sekunden.
+ * Gezählt wird in Bildern, nicht in Millisekunden: Stockt die Darstellung kurz (schwaches Gerät,
+ * Speicherbereinigung), lief ein Zeitgeber mitten im Sprung ab, und das Ziel trat doch noch auf.
+ */
+const JUMP_REST_FRAMES = 10;
+const JUMP_MAX_MS = 4000;
+let jumpMax = 0;
+let restFrames = 0;
+let watchingRest = false;
+const endJump = () => {
+  window.clearTimeout(jumpMax);
+  window.removeEventListener('scroll', resetRest);
+  delete document.documentElement.dataset.jump;
+};
+function resetRest() {
+  restFrames = 0;
+}
+const watchRest = () => {
+  if (!jumping()) {
+    watchingRest = false;
+    return;
+  }
+  restFrames = smooth?.lenis?.isScrolling === 'smooth' ? 0 : restFrames + 1;
+  if (restFrames >= JUMP_REST_FRAMES) {
+    watchingRest = false;
+    endJump();
+    return;
+  }
+  requestAnimationFrame(watchRest);
+};
+const markJump = () => {
+  document.documentElement.dataset.jump = '';
+  jumpTakenOver = false;
+  restFrames = 0;
+  // Derselbe Zuhörer zählt nur einmal, auch wenn ein Sprung den anderen ablöst.
+  window.addEventListener('scroll', resetRest, { passive: true });
+  window.clearTimeout(jumpMax);
+  jumpMax = window.setTimeout(endJump, JUMP_MAX_MS);
+  if (watchingRest) return;
+  watchingRest = true;
+  requestAnimationFrame(watchRest);
+};
+
+/*
  * Neu geladen oder über den Verlauf geöffnet: die gemerkte Ansicht wiederherstellen (position.ts).
  * Angesteuert wird sie mehrmals, denn dazwischen kann der Browser seine eigene, ungenaue
  * Wiederherstellung einschieben, und die Seite wächst noch (Anpinnen im Hero). Sobald jemand
@@ -163,6 +276,7 @@ const restoreView = () => {
   if (!restoring || !view) return;
   const top = scrollTopFor(view);
   if (top === null || Math.abs(top - window.scrollY) < 1) return;
+  markJump();
   if (smooth?.lenis) {
     smooth.lenis.resize();
     smooth.lenis.scrollTo(top, { immediate: true, force: true });
@@ -183,6 +297,7 @@ if (view) {
 }
 
 if (window.location.hash || window.scrollY > 0 || view) {
+  if (window.location.hash || view) markJump();
   layOutNow();
   restoreView();
   if (view) {
@@ -211,14 +326,23 @@ document.addEventListener(
     if (!(event.target instanceof Element)) return;
     const link = event.target.closest<HTMLAnchorElement>('a[href*="#"]');
     if (!link || link.pathname !== window.location.pathname || link.hash.length < 2) return;
+    markJump();
     layOutNow();
     // Lenis erfährt eine neue Seitenlänge nur verzögert (entprellter ResizeObserver). Wurden
     // Teile gerade erst ausgelegt, endete der Sprung sonst an der alten, zu kurzen Grenze.
-    smooth?.lenis?.resize();
+    const lenis = smooth?.lenis;
+    lenis?.resize();
+    // Aus dem Menü: Der Vorhang deckt die Seite noch. Der Sprung landet sofort darunter, und hebt
+    // sich der Vorhang, steht das Ziel schon da (sonst glitte die Seite danach noch durch).
+    const mark = link.closest('[data-menu-link]') ? markOf(link.hash) : null;
+    if (lenis && mark) lenis.scrollTo(mark, { immediate: true, force: true });
   },
   true,
 );
-window.addEventListener('hashchange', layOutNow);
+window.addEventListener('hashchange', () => {
+  markJump();
+  layOutNow();
+});
 
 // ---------------------------------------------------------------- Zuletzt: Smooth Scroll und Scroll-Animationen
 

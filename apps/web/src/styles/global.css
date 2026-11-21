@@ -20,6 +20,12 @@ picture {
   display: contents;
 }
 
+/* Die <source>-Elemente würden sonst selbst zu Grid-Elementen des Rahmens und Platz belegen
+   (leere Zeile über dem Porträt). Für die Auswahl der Quelle spielt `display` keine Rolle. */
+picture > source {
+  display: none;
+}
+
 /*
  * Zeilenmaske der Überschriften (reveal.ts): Die Maske darf etwas über die Zeile hinausreichen,
  * damit Umlaute und Unterlängen nicht abgeschnitten werden. Bewusst ohne padding oder margin:
@@ -55,8 +61,28 @@ picture {
 }
 
 /*
- * Seitenwechsel innerhalb der Website: kurzes Überblenden statt eines harten Schnitts, wo
- * der Browser das kann (View Transitions zwischen Dokumenten). Sonst ändert sich nichts.
+ * Seitenwechsel innerhalb der Website: Überblenden statt eines harten Schnitts, wo der Browser
+ * das kann (View Transitions zwischen Dokumenten, reines CSS, auch ohne Skript). Sonst ändert
+ * sich nichts.
+ * Der Header bleibt dabei stehen: Die Leiste oben trägt einen eigenen Namen (site-bar, siehe
+ * Header.astro) und wird darum nicht mit der Seite überblendet. Stehen beide Seiten oben, bilden
+ * alte und neue Leiste ein Paar mit denselben Pixeln: Dann wird gar nicht überblendet, die neue
+ * steht vom ersten Bild an. (Zwei gleiche Bilder überzublenden, sieht man nicht, solange beide
+ * im Takt sind. Gerät die Überblendung im ersten Bild aus dem Takt, wird die Leiste für ein Bild
+ * grau; gemessen in Chromium, mit bremsender Kurve fast bei jedem Wechsel.)
+ * Die Kapsel trägt den Namen nicht, ebenso wenig die Leiste einer Seite, die zu einer Marke oder
+ * durch den Verlauf verlassen wird (header.ts): Dann geht der Header mit der alten Seite, und der
+ * neue blendet für sich ein (--dur-2, bremsend). Zurück und vor (und ohne Navigation API) weiss
+ * erst die neue Seite, wo sie beginnt: Steht sie oben, setzt sie den Übergangstyp `stand`
+ * (header.ts), und ihre Leiste steht sofort, während die alte mit der alten Seite darunter weicht.
+ * Überblendet würde der Header dabei für einige Bilder grau (die alte Seite weicht schneller, als
+ * die neue Leiste einblendet). Von Kapsel zu Kapsel trägt sie für den Wechsel einen eigenen Namen
+ * (site-capsule) und steht ebenso.
+ * Darunter weicht die alte Seite schnell (--dur-1, bremsend, nur Deckkraft), die neue setzt sich
+ * 40 ms später weich bremsend von leicht unten. Die beiden liegen so kaum übereinander, und der
+ * Wechsel geht nur einen Augenblick durch das Papier statt durch eine Doppelbelichtung.
+ * Bei reduzierter Bewegung fällt der ganze Block weg: harter Schnitt wie bisher. Bei angehaltener
+ * Bewegung (Schalter) überspringt header.ts den Übergang.
  */
 @media (prefers-reduced-motion: no-preference) {
   @view-transition {
@@ -64,11 +90,59 @@ picture {
   }
 
   ::view-transition-old(root) {
-    animation: 160ms var(--ease) both page-out;
+    animation: var(--dur-1) var(--ease-out) both page-out;
   }
 
   ::view-transition-new(root) {
-    animation: 280ms var(--ease) both page-in;
+    animation: 480ms var(--ease-expo) 40ms both page-in;
+  }
+
+  /* Der Browser bewegt nur die Momentaufnahme der Leiste, nie das echte Layout. */
+  ::view-transition-group(site-bar),
+  ::view-transition-group(site-capsule) {
+    animation-duration: var(--dur-3);
+    animation-timing-function: var(--ease-in-out);
+  }
+
+  /* Ein Paar: nicht überblenden. */
+  ::view-transition-old(site-bar),
+  ::view-transition-new(site-bar),
+  ::view-transition-old(site-capsule),
+  ::view-transition-new(site-capsule) {
+    animation: none;
+  }
+
+  ::view-transition-old(site-bar),
+  ::view-transition-old(site-capsule) {
+    opacity: 0;
+  }
+
+  /* Ohne Gegenstück: Die Leiste blendet für sich aus bzw. ein. */
+  ::view-transition-old(site-bar):only-child {
+    opacity: 1;
+    animation: var(--dur-2) var(--ease-out) both page-out;
+  }
+
+  ::view-transition-new(site-bar):only-child {
+    animation: var(--dur-2) var(--ease-out) both bar-in;
+  }
+
+  html:active-view-transition-type(stand)::view-transition-new(site-bar):only-child {
+    animation: none;
+  }
+
+  /*
+   * Kapsel zu Kapsel (header.ts, is-handing): Sie steht wie die Leiste (oben), die Seiten
+   * wechseln darunter. Hat sie kein Gegenstück, geht bzw. kommt sie mit ihrer Seite, im selben
+   * Takt wie diese.
+   */
+  ::view-transition-old(site-capsule):only-child {
+    opacity: 1;
+    animation: var(--dur-1) var(--ease-out) both page-out;
+  }
+
+  ::view-transition-new(site-capsule):only-child {
+    animation: 480ms var(--ease-expo) 40ms both page-in;
   }
 }
 
@@ -78,9 +152,15 @@ picture {
   }
 }
 
+@keyframes bar-in {
+  from {
+    opacity: 0;
+  }
+}
+
 @keyframes page-in {
   from {
     opacity: 0;
-    transform: translateY(0.5rem);
+    transform: translateY(0.75rem);
   }
 }

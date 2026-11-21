@@ -222,37 +222,59 @@ const { progress = false } = Astro.props;
       left: var(--chrome-inset);
     }
 
-    .chrome-motion {
-      right: var(--chrome-inset);
-    }
-
     /*
      * Auf der Startseite steht der Schalter ganz oben mit Beschriftung da (im Hero ist die Ecke
      * frei). Nach dem Scrollen und auf allen Unterseiten bleibt nur der runde Knopf, damit er nie
      * über Text liegt; Zeiger oder Fokus klappen die Beschriftung wieder aus. Der Name bleibt für
      * Screenreader immer erhalten.
+     * Der Knopf ist dabei immer gleich ausgelegt (nichts verschiebt sich); der Ausschnitt
+     * (clip-path) zeigt entweder alles oder nur sein rundes Ende rechts, in dessen Mitte das
+     * Symbol steht, und faltet sich weich bremsend dazwischen auf wie die Fläche der Kapsel. Ein
+     * Klick trifft nur, was zu sehen ist. Ein Ring (::after) zeichnet den Rand des runden
+     * Knopfs, der Rand des ganzen Knopfs liegt dort ja ausserhalb.
      */
-    :global([data-header].is-scrolled) ~ .chrome .chrome-motion:not(:hover, :focus-visible),
-    .chrome:not([data-home]) .chrome-motion:not(:hover, :focus-visible) {
-      gap: 0;
-      padding-inline: 0;
+    .chrome-motion {
+      right: var(--chrome-inset);
+      /* Rechts genau so viel Platz, dass das Symbol (14 px breit) mitten im runden Ende steht. */
+      padding-right: calc((var(--chrome-size) - 14px) / 2 - 1px);
+      clip-path: inset(0 round var(--r-pill));
+      transition:
+        border-color var(--dur-2) var(--ease),
+        color var(--dur-2) var(--ease),
+        clip-path var(--dur-3) var(--ease-expo);
     }
 
-    :global([data-header].is-scrolled)
-      ~ .chrome
-      .chrome-motion:not(:hover, :focus-visible)
-      .chrome-motion-label,
-    .chrome:not([data-home]) .chrome-motion:not(:hover, :focus-visible) .chrome-motion-label {
+    .chrome-motion::after {
       position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-      white-space: nowrap;
+      top: -1px;
+      right: -1px;
+      width: var(--chrome-size);
+      height: var(--chrome-size);
+      border: 1px solid var(--steel);
+      border-radius: var(--r-pill);
+      content: '';
+      opacity: 0;
+      pointer-events: none;
+      /* Beim Auffalten weicht der Ring sofort, beim Zusammenfalten kommt er erst am Ende. */
+      transition: opacity var(--dur-1) var(--ease);
+    }
+
+    :global([data-header].is-scrolled) ~ .chrome .chrome-motion:not(:hover, :focus-visible),
+    .chrome:not([data-home]) .chrome-motion:not(:hover, :focus-visible) {
+      clip-path: inset(0 0 0 calc(100% - var(--chrome-size)) round var(--r-pill));
+    }
+
+    :global([data-header].is-scrolled) ~ .chrome .chrome-motion:not(:hover, :focus-visible)::after,
+    .chrome:not([data-home]) .chrome-motion:not(:hover, :focus-visible)::after {
+      opacity: 1;
+      transition: opacity var(--dur-2) var(--ease) var(--dur-2);
     }
   }
 
-  /* Kleiner Equalizer: bewegt sich, solange Bewegung läuft */
+  /*
+   * Kleiner Equalizer: bewegt sich, solange Bewegung läuft. Eine Dauerbewegung mit eigenem,
+   * ruhigem Takt (1,1 s, die Balken versetzt), darum kein Token für die Dauer.
+   */
   .eq {
     display: inline-flex;
     align-items: center;
@@ -266,7 +288,7 @@ const { progress = false } = Astro.props;
     border-radius: 1px;
     background-color: currentColor;
     transform: scaleY(0.35);
-    animation: eq 1.1s ease-in-out infinite;
+    animation: eq 1.1s var(--ease-in-out) infinite;
   }
 
   .eq i:nth-child(2) {
@@ -323,8 +345,8 @@ const { progress = false } = Astro.props;
   }
 
   /*
-   * Der Hinweis wächst aus seinem Knopf heraus und zieht sich dorthin zurück. Browser ohne
-   * @starting-style zeigen ihn einfach sofort.
+   * Der Hinweis wächst aus seinem Knopf heraus und zieht sich dorthin zurück, weich bremsend und
+   * ohne Überschwingen. Browser ohne @starting-style zeigen ihn einfach sofort.
    */
   .cookie-note {
     opacity: 0;
@@ -332,7 +354,7 @@ const { progress = false } = Astro.props;
     transform-origin: left bottom;
     transition:
       opacity var(--dur-2) var(--ease),
-      transform var(--dur-2) cubic-bezier(0.2, 1.3, 0.4, 1),
+      transform var(--dur-2) var(--ease-expo),
       display var(--dur-2) allow-discrete,
       overlay var(--dur-2) allow-discrete;
   }

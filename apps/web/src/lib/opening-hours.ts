@@ -2,8 +2,9 @@
  * Öffnungszeiten und der Status «jetzt geöffnet / geschlossen».
  * Ohne DOM, damit sich die Regeln einzeln prüfen lassen (test/opening-hours.test.ts).
  *
- * Grundlage sind nur die veröffentlichten Zeiten (docs/index.html). Feiertage und Betriebsferien
- * kennt die Website nicht (docs/TODO.md): Darum sagt die Anzeige «laut Öffnungszeiten».
+ * Grundlage sind nur die veröffentlichten Zeiten (config/hours.ts, dort mit Quelle). Feiertage
+ * und Betriebsferien kennt die Website nicht (docs/TODO.md): Darum sagt die Anzeige im Kontakt
+ * «laut Öffnungszeiten».
  */
 
 /** 0 = Sonntag … 6 = Samstag, wie `Date.getDay()` */

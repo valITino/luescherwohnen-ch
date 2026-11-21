@@ -1,18 +1,20 @@
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
-import { motionAllowed } from './reduced.ts';
+import { motionAllowed, motionPaused, onMotionPausedChange } from './reduced.ts';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export { gsap, ScrollTrigger };
 
-/** Motion-Tokens für GSAP (Sekunden) */
-export const DUR = { d1: 0.15, d2: 0.25, d3: 0.4, d4: 0.8 } as const;
-export const EASE = 'power3.out';
+/** Motion-Tokens aus tokens.ts (Sekunden, Kurven als `EASE.*.gsap`), gleich wie tokens.css */
+export { DUR, EASE, STAGGER } from './tokens.ts';
 
 export interface SmoothScroll {
-  /** Lenis-Instanz; `null` bei reduzierter Bewegung (dann scrollt der Browser nativ) */
+  /**
+   * Lenis-Instanz; `null` bei reduzierter Bewegung, auf Touch-Geräten und solange die Bewegung
+   * angehalten ist (natives Scrollen). Immer frisch lesen, nicht zwischenspeichern.
+   */
   readonly lenis: Lenis | null;
   /** Scrollen sperren, z. B. solange ein Vollbild-Overlay offen ist */
   stop(): void;
@@ -22,20 +24,43 @@ export interface SmoothScroll {
 /** Klasse am <html>, solange ein Vollbild-Overlay (Menü) die Seite sperrt */
 const LOCKED = 'scroll-locked';
 
+/** Geräte, die man nur mit dem Finger bedient (Handy, Tablet) */
+const TOUCH_ONLY = '(hover: none) and (pointer: coarse)';
+
+/** Tasten, mit denen der Browser selbst scrollt */
+const SCROLL_KEYS = new Set(['Home', 'End', 'PageUp', 'PageDown', ' ', 'ArrowUp', 'ArrowDown']);
+
+const editable = (target: EventTarget | null) =>
+  target instanceof HTMLElement &&
+  (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
+
+/** Bedienelemente, die die Leertaste auslösen, statt die Seite zu scrollen */
+const PRESSABLE =
+  'button, summary, [role="button"], [role="checkbox"], [role="switch"], [role="radio"], [role="tab"], [role="menuitem"], [role="option"]';
+const pressed = (event: KeyboardEvent) =>
+  event.key === ' ' && event.target instanceof Element && event.target.closest(PRESSABLE) !== null;
+
 /**
  * Lenis-Smooth-Scroll (lerp 0.1), synchron zu ScrollTrigger.
- * Bei `prefers-reduced-motion` wird Lenis gar nicht erst gestartet.
+ * Bei `prefers-reduced-motion` wird Lenis gar nicht erst gestartet, ebenso auf Geräten, die man
+ * nur mit dem Finger bedient: Dort scrollt Lenis ohnehin nicht selbst (syncTouch aus), hängt sich
+ * aber mit blockierenden Zuhörern (passive: false) an jede Berührung. Jedes Wischen müsste dann
+ * auf den Hauptthread warten. Ohne Lenis scrollt der Browser frei; Sprünge zu Marken sind dort
+ * sofort am Ziel (unter dem Menü-Vorhang ohnehin unsichtbar).
  *
  * Der Abstand für den festen Header kommt aus CSS (`scroll-padding-top` am <html>);
  * Lenis und der Browser werten denselben Wert aus.
  *
  * Overlays mit eigenem Scrollen (Menü) tragen `data-lenis-prevent`: Ein gestopptes
  * Lenis schluckt sonst jedes Rad- und Wischereignis, und das Overlay liesse sich nicht scrollen.
+ *
+ * Hält jemand die Bewegung an (Schalter, `data-motion="off"`), scrollt bis zum Fortsetzen der
+ * Browser selbst: kein Ausgleiten, Sprünge sind sofort am Ziel, wie bei reduzierter Bewegung.
  */
 export function initSmoothScroll(): SmoothScroll {
   const root = document.documentElement;
 
-  if (!motionAllowed()) {
+  if (!motionAllowed() || window.matchMedia(TOUCH_ONLY).matches) {
     return {
       lenis: null,
       stop: () => root.classList.add(LOCKED),
@@ -43,29 +68,60 @@ export function initSmoothScroll(): SmoothScroll {
     };
   }
 
-  const lenis = new Lenis({
-    lerp: 0.1,
-    autoRaf: false,
-    anchors: true,
-    stopInertiaOnNavigate: true,
-  });
-  // Ist schon ein Overlay offen (jemand war schneller als das Nachladen), bleibt die Seite stehen.
-  if (root.classList.contains(LOCKED)) lenis.stop();
+  let lenis: Lenis | null = null;
 
-  lenis.on('scroll', ScrollTrigger.update);
-  const tick = (time: number) => lenis.raf(time * 1000);
-  gsap.ticker.add(tick);
+  const create = () => {
+    if (lenis) return;
+    lenis = new Lenis({
+      lerp: 0.1,
+      autoRaf: false,
+      anchors: true,
+      stopInertiaOnNavigate: true,
+    });
+    // Ist schon ein Overlay offen (jemand war schneller als das Nachladen), bleibt die Seite stehen.
+    if (root.classList.contains(LOCKED)) lenis.stop();
+    lenis.on('scroll', ScrollTrigger.update);
+  };
+  // Mitten im Ausgleiten angehalten: Die Seite bleibt, wo sie gerade ist.
+  const destroy = () => {
+    lenis?.destroy();
+    lenis = null;
+  };
+
+  /*
+   * Scrollt jemand mit der Tastatur (Pos1, Ende, Bild auf/ab, Leertaste, Pfeile), während Lenis
+   * noch vom Mausrad ausgleitet, endet das Ausgleiten: Sonst zöge Lenis die Seite nach der Taste
+   * zurück an sein altes Ziel. Das Ziel springt dafür auf die aktuelle Lage, ohne Lenis anzuhalten
+   * (Anhalten setzte kurz `overflow: clip` am <html>, mit klassischen Bildlaufleisten rechnete
+   * der Browser dafür das ganze Layout neu). Ein offenes Menü (gestopptes Lenis) bleibt gesperrt.
+   * Die Leertaste auf einem Knopf löst den Knopf aus und scrollt nicht: Dann gleitet die Seite
+   * weiter.
+   */
+  window.addEventListener('keydown', (event) => {
+    if (!lenis || !SCROLL_KEYS.has(event.key) || event.altKey || event.ctrlKey || event.metaKey)
+      return;
+    if (event.defaultPrevented || editable(event.target) || pressed(event)) return;
+    if (lenis.isStopped || lenis.isScrolling !== 'smooth') return;
+    lenis.scrollTo(lenis.animatedScroll, { immediate: true, force: true });
+  });
+
+  gsap.ticker.add((time: number) => lenis?.raf(time * 1000));
   gsap.ticker.lagSmoothing(0);
 
+  if (!motionPaused()) create();
+  onMotionPausedChange((paused) => (paused ? destroy() : create()));
+
   return {
-    lenis,
+    get lenis() {
+      return lenis;
+    },
     stop() {
-      lenis.stop();
+      lenis?.stop();
       root.classList.add(LOCKED);
     },
     start() {
       root.classList.remove(LOCKED);
-      lenis.start();
+      lenis?.start();
     },
   };
 }

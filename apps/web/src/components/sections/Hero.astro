@@ -3,7 +3,9 @@
  * Hero: der alte Slogan als riesige Headline in zwei Zeilen, rechts die runde Bild-Bühne (an der
  * Stelle des Globus bei PSYber), oben rechts die Statuszeilen mit Uhrzeit und Öffnungsstatus.
  * Darunter, im selben Abschnitt, die Bühne mit dem Wichtigsten für einen Besuch.
- * Die Headline blendet zeilenweise hinter einer Maske ein (reines CSS, Stagger 80 ms).
+ * Auftakt (reines CSS, spielt also auch ohne Skript): Das Foto öffnet sich wie eine Blende, der
+ * Ring folgt, die Zeilen der Headline steigen dicht gestaffelt aus ihrer Maske, Lead, Buttons und
+ * Statuszeilen setzen sich, während die Zeilen noch gleiten. Nach 1,2 s ruht alles.
  * Verhalten (Uhrzeit, Öffnungsstatus, Scroll-Verlauf): src/scripts/hero.ts
  *
  * Text: Slogans der bisherigen Website («Wohnen heisst leben», «Wohnen heisst sich wohl fühlen»,
@@ -46,7 +48,7 @@ const cta = primaryCta(true);
               </span>
             </span>
             <span class="hud-rule" aria-hidden="true"></span>
-            <span class="hud-key" data-open-status hidden>
+            <span class="hud-key" data-open-status data-breathe hidden>
               <i class="dot" aria-hidden="true"></i>
               <span data-open-status-text></span>
             </span>
@@ -55,8 +57,11 @@ const cta = primaryCta(true);
         </ul>
 
         <div class="hero-head">
-          <Kicker>Familienunternehmen in {company.city} seit 1946</Kicker>
+          {/* Die Zeile über dem Slogan gehört zur H1: Angebot und Ort für Suchmaschinen. */}
           <h1 id="hero-title" class="display hero-title">
+            <Kicker as="span" class="hero-kicker">
+              Inneneinrichtung in {company.city} seit 1946
+            </Kicker>{' '}
             <span class="q q1">
               <span class="mask">
                 <span class="mask-line">Wohnen heisst leben.</span>
@@ -100,7 +105,7 @@ const cta = primaryCta(true);
   .hero {
     --hero-p: 0;
     position: relative;
-    padding-bottom: calc(var(--section-y) * 0.75 + var(--r-sheet));
+    padding-bottom: calc(var(--section-y) * 0.5 + var(--r-sheet));
     background-color: var(--linen);
   }
 
@@ -144,17 +149,31 @@ const cta = primaryCta(true);
 
   /* Mobile: im Fluss oben rechts, die Headline steht darunter (auch auf kleinen Geräten) */
   .hero-orb {
+    position: relative;
+    isolation: isolate;
     justify-self: end;
     width: min(58vw, 30svh, 22rem);
     aspect-ratio: 1;
     margin: 0 calc(var(--gutter) * -0.25) 0 0;
     border-radius: 50%;
+    transform: scale(calc(1 + var(--hero-p) * 0.07));
+  }
+
+  /*
+   * Ring und Schatten auf eigener Ebene hinter dem Foto: Nur sie blenden ein. Das Foto ist meist
+   * das grösste Element beim Laden (LCP) und darum vom ersten Bild an sichtbar.
+   */
+  .hero-orb::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 50%;
     box-shadow:
       0 0 0 1px var(--leaf-edge),
       0 0 0 0.75rem rgb(var(--leaf-rgb) / 0.12),
       0 2rem 4rem rgb(var(--charcoal-rgb) / 0.14);
-    transform: scale(calc(1 + var(--hero-p) * 0.07));
-    animation: orb-in var(--dur-4) var(--ease) 120ms backwards;
+    animation: hero-ring var(--dur-4) var(--ease-out) 300ms backwards;
   }
 
   .hero-orb :global(.hero-photo) {
@@ -163,12 +182,31 @@ const cta = primaryCta(true);
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
+    animation: hero-aperture var(--dur-5) var(--ease-out) backwards;
   }
 
-  @keyframes orb-in {
+  /*
+   * Blende: Das Foto öffnet sich aus der Mitte und rückt dabei aus der Nähe auf seinen Ausschnitt
+   * zurück. Clip und Skalierung sitzen beide auf dem Bild und bleiben so konzentrisch; der Kreis
+   * wächst dabei nie über die Bühne hinaus. Das Ziel ist ausdrücklich der Kreis, den border-radius
+   * ohnehin zeigt: Von circle() nach none überblendet der Browser nicht, der Clip spränge nach der
+   * halben Zeit auf.
+   */
+  @keyframes hero-aperture {
+    from {
+      clip-path: circle(30% at 50% 50%);
+      transform: scale(1.1);
+    }
+
+    to {
+      clip-path: circle(50% at 50% 50%);
+    }
+  }
+
+  @keyframes hero-ring {
     from {
       opacity: 0;
-      transform: scale(0.94);
+      transform: scale(0.96);
     }
   }
 
@@ -199,6 +237,12 @@ const cta = primaryCta(true);
     line-height: 0.98;
   }
 
+  .hero-title :global(.hero-kicker) {
+    display: block;
+    margin-bottom: clamp(1rem, 2.5svh, 1.5rem);
+    letter-spacing: var(--ls-label);
+  }
+
   .q {
     display: block;
   }
@@ -208,7 +252,7 @@ const cta = primaryCta(true);
     opacity: calc(1 - var(--hero-p) * 0.5);
   }
 
-  /* Maske: Zeile fährt von unten herein; Luft für Umlaute */
+  /* Maske: Zeile steigt von unten herein; Luft für Umlaute */
   .mask {
     display: block;
     overflow: hidden;
@@ -216,17 +260,22 @@ const cta = primaryCta(true);
     padding-block: 0.12em;
   }
 
+  /*
+   * Die Zeilen folgen dicht aufeinander (--line-i mal --stagger) und gleiten bewusst etwas länger
+   * als ein gewöhnlicher Auftritt (eine Ausnahme, darum kein eigenes Token).
+   */
   .mask-line {
     display: block;
-    animation: hero-line var(--dur-4) var(--ease) both;
+    animation: hero-line calc(var(--dur-4) + 200ms) var(--ease-expo)
+      calc(60ms + var(--line-i, 0) * var(--stagger)) both;
   }
 
-  .q2 .mask:nth-child(1) .mask-line {
-    animation-delay: 80ms;
+  .q2 .mask:nth-child(1) {
+    --line-i: 1;
   }
 
-  .q2 .mask:nth-child(2) .mask-line {
-    animation-delay: 160ms;
+  .q2 .mask:nth-child(2) {
+    --line-i: 2;
   }
 
   @keyframes hero-line {
@@ -240,8 +289,16 @@ const cta = primaryCta(true);
     gap: 1.5rem;
   }
 
+  /*
+   * Folgeelemente: setzen sich, während die Zeilen noch gleiten (Statuszeilen siehe Desktop).
+   * Der Lead ist Fliesstext und blendet darum nie ein: Er ist vom ersten Bild an lesbar und rückt
+   * nur um 4 px nach, so wenig, dass es beim Lesen nicht stört. So bleibt er auch das, was der
+   * Browser als grösstes Element zuerst sieht (LCP), wenn die Blende das Foto anfangs kleiner
+   * zeigt. Die Knöpfe sind ab etwa 0,5 s klar.
+   */
   .hero-lead {
     max-width: 24em;
+    animation: hero-settle 560ms var(--ease-out) 200ms backwards;
   }
 
   .hero-actions {
@@ -249,13 +306,57 @@ const cta = primaryCta(true);
     flex-wrap: wrap;
     align-items: center;
     gap: 0.75rem;
+    animation: hero-follow 560ms var(--ease-out) 260ms backwards;
+  }
+
+  @keyframes hero-settle {
+    from {
+      transform: translateY(0.25rem);
+    }
+  }
+
+  @keyframes hero-follow {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+  }
+
+  /*
+   * Hält jemand die Bewegung an (Schalter), ist der Auftakt vorbei: hero.ts setzt data-rested,
+   * alles steht sofort am Ende und spielt auch nach dem Fortsetzen nicht weiter.
+   */
+  .hero[data-rested] .hero-orb::before,
+  .hero[data-rested] .hero-orb :global(.hero-photo),
+  .hero[data-rested] .mask-line,
+  .hero[data-rested] .hero-lead,
+  .hero[data-rested] .hero-actions,
+  .hero[data-rested] .hero-hud {
+    animation: none;
+  }
+
+  /* Auch der Atem des Öffnungsstatus (components.css) ist nach dem Anhalten vorbei. */
+  .hero[data-rested] :global(.dot-ok)::after {
+    animation: none;
+  }
+
+  /*
+   * Nach dem Fortsetzen (hero.ts, data-settling): Was das Scrollen am Hero verändert, gleitet kurz
+   * an seinen Platz, statt in einem Bild zu springen. Angehalten gelten keine Übergänge (base.css).
+   */
+  .hero[data-settling] .q1 {
+    transition: opacity var(--dur-3) var(--ease-out);
+  }
+
+  .hero[data-settling] .hero-orb {
+    transition: transform var(--dur-3) var(--ease-out);
   }
 
   /* ---------- Bühne mit den Angaben für den Besuch ---------- */
 
   .hero-demo {
     position: relative;
-    margin-top: clamp(1rem, 4vw, 3rem);
+    margin-top: clamp(0.5rem, 2vw, 1.5rem);
   }
 
   @media (min-width: 64rem) {
@@ -267,13 +368,6 @@ const cta = primaryCta(true);
       width: min(33vw, 60svh, 36rem);
       margin: 0;
       transform: translateY(-50%) scale(calc(1 + var(--hero-p) * 0.07));
-    }
-
-    @keyframes orb-in {
-      from {
-        opacity: 0;
-        transform: translateY(-50%) scale(0.94);
-      }
     }
 
     .hero-inner {
@@ -294,6 +388,7 @@ const cta = primaryCta(true);
       letter-spacing: var(--ls-label);
       line-height: 1.4;
       text-transform: uppercase;
+      animation: hero-follow 560ms var(--ease-out) 320ms backwards;
     }
 
     .hero-hud li {
@@ -330,9 +425,11 @@ const cta = primaryCta(true);
       align-self: center;
     }
 
-    /* So gross, dass die Zeilen links neben der runden Bühne enden (Text nie über dem Foto). */
+    /* So gross, dass die Zeilen links neben der runden Bühne enden (Text nie über dem Foto):
+       4.6vw lässt ab 1024 px rund 60 px Luft. Ab etwa 1600 px wächst der Inhalt nicht mehr mit
+       (max. 1440 px), darum endet die Schrift bei 4.5rem. */
     .hero-title {
-      font-size: clamp(3.25rem, 0.2rem + 4.9vw, 5.75rem);
+      font-size: clamp(3rem, 4.6vw, 4.5rem);
     }
 
     /* Die zweite Zeile steht eingerückt auf einer Zeile */

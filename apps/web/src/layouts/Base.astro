@@ -12,7 +12,17 @@ import {
 } from '@luescher/ui/lib/structured-data';
 import Chrome from '../components/Chrome.astro';
 import { clock } from '../lib/opening-hours.ts';
-import { absoluteUrl, basePath, brand, company, hours, meta, sites } from '../config/site.ts';
+import {
+  absoluteUrl,
+  basePath,
+  brand,
+  company,
+  hours,
+  href,
+  mapUrl,
+  meta,
+  sites,
+} from '../config/site.ts';
 
 interface Props {
   title: string;
@@ -56,7 +66,8 @@ const jsonLd = hidden
       isHome &&
         store({
           home,
-          type: 'FurnitureStore',
+          // Möbel, dazu Vorhänge, Teppiche und Leuchten: beide Typen.
+          type: ['FurnitureStore', 'HomeGoodsStore'],
           name: company.name,
           url: home,
           image: absoluteUrl(ogImage),
@@ -67,7 +78,9 @@ const jsonLd = hidden
             zip: company.zip,
             city: company.city,
             countryCode: company.countryCode,
+            region: 'AG',
           },
+          hasMap: mapUrl,
           hours: hours.flatMap((row) =>
             row.hours
               ? [
@@ -84,7 +97,8 @@ const jsonLd = hidden
         website({
           url: home,
           name: company.short,
-          alternateName: brand.alternateName,
+          // Andere Namen als der Name selbst (sonst wiederholte er sich).
+          alternateName: [company.name, 'luescherwohnen.ch'],
           description: brand.description,
           language,
           publisherHome: home,
@@ -123,6 +137,10 @@ const jsonLd = hidden
       verification={sites.verification}
     />
     <slot name="head" />
+    {/* Ohne JavaScript: Header ohne Kapsel und Menü (noscript.css). */}
+    <noscript>
+      <link rel="stylesheet" href={href('/noscript.css')} />
+    </noscript>
   </head>
   <body class={bodyClass}>
     <a class="skip-link" href="#inhalt">

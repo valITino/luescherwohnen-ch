@@ -12,6 +12,8 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+// Pfade relativ zu docs/ressources. «website-2026/…» stammt von der aktuellen Website (siehe
+// docs/ressources/website-2026/QUELLE.md), alles andere aus dem Bestand der alten Website.
 const source = (path) => resolve(root, 'docs/ressources', path);
 const target = resolve(root, 'apps/web/src/assets/photos');
 mkdirSync(target, { recursive: true });
@@ -21,6 +23,20 @@ mkdirSync(target, { recursive: true });
  * width: Breite des Ergebnisses. note: wozu und woher (für die Doku).
  */
 const PHOTOS = [
+  {
+    name: 'team-michael-laengle',
+    file: 'website-2026/team-michael-laengle.jpg',
+    crop: { left: 150, top: 110, width: 700, height: 700 },
+    width: 600,
+    note: 'Unser Team: Michael Längle (aktuelle Website, Abschnitt «Unser Team»)',
+  },
+  {
+    name: 'team-iris-laengle',
+    file: 'website-2026/team-iris-laengle.jpg',
+    crop: { left: 150, top: 80, width: 700, height: 700 },
+    width: 600,
+    note: 'Unser Team: Iris Längle (aktuelle Website, Abschnitt «Unser Team»)',
+  },
   {
     name: 'hero-liege',
     file: '2024/01/main_slider_liege_gruen_original_1920_600_300px.jpg',

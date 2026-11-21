@@ -34,8 +34,12 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
 - [ ] D-002 Sprache: nur Deutsch (Schweiz)? Die Website ist einsprachig gebaut.
 - [ ] D-003 Kontaktweg: Formular, E-Mail oder beides; Empfänger, Pflichtfelder, Aufbewahrung,
       Löschung. Danach Empfänger bauen (serverseitige Prüfung, Spam-Schutz, Rate Limit).
-- [ ] D-004 Öffnungszeiten bestätigen, besonders Samstag 9:00 oder 10:00 Uhr (W1); Feiertage und
-      Betriebsferien; Kartenlösung (derzeit Link zu OpenStreetMap).
+- [ ] D-004 Feiertage und Betriebsferien; Kartenlösung (derzeit Link zu OpenStreetMap). Samstag
+      ab 9:00 Uhr ist entschieden (W1 gelöst, Entscheid 47).
+- [ ] D-005 Team (Entscheide 46 und 47): Fotos von Christina Stahl und Vlavono Macoso (bis dahin
+      Initialen); Funktion von Michael Längle (W3: Impressum «Geschäftsleiter», aktuelle Website
+      «Geschäftsführer»). Die Einwilligung aller vier für Name, Aufgabe und Foto liegt laut
+      Repository-Inhaber vor (21.11.2026); für die Produktion belegbar ablegen (wer, wann, wofür).
 - [ ] D-005 Bildrechte: Herstellerbilder (Slider, Creation Baumann, Baltensweiler,
       Klangboxen-Fotograf), eigene Referenzfotos (Einwilligung der Kundschaft), Porträts von Hans
       Lüscher, Bruno Längle und Michael Längle; Freigabe des Favicons «L».
@@ -55,21 +59,58 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
 - [ ] Aktualität der Beiträge unter «Aktuell» (3D-Druck-Möbel, Klangboxen, Interview Ausgabe 125).
 - [ ] Projekte (Referenzen): Titel und Freigabe; in Produktion `PUBLIC_SHOW_PROJECTS=true` (W16).
 - [ ] Fläche und Etagen «6 Etagen, rund 1200 m²» bestätigen (W19).
+- [ ] Kürzungen und Verschiebungen der Texte freigeben (Entscheid 45), besonders: Zitat aus dem
+      Interview bei «Über uns», der gestrichene Satz zum Schlafen, Lieferung als ein Satz.
+- [ ] SEO zum Start (Entscheid 45): Weiterleitungen der alten WordPress-Adressen und von
+      `www.luescherwohnen.ch` auf `luescherwohnen.ch` (D-011, D-007); Google Business Profile
+      übernehmen, Name, Adresse, Telefon und Öffnungszeiten wie auf der Seite (Samstag ab 9:00
+      Uhr, Entscheid 47);
+      Koordinaten der Weiten Gasse 9 aus amtlicher Quelle (swisstopo, mindestens fünf
+      Nachkommastellen) für die strukturierten Daten; Fotos des Geschäfts in 1:1, 4:3 und 16:9
+      (Rechte, D-005); Haltung zu KI-Crawlern (Training sperren oder nicht, Entscheid beim
+      Auftraggeber); nach dem Start Search Console bestätigen und die Sitemap einreichen.
 - [ ] `ANNAHME - ZU BESTAETIGEN`: security.txt nennt vorerst `info@luescherwohnen.ch` als Kontakt.
-- [ ] `ANNAHME - ZU BESTAETIGEN`: Tage ohne Zeile in der Öffnungszeiten-Tabelle gelten als
+- [ ] `ANNAHME - ZU BESTAETIGEN`: Tage ohne Zeile in der Liste der Öffnungszeiten gelten als
       geschlossen (betrifft nur den Live-Status).
 
 ## Prüfungen, die noch Menschen brauchen
 
 - [ ] Manueller Tastatur- und Screenreader-Test (NVDA/VoiceOver) der Kernflüsse (WEB-Q-001); axe
-      deckt nur einen Teil von WCAG 2.2 AA ab.
+      deckt nur einen Teil von WCAG 2.2 AA ab. Dabei auch hören, ob «Nächster Raum» und «Weiter»
+      ihre Meldung ansagen («Polstermöbel, 2 von 7», Entscheid 48).
 - [ ] Sichtprüfung auf echten Geräten (iOS Safari, Android Chrome, Windows/Edge).
 - [ ] Repository-Einstellungen (nur mit Admin-Recht, von hier nicht prüfbar): Pages-Quelle
       «GitHub Actions»; Environment `github-pages` nur für `main` (`docs/DEPLOY.md`, Abschnitt 1).
 - [ ] Freigabe des Designs durch den Auftraggeber.
+- [ ] Bewegung auf einem echten Mittelklasse-Android messen (Chrome DevTools, Leistung): Menü-
+      Vorhang und Bild-Enthüllung beim Wischen, Wischen ohne Lenis (Entscheid 39), gelegentliche
+      Stockung von 83 ms beim Wischen. In der Cloud-Umgebung ohne Grafikchip lief der Vorhang am
+      Desktop mit halber Bildrate; das sagt über echte Geräte wenig aus.
+- [ ] Auf einem iPhone prüfen: Bild-Enthüllung ab einem Viertel bzw. 12 % der Fensterhöhe, an der
+      Fensterkante und nach kurzer Ruhe im untersten Streifen (Entscheide 40 bis 42) fühlt sich
+      beim Lesen ruhig an; Seitenwechsel in Safari (ohne Navigation API) lassen die Leiste
+      stehen (Entscheid 42); das offene Menü sperrt den
+      Hintergrund (ohne Lenis nur über `overflow: hidden` am `<html>`; iOS vor 16 beachtet das
+      beim Wischen nicht, nicht prüfbar).
+- [ ] Kontrast des Knopfs «Beratung anfragen» in der Kapsel von Hand bestätigen: axe kann ihn wegen
+      der Ebene für den Hover-Schein (`::after`) nicht mehr berechnen. Gemessen 7,2:1 (berechnet)
+      und 7,3:1 (Pixel), Hover 9,2:1; erfüllt AA. Die Farben sind unverändert.
 
 ## Später
 
 - [ ] Shop (Phase 5, separater Auftrag mit eigenem Threat Model; AGB im Bestand vorhanden).
 - [ ] Hero-Fotos in höherer Auflösung (keine Datei im Bestand ist breiter als 1920 px).
 - [ ] Fotos der Ausstellung an der Weiten Gasse 9 (es gibt nur ein Innenbild).
+- [ ] Bei reduzierter und angehaltener Bewegung wechselt der Header sofort die Form; das zählt
+      als Layoutverschiebung (CLS 0,031 je Wechsel, gemessen am Desktop beim Scrollen mit dem
+      Rad). Bewusst so belassen: Die Leiste dafür ein Bild lang zu verbergen, wie beim animierten
+      Wechsel, wäre ohne Abtauchen ein sichtbares Blinken. (Beim Laden mit Direktlink und beim
+      Neuladen gibt es keine Verschiebung mehr, seit das Skript vor dem ersten Bild läuft,
+      Entscheid 44.)
+- [ ] Chromium (153) stürzt ab, wenn ein Skript während eines Seitenübergangs mit
+      `getComputedStyle()` den Stil einer nicht beteiligten Ebene liest, für die eine Regel mit
+      `:only-child` gilt (etwa `::view-transition-new(site-bar)`). Die Website liest ihn nie,
+      Tests nutzen `getAnimations()`. Kleinstes Beispiel bei Bedarf als Fehlerbericht an Chromium.
+- [ ] Setzt man im Hero fort, steht man am Ende der angepinnten Strecke (die Ansicht bleibt, die
+      erste Zeile und das Bild gleiten zu ihrem Endpunkt, Entscheid 42). Oben am Anfang zu bleiben,
+      hiesse den Inhalt um die gescrollte Strecke zu verschieben.

@@ -82,11 +82,14 @@ export { hours } from './hours.ts';
 // ---------------------------------------------------------------- Meta
 
 export const meta = {
-  /** Titel der Startseite: zuerst, worum es geht, am Schluss die Marke */
-  homeTitle: 'Möbel, Betten, Bodenbeläge und Innenarchitektur in Baden – Lüscher Wohnen',
+  /**
+   * Titel der Startseite: zuerst, worum es geht (Angebot und Ort), am Schluss die Marke. Passt
+   * ganz in den Treffer (rund 600 px).
+   */
+  homeTitle: 'Möbel, Betten und Innenarchitektur in Baden – Lüscher Wohnen',
   /** Das Wichtigste zuerst: Suchmaschinen kürzen nach rund 155 Zeichen. */
   defaultDescription:
-    'Lüscher Wohnen in Baden: Möbel, Polstermöbel, Betten, Bodenbeläge, Vorhänge und Beleuchtung. Beratung im Geschäft und bei Ihnen zu Hause, Lieferung und Montage.',
+    'Möbel, Betten, Bodenbeläge, Teppiche, Vorhänge und Lampen in Baden. Beratung im Geschäft und bei Ihnen zu Hause, Lieferung und Montage.',
   ogImage: '/og/luescher.png',
 } as const;
 
@@ -103,10 +106,14 @@ export const brand = {
     'Möbel und Polstermöbel',
     'Betten und Bettwaren',
     'Bodenbeläge',
+    'Teppiche und Heimtextilien',
     'Vorhänge und Vorhangsysteme',
     'Beleuchtung',
-    'Innenarchitektur',
+    'Innenarchitektur und Bauführung',
   ],
+  /** Gründung und Gründer: sichtbar in der Firmengeschichte (Über uns). */
+  foundingDate: '1946',
+  founders: ['Hans Lüscher', 'Arthur Lüscher'],
   email: company.email,
   telephone: company.phone.tel,
 } as const;

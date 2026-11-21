@@ -2,10 +2,10 @@ import { expect, test } from '@playwright/test';
 import { PREVIEW, PROD } from './helpers.ts';
 
 /**
- * Regeln für Suchmaschinen (docs/DESIGN.md, Abschnitt 8), geprüft am rohen HTML.
- * Läuft nur einmal (Desktop), weil es um das ausgelieferte HTML geht.
+ * Regeln für Suchmaschinen (docs/DESIGN.md, Abschnitt 8), geprüft am rohen HTML. Das HTML ist
+ * für alle Geräte gleich: Diese Datei läuft darum einmal, im eigenen Projekt «html» ohne Gerät
+ * (playwright.config.ts).
  */
-test.skip(({ isMobile }) => isMobile, 'HTML ist für alle Geräte gleich');
 
 const INDEXED = ['/', '/impressum', '/datenschutz'] as const;
 const HIDDEN = ['/404', '/styleguide'] as const;
@@ -47,11 +47,22 @@ test.describe('Produktion', () => {
     const raw = /<script type="application\/ld\+json">(.+?)<\/script>/.exec(html)?.[1];
     expect(raw).toBeDefined();
     const data = JSON.parse(raw!) as { '@graph': Record<string, unknown>[] };
-    const types = data['@graph'].map((node) => node['@type']);
+    // Das Geschäft trägt zwei Typen (Möbel, dazu Vorhänge, Teppiche und Leuchten).
+    const types = data['@graph'].flatMap((node) => node['@type'] as string | string[]);
     expect(types).toEqual(
-      expect.arrayContaining(['Organization', 'FurnitureStore', 'WebSite', 'WebPage']),
+      expect.arrayContaining([
+        'Organization',
+        'FurnitureStore',
+        'HomeGoodsStore',
+        'WebSite',
+        'WebPage',
+      ]),
     );
-    const store = data['@graph'].find((node) => node['@type'] === 'FurnitureStore')!;
+    const store = data['@graph'].find((node) =>
+      ([] as unknown[]).concat(node['@type']).includes('FurnitureStore'),
+    )!;
+    expect(store.address).toMatchObject({ addressRegion: 'AG' });
+    expect(String(store.hasMap)).toContain('openstreetmap.org');
     expect(store.telephone).toBe('+41562227852');
     expect(store.address).toMatchObject({
       streetAddress: 'Weite Gasse 9',
@@ -59,18 +70,32 @@ test.describe('Produktion', () => {
       addressLocality: 'Baden',
       addressCountry: 'CH',
     });
-    const hours = store.openingHoursSpecification as { dayOfWeek: string[]; opens: string }[];
+    const hours = store.openingHoursSpecification as {
+      dayOfWeek: string[];
+      opens: string;
+      closes: string;
+    }[];
     expect(hours.flatMap((entry) => entry.dayOfWeek)).not.toContain('Monday');
     expect(hours.flatMap((entry) => entry.dayOfWeek)).not.toContain('Sunday');
+    // Samstag 9:00 bis 16:00 Uhr, Dienstag bis Freitag 10:00 bis 18:30 Uhr (wie auf der Seite).
+    expect(hours.find((entry) => entry.dayOfWeek.includes('Saturday'))).toMatchObject({
+      opens: '09:00',
+      closes: '16:00',
+    });
+    expect(hours.find((entry) => entry.dayOfWeek.includes('Tuesday'))).toMatchObject({
+      opens: '10:00',
+      closes: '18:30',
+    });
     // Keine Bewertungen, keine Preise
     expect(raw).not.toMatch(/aggregateRating|review|price/i);
   });
 
   test('robots.txt erlaubt alles und nennt die Sitemap', async ({ request }) => {
+    // Nur die Regeln, die Suchmaschinen auswerten: kein Kommentar, kein Crawl-delay, kein Host.
     const text = await (await request.get(`${PROD}/robots.txt`)).text();
-    expect(text).toMatch(/^Allow: \/$/m);
-    expect(text).not.toMatch(/^Disallow:/m);
-    expect(text).toContain('Sitemap: https://luescherwohnen.ch/sitemap-index.xml');
+    expect(text).toBe(
+      'User-agent: *\nAllow: /\n\nSitemap: https://luescherwohnen.ch/sitemap-index.xml\n',
+    );
   });
 
   test('Sitemap: nur Seiten im Index', async ({ request }) => {
@@ -78,6 +103,34 @@ test.describe('Produktion', () => {
     for (const path of INDEXED) expect(xml).toContain(`https://luescherwohnen.ch${path}`);
     expect(xml).not.toContain('styleguide');
     expect(xml).not.toContain('404');
+  });
+
+  test('Startseite: Angebot und Ort in Titel, Beschreibung und H1', async ({ request }) => {
+    const html = await (await request.get(`${PROD}/`)).text();
+    const title = /<title>([^<]+)<\/title>/.exec(html)?.[1] ?? '';
+    // Passt ganz in den Treffer (rund 60 Zeichen), die Marke am Ende.
+    expect(title).toBe('Möbel, Betten und Innenarchitektur in Baden – Lüscher Wohnen');
+    expect(title.length).toBeLessThanOrEqual(60);
+    const description = (await meta(html, 'description')) ?? '';
+    for (const word of ['Möbel', 'Betten', 'Bodenbeläge', 'Teppiche', 'Vorhänge', 'Baden']) {
+      expect(description).toContain(word);
+    }
+    expect(description.length).toBeLessThanOrEqual(140);
+    const h1 = (/<h1[^>]*>([\s\S]*?)<\/h1>/.exec(html)?.[1] ?? '').replace(/<[^>]+>/g, ' ');
+    expect(h1.replace(/\s+/g, ' ')).toContain('Inneneinrichtung in Baden seit 1946');
+    // Der Linktext des Logos ist der alt-Text des Bildes.
+    expect(html).toMatch(/<img[^>]+alt="Lüscher Wohnen, zur Startseite"/);
+  });
+
+  test('Zoomen bleibt auf jeder Seite erlaubt (WCAG 1.4.4), auch auf dem Handy', async ({
+    request,
+  }) => {
+    for (const path of [...INDEXED, ...HIDDEN]) {
+      const html = await (await request.get(`${PROD}${path}`)).text();
+      const viewport = await meta(html, 'viewport');
+      expect(viewport, path).toBe('width=device-width, initial-scale=1');
+      expect(html, path).not.toMatch(/maximum-scale|user-scalable/);
+    }
   });
 
   test('security.txt nach RFC 9116', async ({ request }) => {

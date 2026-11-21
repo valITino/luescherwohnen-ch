@@ -3,6 +3,6 @@
  * Smooth Scroll und ScrollTrigger liegen bewusst separat in `@luescher/ui/motion/smooth`,
  * damit Unterseiten ohne Scroll-Animationen die Bibliotheken nicht laden.
  */
+export * from './tokens.ts';
 export * from './reduced.ts';
 export * from './in-view.ts';
-export * from './count-up.ts';

@@ -1,7 +1,8 @@
 ---
 /**
- * 04 Projekte: ausgeführte Einrichtungen (die fünf Referenzen der bisherigen Startseite, ohne
- * Doppel mit dem Sortiment). Titel aus den Dateinamen, ohne Ortsangaben der Kundschaft.
+ * Projekte (ohne Nummer, nur in der Vorschau): ausgeführte Einrichtungen (die fünf Referenzen der
+ * bisherigen Startseite, ohne Doppel mit dem Sortiment). Titel aus den Dateinamen, ohne
+ * Ortsangaben der Kundschaft.
  * Erscheint nur mit freigegebenen Inhalten (WEB-F-006, D-005): siehe `showProjects`.
  */
 import { Picture } from 'astro:assets';
@@ -42,7 +43,6 @@ const projects = [
 <section data-lazy class="sheet" id="projekte" aria-labelledby="projekte-title">
   <div class="wrap">
     <SectionHead
-      num="04"
       kicker="Projekte"
       title="Bereits ausgeführt."
       id="projekte-title"
@@ -54,7 +54,7 @@ const projects = [
       {projects.map((project) => (
         <li class="project">
           <figure>
-            <div class="project-media">
+            <div class="project-media enter-unveil" data-enter>
               <Picture
                 src={project.image}
                 formats={['avif', 'webp']}
@@ -93,7 +93,7 @@ const projects = [
     overflow: hidden;
     border: 1px solid var(--border);
     border-radius: var(--r-card);
-    background-color: var(--sand);
+    /* Sandfläche bis zum Bild: .enter-unveil in components.css */
   }
 
   .project-media :global(.project-photo) {
@@ -101,7 +101,8 @@ const projects = [
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform var(--dur-3) var(--ease);
+    /* Langsamer Zoom: ruhiger als ein kurzer Ruck */
+    transition: transform 700ms var(--ease-out);
   }
 
   @media (hover: hover) and (pointer: fine) {

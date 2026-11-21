@@ -1,6 +1,7 @@
 // @ts-check
 import sitemap from '@astrojs/sitemap';
 import { loadSites } from '@luescher/config/astro-env';
+import { earlyScript } from '@luescher/config/early-script';
 import { cspConfig } from '@luescher/config/security';
 import { splitSiteUrl } from '@luescher/config/sites';
 import tailwindcss from '@tailwindcss/vite';
@@ -30,6 +31,8 @@ export default defineConfig({
     responsiveStyles: false,
   },
   integrations: [
+    // Das Skript einer Seite läuft vor ihrem ersten Bild (docs/DECISIONS.md 44).
+    earlyScript(),
     sitemap({
       filter: (page) => !/\/(styleguide|404)(\.html)?\/?$/.test(page),
     }),

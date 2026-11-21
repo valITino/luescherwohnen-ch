@@ -1,40 +1,53 @@
 ---
 /**
- * Band: zwei gegenläufige Reihen aus Kacheln (Bereich plus Art) quer über die Seite.
- * CSS-Animation über transform; die Kopie für den Loop ist aria-hidden.
- * Pausiert bei Hover und über den Pause-Button. Reduced motion: statisch, umbrechend.
+ * Band: zwei gegenläufige Reihen grosser Wörter quer über die Seite, eine ruhige Textur zwischen
+ * Sortiment und Haltung (Entscheid 45: ohne eigene Überschrift und ohne Etiketten, die Wörter
+ * genügen). CSS-Animation über transform; die Kopie für den Loop ist aria-hidden.
+ * Pausiert bei Hover und über den runden Knopf. Reduced motion: statisch, umbrechend.
  * Begriffe aus der Angebotsliste der bisherigen Website (docs/Homepage.docx).
  */
 import Icon from '@luescher/ui/components/Icon.astro';
 
-const items = [
-  ['Möbel', 'Sortiment'],
-  ['Polstermöbel', 'Sortiment'],
-  ['Esstische und Stühle', 'Sortiment'],
-  ['Betten und Bettwaren', 'Sortiment'],
-  ['Teppiche', 'Sortiment'],
-  ['Vorhänge und Vorhangsysteme', 'Sortiment'],
-  ['Lampen und Beleuchtung', 'Sortiment'],
-  ['Parkett', 'Bodenbelag'],
-  ['Laminat', 'Bodenbelag'],
-  ['Kork', 'Bodenbelag'],
-  ['Innenarchitektur', 'Service'],
-  ['Bauführung', 'Service'],
-  ['Beratung bei Ihnen zu Hause', 'Service'],
-  ['Lieferung und Montage', 'Service'],
-] as const;
-
-const rows = [items.slice(0, 7), items.slice(7)];
+const rows = [
+  [
+    'Möbel',
+    'Polstermöbel',
+    'Esstische und Stühle',
+    'Betten und Bettwaren',
+    'Teppiche',
+    'Vorhänge und Vorhangsysteme',
+    'Lampen und Beleuchtung',
+  ],
+  [
+    'Parkett',
+    'Laminat',
+    'Kork',
+    'Innenarchitektur',
+    'Bauführung',
+    'Beratung bei Ihnen zu Hause',
+    'Lieferung und Montage',
+  ],
+];
 ---
 
-<section data-lazy class="sheet ticker" aria-labelledby="ticker-title" data-ticker>
-  <div class="wrap ticker-head">
-    <div class="ticker-heading">
-      <p class="kicker">Sortiment und Service</p>
-      <h2 id="ticker-title" class="display h2 ticker-title">
-        Alle Bereiche der Inneneinrichtung.
-      </h2>
-    </div>
+<section data-lazy class="sheet ticker" aria-label="Sortiment und Service" data-ticker>
+  <div class="ticker-rows">
+    {rows.map((row, rowIndex) => (
+      <div class:list={['ticker-row', { 'ticker-row-reverse': rowIndex === 1 }]}>
+        <ul class="ticker-list">
+          {row.map((name) => (
+            <li class="pill">{name}</li>
+          ))}
+        </ul>
+        <ul class="ticker-list ticker-copy" aria-hidden="true">
+          {row.map((name) => (
+            <li class="pill">{name}</li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+  <div class="wrap ticker-foot">
     {/* Der Name sagt, was der Button tut; er wechselt mit dem Zustand (darum kein aria-pressed). */}
     <button type="button" class="ticker-toggle" data-ticker-toggle>
       <span class="ticker-icon ticker-icon-pause">
@@ -43,31 +56,10 @@ const rows = [items.slice(0, 7), items.slice(7)];
       <span class="ticker-icon ticker-icon-play">
         <Icon name="play" size={16} />
       </span>
-      <span data-ticker-label>Band anhalten</span>
+      <span class="sr-only" data-ticker-label>
+        Band anhalten
+      </span>
     </button>
-  </div>
-
-  <div class="ticker-rows">
-    {rows.map((row, rowIndex) => (
-      <div class:list={['ticker-row', { 'ticker-row-reverse': rowIndex === 1 }]}>
-        <ul class="ticker-list">
-          {row.map(([name, kind]) => (
-            <li class="pill">
-              <span class="pill-text">{name}</span>
-              <span class="pill-kind">{kind}</span>
-            </li>
-          ))}
-        </ul>
-        <ul class="ticker-list ticker-copy" aria-hidden="true">
-          {row.map(([name, kind]) => (
-            <li class="pill">
-              <span class="pill-text">{name}</span>
-              <span class="pill-kind">{kind}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    ))}
   </div>
 </section>
 
@@ -76,36 +68,21 @@ const rows = [items.slice(0, 7), items.slice(7)];
     overflow: clip;
   }
 
-  .ticker-head {
+  .ticker-foot {
     display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 1.5rem;
+    justify-content: end;
+    margin-top: clamp(1.25rem, 3vw, 2rem);
   }
 
-  .ticker-heading {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .ticker-title {
-    max-width: 14em;
-  }
-
+  /* Rund, nur das Symbol: Der Name (Band anhalten, Band fortsetzen) bleibt für Screenreader. */
   .ticker-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.625rem;
-    min-height: 2.75rem;
-    padding-inline: 1.125rem;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
     border: 1px solid var(--border-strong);
-    border-radius: var(--r-pill);
+    border-radius: 50%;
     color: var(--fg-strong);
-    font-size: var(--fs-micro);
-    font-weight: 600;
-    letter-spacing: var(--ls-label);
-    text-transform: uppercase;
     transition: border-color var(--dur-2) var(--ease);
   }
 
@@ -126,10 +103,12 @@ const rows = [items.slice(0, 7), items.slice(7)];
     display: grid;
   }
 
+  /* Die Enden laufen weich aus (statisch, nur eine Maske). */
   .ticker-rows {
     display: grid;
-    gap: 0.875rem;
-    margin-top: clamp(2rem, 5vw, 4rem);
+    gap: clamp(0.5rem, 1.5vw, 1rem);
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
   }
 
   .ticker-row {
@@ -146,47 +125,39 @@ const rows = [items.slice(0, 7), items.slice(7)];
   .ticker-list {
     display: flex;
     flex: none;
-    gap: 0.875rem;
-    padding-right: 0.875rem;
   }
 
-  /* Papierweisse Kachel auf Leinen */
+  /* Ein Wort, davor ein kleiner grüner Punkt als Trenner (auch über die Naht des Loops). */
   .pill {
     display: inline-flex;
     align-items: center;
-    gap: 1rem;
-    min-height: 4.5rem;
-    padding: 0.875rem 1.125rem 0.875rem 1.625rem;
-    border: 1px solid var(--hairline);
-    border-radius: var(--r-card);
-    background-color: var(--paper);
+    color: var(--charcoal);
+    font-size: clamp(1.75rem, 1rem + 3.2vw, 4rem);
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 1.15;
     white-space: nowrap;
   }
 
-  .pill-text {
-    color: var(--charcoal);
-    font-size: var(--fs-h4);
-    font-weight: 500;
-    letter-spacing: -0.02em;
+  .pill::before {
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-inline: clamp(1.25rem, 2.5vw, 2.5rem);
+    border-radius: 50%;
+    background-color: var(--leaf);
+    content: '';
   }
 
-  .pill-kind {
-    padding: 0.3125rem 0.75rem;
-    border: 1px solid var(--leaf-edge);
-    border-radius: var(--r-pill);
-    color: var(--leaf-deep);
-    font-size: var(--fs-micro);
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+  .ticker-row-reverse .pill {
+    color: var(--ash);
   }
 
   /*
-   * Pausiert bei Hover, bei Fokus im Band und wenn der Button es anhält. Der Fokus auf dem Button
-   * selbst zählt nicht: Sonst stünde das Band nach «Band fortsetzen» weiter still.
+   * Pausiert bei Hover und wenn der Button es anhält. Im Band selbst gibt es nichts zu fokussieren
+   * (nur Wörter); der Fokus auf dem Button hält es nicht an: Sonst stünde das Band nach «Band
+   * fortsetzen» weiter still.
    */
-  .ticker:global(.is-paused) .ticker-row,
-  .ticker-rows:focus-within .ticker-row {
+  .ticker:global(.is-paused) .ticker-row {
     animation-play-state: paused;
   }
 
@@ -204,7 +175,7 @@ const rows = [items.slice(0, 7), items.slice(7)];
 
   /*
    * Reduzierte Bewegung oder kein Skript (dann gäbe es keinen Knopf zum Anhalten, WCAG 2.2.2):
-   * statisch und umbrechend.
+   * statisch, umbrechend, mittig, etwas kleiner.
    */
   @media (prefers-reduced-motion: reduce), (scripting: none) {
     /* Block statt Flex: Sonst behält die Liste ihre volle Breite und bricht nicht um. */
@@ -217,20 +188,28 @@ const rows = [items.slice(0, 7), items.slice(7)];
     .ticker-rows {
       width: min(100% - 2 * var(--gutter), var(--container));
       margin-inline: auto;
+      -webkit-mask-image: none;
+      mask-image: none;
     }
 
     .ticker-list {
       flex-wrap: wrap;
-      padding-right: 0;
+      justify-content: center;
+      gap: 0.25rem 1.5rem;
     }
 
     .pill {
-      min-height: 3.5rem;
+      font-size: var(--fs-h3);
       white-space: normal;
+      text-wrap: balance;
+    }
+
+    .pill::before {
+      display: none;
     }
 
     .ticker-copy,
-    .ticker-toggle {
+    .ticker-foot {
       display: none;
     }
   }

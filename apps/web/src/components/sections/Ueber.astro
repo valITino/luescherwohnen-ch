@@ -1,8 +1,9 @@
 ---
 /**
- * 06 Über uns: Porträt im Sucher-Rahmen, daneben Überschrift, Haltung und «Wir stehen für»
- * (an der Stelle des Terminals bei PSYber). Darunter die Firmengeschichte als Zeitleiste und die
- * beiden Standorte.
+ * 04 Über uns: Porträt im Sucher-Rahmen, daneben Überschrift, Lead und das Zitat des Mannes im
+ * Porträt (Gesicht und Stimme); Haltung und «Wir stehen für» hinter «Mehr über uns». Darunter das
+ * Team (Fotos und Aufgaben von der aktuellen Website, Entscheid 46) und die Firmengeschichte
+ * «Jahr für Jahr» (choice.ts). Die Standorte stehen im Kontakt (Entscheid 45).
  * Texte und Jahreszahlen: «Unternehmen», «Firmengeschichte», «Firmenstandorte» der bisherigen
  * Website (docs/Homepage.docx). Widersprüchliche Angaben (Generation, Funktion) bleiben weg.
  */
@@ -11,6 +12,8 @@ import Icon from '@luescher/ui/components/Icon.astro';
 import bruno from '../../assets/photos/portrait-bruno-laengle.jpg';
 import hans from '../../assets/photos/portrait-hans-luescher.jpg';
 import michael from '../../assets/photos/portrait-michael-laengle.jpg';
+import teamIris from '../../assets/photos/team-iris-laengle.jpg';
+import teamMichael from '../../assets/photos/team-michael-laengle.jpg';
 import { company } from '../../config/site.ts';
 import SectionHead from '../SectionHead.astro';
 
@@ -21,6 +24,24 @@ const values = [
   'Ein Umfeld, in dem Sie in Ruhe und ohne Zeitdruck Ihr Zuhause einrichten können.',
   'Qualitativ beste Arbeit, Pünktlichkeit und Zuverlässigkeit.',
 ];
+
+/*
+ * Unser Team: Namen, Aufgaben und Fotos aus dem Abschnitt «Unser Team» der aktuellen Website
+ * (luescherwohnen.ch, abgerufen am 21.11.2026; docs/ressources/website-2026/QUELLE.md). Michael
+ * Längle als «Geschäftsleiter» wie im Impressum (Entscheid 23; die Website sagt «Geschäftsführer»,
+ * W3). Ohne Foto auf der Website: die Initialen statt eines Bildes.
+ */
+const team = [
+  { name: company.management, role: 'Geschäftsleiter', photo: teamMichael },
+  { name: 'Christina Stahl', role: 'Verkauf' },
+  { name: 'Iris Längle', role: 'Administration, Buchhaltung, Finanzen', photo: teamIris },
+  { name: 'Vlavono Macoso', role: 'Lieferung und Montage' },
+];
+const initials = (name: string) =>
+  name
+    .split(' ')
+    .map((part) => part[0])
+    .join('');
 
 const history = [
   {
@@ -50,26 +71,13 @@ const history = [
     text: `${company.management} führt das Familienunternehmen.`,
   },
 ];
-
-const locations = [
-  {
-    label: 'Ausstellung',
-    icon: 'store',
-    lines: [company.name, company.street, `${company.zip} ${company.city}`],
-  },
-  {
-    label: 'Lager',
-    icon: 'truck',
-    lines: [company.name, 'Ringstrasse 13', '5432 Neuenhof'],
-  },
-] as const;
 ---
 
 <section data-lazy class="sheet sheet-sage on-sage" id="ueber" aria-labelledby="ueber-title">
   <div class="wrap">
     <div class="about">
       <div class="portrait" data-enter>
-        <figure class="portrait-frame">
+        <figure class="portrait-frame enter-unveil" data-enter>
           <span class="portrait-corner portrait-corner-tl" aria-hidden="true"></span>
           <span class="portrait-corner portrait-corner-tr" aria-hidden="true"></span>
           <span class="portrait-corner portrait-corner-bl" aria-hidden="true"></span>
@@ -92,7 +100,7 @@ const locations = [
 
       <div class="about-main">
         <SectionHead
-          num="06"
+          num="04"
           kicker="Über uns"
           title={'Ein Familien\u00ADunternehmen aus Baden.'}
           id="ueber-title"
@@ -103,68 +111,131 @@ const locations = [
             Seit 1946 richten wir Wohnungen und Häuser ein. Für uns steht der persönliche Kontakt
             und Ihre Bedürfnisse im Vordergrund.
           </p>
-          <p>
-            Unsere Grösse und unsere Lage fernab der Grossstadthektik geben uns die Möglichkeit,
-            Ihnen die Zeit und Aufmerksamkeit zu schenken, die es braucht, um das für Sie richtige
-            Produkt zu finden. Bei uns im Laden oder bei Ihnen zu Hause, zu dem für Sie besten
-            Zeitpunkt.
-          </p>
         </div>
 
-        <div class="card values" data-enter>
-          <p class="kicker values-kicker">Wir stehen für</p>
-          <ul class="values-list">
-            {values.map((value) => (
-              <li>
-                <Icon name="check" size={20} />
-                <span>{value}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {/* Gesicht und Stimme: Das Zitat stammt vom Mann im Porträt (Entscheid 45). */}
+        <figure class="voice">
+          <blockquote class="voice-quote">
+            <p>
+              «Wichtig ist, dass sich beide Parteien – Verkäufer und Kundschaft – Zeit nehmen für
+              das Thema. Dass sie einander zuhören und Fragen stellen.»
+            </p>
+          </blockquote>
+          <figcaption class="voice-source">
+            Michael Längle im Interview zum Bettenkauf in «Einrichten Schweiz», Ausgabe 125, dem
+            Organ des Verbandes einrichtenschweiz
+          </figcaption>
+        </figure>
+
+        <details class="more about-more">
+          <summary>
+            <span class="more-icon" aria-hidden="true"></span>
+            <span class="more-closed">Mehr über uns</span>
+            <span class="more-opened">Weniger</span>
+          </summary>
+          <div class="more-body">
+            <p>
+              Unsere Grösse und unsere Lage fernab der Grossstadthektik geben uns die Möglichkeit,
+              Ihnen die Zeit und Aufmerksamkeit zu schenken, die es braucht, um das für Sie richtige
+              Produkt zu finden. Bei uns im Laden oder bei Ihnen zu Hause, zu dem für Sie besten
+              Zeitpunkt.
+            </p>
+            <p>
+              Nebst Ersteinrichtungen sind vor allem Neueinrichtungen unsere Stärke. Unsere
+              Erfahrung erspart Ihnen unnötige Überraschungen und Aufwand.
+            </p>
+            <p class="kicker values-kicker">Wir stehen für</p>
+            <ul class="values-list">
+              {values.map((value) => (
+                <li>
+                  <Icon name="check" size={20} />
+                  <span>{value}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </details>
       </div>
+    </div>
+
+    {/* Unser Team: die Menschen hinter «Wir nehmen uns Zeit». Die Fotos öffnen sich wie die Blende
+        im Hero, einer nach dem anderen (reveal.ts setzt data-enter). */}
+    <div class="team">
+      <h3 class="display h3 team-title">Unser Team</h3>
+      <ul class="team-list" data-enter>
+        {team.map((member) => (
+          <li class="member">
+            <div class="member-photo">
+              {member.photo ? (
+                <Picture
+                  src={member.photo}
+                  formats={['avif', 'webp']}
+                  widths={[240, 480]}
+                  sizes="(min-width: 48rem) 8rem, 6.5rem"
+                  alt={`Porträt von ${member.name}`}
+                  class="member-img"
+                  loading="lazy"
+                />
+              ) : (
+                <span class="member-initials" aria-hidden="true">
+                  {initials(member.name)}
+                </span>
+              )}
+            </div>
+            <p class="member-name">{member.name}</p>
+            <p class="member-role">{member.role}</p>
+          </li>
+        ))}
+      </ul>
     </div>
 
     <div class="history">
       <h3 class="display h3 history-title">Firmengeschichte</h3>
-      <ol class="timeline">
-        {history.map((entry) => (
-          <li class="moment">
-            <span class="moment-year">{entry.year}</span>
-            <div class="moment-body">
-              {entry.photo && (
-                <Picture
-                  src={entry.photo.src}
-                  formats={['avif', 'webp']}
-                  widths={[160, 320]}
-                  sizes="10rem"
-                  alt={entry.photo.alt}
-                  class="moment-photo"
-                  loading="lazy"
-                />
-              )}
-              <p>{entry.text}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
+      {/*
+        «Jahr für Jahr» (choice.ts): eine Achse mit den Jahren und ein Moment. Ohne Skript die
+        Zeitleiste mit allen Momenten. Die grosse Jahreszahl ist nur Gestaltung (CSS, ohne Text).
+      */}
+      <div class="years" data-years>
+        <span class="yr-track" aria-hidden="true"></span>
+        <ol class="timeline">
+          {history.map((entry) => (
+            <li
+              class="moment"
+              id={`jahr-${entry.year.toLowerCase()}`}
+              data-choice-item
+              data-choice-name={entry.year}
+            >
+              <span class="moment-year" data-choice-head data-choice-button="yr-btn">
+                {entry.year}
+              </span>
+              <div class="moment-panel" data-choice-panel>
+                <span class="yr-big" data-year={entry.year} aria-hidden="true"></span>
+                <div class="moment-body">
+                  {entry.photo && (
+                    <Picture
+                      src={entry.photo.src}
+                      formats={['avif', 'webp']}
+                      widths={[160, 320]}
+                      sizes="10rem"
+                      alt={entry.photo.alt}
+                      class="moment-photo"
+                      loading="lazy"
+                    />
+                  )}
+                  <p>{entry.text}</p>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <button type="button" class="yr-next" data-choice-next hidden>
+          <span data-choice-next-text>Weiter</span>
+          <span class="yr-next-icon" aria-hidden="true">
+            <Icon name="arrow-right" size={16} />
+          </span>
+        </button>
+      </div>
     </div>
-
-    <ul class="locations">
-      {locations.map((location) => (
-        <li class="card location">
-          <p class="label-up location-label">
-            <Icon name={location.icon} size={18} />
-            {location.label}
-          </p>
-          <address class="location-address">
-            {location.lines.map((line) => (
-              <span>{line}</span>
-            ))}
-          </address>
-        </li>
-      ))}
-    </ul>
   </div>
 </section>
 
@@ -218,6 +289,15 @@ const locations = [
     object-position: 50% 30%;
   }
 
+  /*
+   * Ecken und Linie gehören zum Foto, nicht zum ganzen Rahmen: Sie liegen in dessen Zeile des
+   * Rasters (ein absolut gesetztes Kind nimmt sie als Bezug), über dem Bildtext bleibt nichts.
+   */
+  .portrait-corner,
+  .portrait-frame::after {
+    grid-area: 1 / 1 / 2 / 2;
+  }
+
   .portrait-caption {
     display: grid;
     align-content: start;
@@ -255,7 +335,7 @@ const locations = [
   }
 
   .portrait-corner-bl {
-    bottom: 6.25rem;
+    bottom: 1.25rem;
     left: 1.25rem;
     border-top: 0;
     border-right: 0;
@@ -263,17 +343,43 @@ const locations = [
 
   .portrait-corner-br {
     right: 1.25rem;
-    bottom: 6.25rem;
+    bottom: 1.25rem;
     border-top: 0;
     border-left: 0;
   }
 
-  /* ---------- Wir stehen für ---------- */
+  /* ---------- Gesicht und Stimme ---------- */
 
-  .values {
+  .voice {
     display: grid;
-    gap: 1rem;
-    padding: clamp(1.25rem, 1rem + 1.5vw, 2rem);
+    gap: 0.875rem;
+    margin: 0;
+    padding-left: clamp(1rem, 2vw, 1.5rem);
+    border-left: 3px solid var(--leaf-edge);
+  }
+
+  .voice-quote p {
+    color: var(--charcoal);
+    font-size: clamp(1.375rem, 1.1rem + 1vw, 2rem);
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    line-height: 1.25;
+    text-wrap: pretty;
+  }
+
+  .voice-source {
+    max-width: 36em;
+    color: var(--moss);
+    font-size: var(--fs-meta);
+  }
+
+  .about-more .more-body > p:not(.kicker) {
+    max-width: 38em;
+    color: var(--fg-muted);
+  }
+
+  .values-kicker {
+    margin-top: 0.5rem;
   }
 
   .values-list {
@@ -294,9 +400,15 @@ const locations = [
   }
 
   /*
-   * Auftritt, sobald die Sektion ins Bild kommt (reveal.ts setzt data-enter): Der Sucher stellt
-   * scharf (die Ecken rücken an ihren Platz), eine feine grüne Linie tastet das Bild einmal ab;
-   * die Werte erscheinen nacheinander.
+   * Auftritt, sobald die Sektion ins Bild kommt (reveal.ts setzt data-enter): Das Bild öffnet sich
+   * wie alle Bilder der Seite von unten (enter-unveil, components.css), der Sucher stellt scharf
+   * (die Ecken rücken weich bremsend an ihren Platz, ohne Überschwingen), eine feine grüne Linie
+   * tastet das Bild einmal ab; die Werte erscheinen im Abstand --stagger nacheinander.
+   *
+   * Die Linie ist ein 0.375rem hohes Band am unteren Rand einer Ebene, die so hoch ist wie das
+   * Foto (ohne Bildtext). Die Ebene fährt von ganz oben (-100 %, Band knapp über dem Bild) nach
+   * unten und endet an der Unterkante des Fotos; bewegt wird nur transform, der Rahmen schneidet
+   * ab, was darüber liegt.
    */
   .portrait-frame::after {
     position: absolute;
@@ -304,26 +416,18 @@ const locations = [
     z-index: 1;
     background-image: linear-gradient(
       to bottom,
-      rgb(var(--leaf-rgb) / 0) 0,
-      rgb(var(--leaf-rgb) / 0.85) 50%,
+      rgb(var(--leaf-rgb) / 0) calc(100% - 0.375rem),
+      rgb(var(--leaf-rgb) / 0.85) calc(100% - 0.1875rem),
       rgb(var(--leaf-rgb) / 0) 100%
     );
-    background-repeat: no-repeat;
-    background-size: 100% 0.375rem;
     content: '';
     opacity: 0;
     pointer-events: none;
   }
 
-  .portrait[data-enter='wait'] .portrait-frame :global(.portrait-photo),
   .portrait[data-enter='wait'] .portrait-corner,
-  .portrait[data-enter='wait'] .portrait-caption,
-  .values[data-enter='wait'] .values-list li {
+  .portrait[data-enter='wait'] .portrait-caption {
     opacity: 0;
-  }
-
-  .portrait[data-enter='in'] .portrait-frame :global(.portrait-photo) {
-    animation: about-rise 700ms var(--ease) backwards;
   }
 
   .portrait[data-enter='in'] .portrait-caption {
@@ -331,15 +435,24 @@ const locations = [
   }
 
   .portrait[data-enter='in'] .portrait-corner {
-    animation: about-focus 560ms cubic-bezier(0.2, 1.5, 0.4, 1) 140ms backwards;
+    animation: about-focus var(--dur-4) var(--ease-expo) 140ms backwards;
   }
 
+  /*
+   * Die oberen Ecken sind hell wie der leere Rahmen: Sie rücken erst an, wenn das aufsteigende Foto
+   * sie erreicht (nach gut 0,4 s), sonst wären sie fast am Ziel, bevor man sie sieht. Sie enden
+   * nach 1220 ms, innerhalb der Grenze, die für jeden Auftritt gilt (e2e/web.spec.ts).
+   */
   .portrait[data-enter='in'] .portrait-corner-tl {
     --from: -0.875rem -0.875rem;
+
+    animation-delay: 420ms;
   }
 
   .portrait[data-enter='in'] .portrait-corner-tr {
     --from: 0.875rem -0.875rem;
+
+    animation-delay: 420ms;
   }
 
   .portrait[data-enter='in'] .portrait-corner-bl {
@@ -350,28 +463,12 @@ const locations = [
     --from: 0.875rem 0.875rem;
   }
 
+  /*
+   * Die Linie beginnt oben, sobald das Foto dort ankommt. --dur-4 statt --dur-5: Mit 450 ms Vorlauf
+   * endet sie nach 1250 ms, innerhalb der Grenze, die für jeden Auftritt gilt (e2e/web.spec.ts).
+   */
   .portrait[data-enter='in'] .portrait-frame::after {
-    animation: about-scan 950ms cubic-bezier(0.3, 0, 0.3, 1) 320ms;
-  }
-
-  .values[data-enter='in'] .values-list li {
-    animation: about-line 320ms var(--ease) backwards;
-  }
-
-  .values[data-enter='in'] .values-list li:nth-child(2) {
-    animation-delay: 120ms;
-  }
-
-  .values[data-enter='in'] .values-list li:nth-child(3) {
-    animation-delay: 240ms;
-  }
-
-  .values[data-enter='in'] .values-list li:nth-child(4) {
-    animation-delay: 360ms;
-  }
-
-  .values[data-enter='in'] .values-list li:nth-child(5) {
-    animation-delay: 480ms;
+    animation: about-scan var(--dur-4) var(--ease-in-out) 450ms;
   }
 
   @keyframes about-rise {
@@ -388,10 +485,11 @@ const locations = [
     }
   }
 
+  /* Die Linie läuft einmal von oben nach unten und verblasst auf den letzten 15 %. */
   @keyframes about-scan {
     0% {
-      background-position: 0 0;
       opacity: 1;
+      transform: translateY(-100%);
     }
 
     85% {
@@ -399,30 +497,152 @@ const locations = [
     }
 
     100% {
-      background-position: 0 100%;
       opacity: 0;
-    }
-  }
-
-  @keyframes about-line {
-    from {
-      opacity: 0;
-      transform: translateY(0.375rem);
+      transform: translateY(0);
     }
   }
 
   /* Im Druck und bei angehaltener Bewegung wartet nichts auf seinen Auftritt. */
   @media print {
-    .portrait[data-enter] *,
-    .values[data-enter] * {
+    .portrait[data-enter] * {
       opacity: 1;
     }
   }
 
-  :global(html[data-motion='off']) .portrait[data-enter] *,
-  :global(html[data-motion='off']) .values[data-enter] * {
+  :global(html[data-motion='off']) .portrait[data-enter] * {
     opacity: 1;
     animation: none;
+  }
+
+  /* Die Linie ist ein Pseudo-Element (der Stern oben trifft sie nicht): angehalten bleibt sie weg. */
+  :global(html[data-motion='off']) .portrait-frame::after {
+    animation: none;
+  }
+
+  /* ---------- Unser Team ---------- */
+
+  .team {
+    display: grid;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+    margin-top: clamp(4rem, 9vw, 8rem);
+  }
+
+  .team-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem 1.25rem;
+  }
+
+  .member {
+    display: grid;
+    align-content: start;
+    justify-items: start;
+    gap: 0.25rem;
+  }
+
+  .member-photo {
+    display: grid;
+    place-items: center;
+    width: clamp(6.5rem, 5rem + 4vw, 8rem);
+    aspect-ratio: 1;
+    margin-bottom: 0.75rem;
+    border-radius: 50%;
+    box-shadow:
+      0 0 0 1px var(--leaf-edge),
+      0 0 0 0.375rem rgb(var(--leaf-rgb) / 0.12);
+  }
+
+  .member-photo :global(picture),
+  .member-photo :global(.member-img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .member-photo :global(.member-img) {
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  /* Ohne Foto: die Initialen auf Salbei, ruhig und ohne Platzhalterbild. */
+  .member-initials {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: var(--sage);
+    color: var(--moss);
+    font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .member-name {
+    color: var(--charcoal);
+    font-size: var(--fs-h4);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+  }
+
+  .member-role {
+    color: var(--fg-muted);
+    font-size: var(--fs-small);
+  }
+
+  /*
+   * Auftritt: Jedes Foto öffnet sich aus der Mitte wie die Blende im Hero (Clip und Zoom auf dem
+   * Bild), im Abstand --stagger; die Initialen setzen sich aus einem leichten Zoom. Namen und
+   * Aufgaben stehen vom ersten Bild an da (Text blendet nicht ein). Endet nach 800 ms plus drei
+   * Versätzen, innerhalb der Grenze für jeden Auftritt.
+   */
+  .team-list[data-enter='wait'] .member-photo > * {
+    opacity: 0;
+  }
+
+  .team-list[data-enter='in'] .member-photo > * {
+    animation: member-open var(--dur-4) var(--ease-out) backwards;
+  }
+
+  .team-list[data-enter='in'] .member:nth-child(2) .member-photo > * {
+    animation-delay: var(--stagger);
+  }
+
+  .team-list[data-enter='in'] .member:nth-child(3) .member-photo > * {
+    animation-delay: calc(2 * var(--stagger));
+  }
+
+  .team-list[data-enter='in'] .member:nth-child(4) .member-photo > * {
+    animation-delay: calc(3 * var(--stagger));
+  }
+
+  @keyframes member-open {
+    from {
+      clip-path: circle(30% at 50% 50%);
+      transform: scale(1.1);
+    }
+
+    to {
+      clip-path: circle(50% at 50% 50%);
+    }
+  }
+
+  :global(html[data-motion='off']) .team-list[data-enter] .member-photo > * {
+    opacity: 1;
+    animation: none;
+  }
+
+  @media print {
+    .team-list[data-enter] .member-photo > * {
+      opacity: 1;
+    }
+  }
+
+  @media (min-width: 48rem) {
+    .team-list {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
   }
 
   /* ---------- Firmengeschichte ---------- */
@@ -486,43 +706,316 @@ const locations = [
     filter: sepia(0.15);
   }
 
-  /* ---------- Standorte ---------- */
-
-  .locations {
+  .moment-panel {
     display: grid;
-    gap: 1.25rem;
-    margin-top: clamp(3rem, 6vw, 5rem);
+    gap: 0.75rem;
   }
 
-  .location {
+  /* Nur mit Skript: die grosse Jahreszahl, die Achse und «Weiter» */
+  .yr-big,
+  .yr-track {
+    display: none;
+  }
+
+  /*
+   * ---------- «Jahr für Jahr» (choice.ts setzt data-ready) ----------
+   * Zeile 1: die Achse mit den sechs Jahren (Knöpfe), Zeile 2: ein Moment, Zeile 3: «Weiter». Alle
+   * Momente liegen per Subgrid in derselben Zelle: Sie ist so hoch wie der längste, beim Wechsel
+   * springt nichts. Eine grüne Linie wächst von 1946 bis zum gewählten Jahr (nur transform).
+   */
+  .years[data-ready] {
+    position: relative;
     display: grid;
-    gap: 0.875rem;
-    padding: clamp(1.25rem, 1rem + 1.5vw, 2rem);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-rows: auto auto auto;
   }
 
-  .location-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .location-label :global(.icon) {
-    color: var(--leaf-deep);
-  }
-
-  .location-address {
+  .years[data-ready] .timeline,
+  .years[data-ready] .moment {
     display: grid;
+    grid-column: 1 / -1;
+    grid-row: 1 / 3;
+    grid-template-columns: subgrid;
+    grid-template-rows: subgrid;
+    gap: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .years[data-ready] .moment {
+    pointer-events: none;
+  }
+
+  .years[data-ready] .moment > * {
+    pointer-events: auto;
+  }
+
+  .years[data-ready] .moment::before {
+    display: none;
+  }
+
+  .years[data-ready] .moment:nth-child(1) .moment-year {
+    grid-column: 1;
+  }
+
+  .years[data-ready] .moment:nth-child(2) .moment-year {
+    grid-column: 2;
+  }
+
+  .years[data-ready] .moment:nth-child(3) .moment-year {
+    grid-column: 3;
+  }
+
+  .years[data-ready] .moment:nth-child(4) .moment-year {
+    grid-column: 4;
+  }
+
+  .years[data-ready] .moment:nth-child(5) .moment-year {
+    grid-column: 5;
+  }
+
+  .years[data-ready] .moment:nth-child(6) .moment-year {
+    grid-column: 6;
+  }
+
+  .years[data-ready] .moment-year {
+    grid-row: 1;
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  /* Achse: von der Mitte der ersten bis zur Mitte der letzten Spalte */
+  .years[data-ready] .yr-track {
+    position: absolute;
+    top: calc(1rem - 0.5px);
+    right: calc(100% / 12);
+    left: calc(100% / 12);
+    display: block;
+    height: 1px;
+    background-color: var(--steel);
+    pointer-events: none;
+  }
+
+  .yr-track::after {
+    position: absolute;
+    inset: -1px 0;
+    background-color: var(--leaf-edge);
+    content: '';
+    transform: scaleX(var(--yr-p, 0));
+    transform-origin: left;
+    transition: transform var(--dur-4) var(--ease-expo);
+  }
+
+  /* Der Knopf entsteht im Skript (choice.ts), darum :global. */
+  .moment-year :global(.yr-btn) {
+    display: grid;
+    justify-items: center;
+    gap: 0.625rem;
+    width: 100%;
+    min-height: 2.75rem;
+    padding-block: 1rem 0.5rem;
+    border-radius: 0.25rem;
+    color: var(--moss);
+    font-family: var(--ff-mono);
+    font-size: var(--fs-meta);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: color var(--dur-2) var(--ease);
+  }
+
+  /* Punkt auf der Achse */
+  .moment-year :global(.yr-btn)::before {
+    width: 0.75rem;
+    height: 0.75rem;
+    margin-top: -0.375rem;
+    border: 2px solid var(--leaf-edge);
+    border-radius: 50%;
+    background-color: var(--sage);
+    content: '';
+    transition:
+      background-color var(--dur-2) var(--ease),
+      transform var(--dur-3) var(--ease-out);
+  }
+
+  .moment[data-past] .moment-year :global(.yr-btn)::before {
+    background-color: var(--leaf);
+  }
+
+  .moment[data-on] .moment-year :global(.yr-btn) {
     color: var(--charcoal);
-    font-size: var(--fs-h4);
-    font-style: normal;
-    font-weight: 500;
-    letter-spacing: -0.02em;
-    line-height: 1.35;
+    font-weight: 600;
+  }
+
+  .moment[data-on] .moment-year :global(.yr-btn)::before {
+    background-color: var(--leaf);
+    transform: scale(1.5);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .moment-year :global(.yr-btn:hover) {
+      color: var(--charcoal);
+    }
+  }
+
+  .years[data-ready] .moment-panel {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 1rem 2rem;
+    padding-top: clamp(1.5rem, 3vw, 2.5rem);
+    visibility: hidden;
+  }
+
+  .years[data-ready] .moment[data-on] .moment-panel {
+    visibility: visible;
+  }
+
+  /* Die grosse Jahreszahl ist reine Gestaltung: ein Pseudo-Element, kein zweiter Text im HTML. */
+  .years[data-ready] .yr-big {
+    display: block;
+    overflow: hidden;
+    margin-block: -0.1em;
+    padding-block: 0.1em;
+  }
+
+  .yr-big::before {
+    display: block;
+    color: var(--charcoal);
+    content: attr(data-year);
+    font-size: var(--fs-number);
+    font-weight: var(--fw-display);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--ls-display);
+    line-height: 0.9;
+  }
+
+  .years[data-ready] .moment-body {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.25rem;
+    max-width: 34em;
+    color: var(--charcoal);
+    font-size: var(--fs-lead);
+    letter-spacing: -0.015em;
+    line-height: 1.36;
+  }
+
+  .years[data-ready] .moment-body :global(.moment-photo) {
+    flex: none;
+    width: 6rem;
+  }
+
+  .years[data-ready] .yr-next:not([hidden]) {
+    display: inline-flex;
+    grid-column: 1 / -1;
+    grid-row: 3;
+    align-items: center;
+    justify-self: start;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    margin-top: 1.5rem;
+    padding: 0 0.4375rem 0 1rem;
+    border: 1px solid var(--steel);
+    border-radius: var(--r-pill);
+    background-color: var(--paper);
+    color: var(--charcoal);
+    font-size: var(--fs-micro);
+    font-weight: 600;
+    letter-spacing: var(--ls-label);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: border-color var(--dur-2) var(--ease);
+  }
+
+  .yr-next-icon {
+    display: grid;
+    place-items: center;
+    width: 1.875rem;
+    height: 1.875rem;
+    border-radius: 50%;
+    background-color: var(--leaf);
+    color: var(--ink);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .yr-next:hover {
+      border-color: var(--leaf-deep);
+    }
+  }
+
+  /* Wechsel: Die Jahreszahl steigt aus ihrer Maske, das Foto öffnet sich, der Text rückt nach. */
+  .moment[data-anim] .yr-big::before {
+    animation: yr-rise var(--dur-4) var(--ease-expo) both;
+  }
+
+  .moment[data-anim] .moment-body :global(.moment-photo) {
+    animation: unveil var(--dur-4) var(--ease-expo) var(--stagger) both;
+  }
+
+  .moment[data-anim] .moment-body p {
+    animation: yr-settle var(--dur-3) var(--ease-out) both;
+  }
+
+  @keyframes yr-rise {
+    from {
+      transform: translateY(105%);
+    }
+  }
+
+  @keyframes yr-settle {
+    from {
+      transform: translateY(0.25rem);
+    }
   }
 
   @media (min-width: 40rem) {
-    .locations {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    .years[data-ready] .moment-panel {
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: end;
+    }
+
+    .moment-year :global(.yr-btn) {
+      font-size: var(--fs-small);
+    }
+  }
+
+  /* Ohne Subgrid und im Druck: die Zeitleiste wie ohne Skript. */
+  @supports not (grid-template-rows: subgrid) {
+    .years[data-ready],
+    .years[data-ready] .timeline,
+    .years[data-ready] .moment {
+      display: block;
+    }
+
+    .years[data-ready] .moment-panel {
+      visibility: visible;
+    }
+
+    .years[data-ready] .yr-track,
+    .years[data-ready] .yr-big,
+    .years[data-ready] .yr-next:not([hidden]) {
+      display: none;
+    }
+  }
+
+  @media print {
+    .years[data-ready],
+    .years[data-ready] .timeline,
+    .years[data-ready] .moment {
+      display: block;
+    }
+
+    .years[data-ready] .moment-panel {
+      visibility: visible;
+    }
+
+    /* Die grosse Jahreszahl stünde im Druck neben dem Jahr des Kopfs ein zweites Mal. */
+    .years[data-ready] .yr-track,
+    .years[data-ready] .yr-big,
+    .years[data-ready] .yr-next:not([hidden]) {
+      display: none;
     }
   }
 
@@ -531,28 +1024,34 @@ const locations = [
       grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
       align-items: stretch;
     }
+
+    /* Der Rahmen ist so hoch wie die Spalte daneben: Das Foto füllt ihn bis zum Bildtext. */
+    .portrait-frame :global(.portrait-photo) {
+      max-height: none;
+    }
   }
 
   @media (min-width: 64rem) {
-    .history {
+    .history,
+    .team {
       grid-template-columns: minmax(0, 3fr) minmax(0, 9fr);
       align-items: start;
     }
 
-    /* Waagrecht: drei Momente pro Reihe, die Linie oben */
-    .timeline {
+    /* Ohne Skript waagrecht: drei Momente pro Reihe, die Linie oben */
+    .years:not([data-ready]) .timeline {
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 3rem 2.5rem;
       padding-left: 0;
       border-left: 0;
     }
 
-    .moment {
+    .years:not([data-ready]) .moment {
       padding-top: 1.75rem;
       border-top: 1px solid var(--border-strong);
     }
 
-    .moment::before {
+    .years:not([data-ready]) .moment::before {
       top: -6px;
       left: 0;
     }

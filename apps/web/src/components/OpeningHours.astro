@@ -1,0 +1,73 @@
+---
+/**
+ * Öffnungszeiten als Liste aus Tag und Zeit (Kontakt). Ohne Formular stehen sie neben den
+ * Kontaktwegen im Feld der direkten Wege, mit Formular in der Spalte der Kontaktwege
+ * (Kontakt.astro).
+ * Eine Beschreibungsliste statt einer Tabelle: Reicht der Platz nicht für Tag und Zeit
+ * nebeneinander (schmale Handys, «Dienstag bis Freitag»), rückt die Zeit von selbst in die nächste
+ * Zeile, statt dass die Liste breiter wird als ihr Feld. Eine Tabelle kann nicht schmaler werden
+ * als ihr längstes Wort plus die Zeit (gemessen: bei 360 px ragte sie aus dem Feld).
+ */
+import Icon from '@luescher/ui/components/Icon.astro';
+import { hours } from '../config/site.ts';
+import { clock } from '../lib/opening-hours.ts';
+---
+
+<div class="kontakt-hours">
+  <h3 class="label-up hours-title">
+    <Icon name="clock" size={16} />
+    Öffnungszeiten
+  </h3>
+  <dl class="hours-list">
+    {hours.map((row) => (
+      <div class="hours-row">
+        <dt>{row.label}</dt>
+        <dd class="mono">
+          {row.hours ? `${clock(row.hours.open)}–${clock(row.hours.close)} Uhr` : 'geschlossen'}
+        </dd>
+      </div>
+    ))}
+  </dl>
+  <slot />
+</div>
+
+<style>
+  .kontakt-hours {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .hours-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .hours-list {
+    display: grid;
+    margin: 0;
+    font-size: var(--fs-body);
+  }
+
+  /* Tag links, Zeit rechts; passt beides nicht in eine Zeile, steht die Zeit darunter, rechts. */
+  .hours-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.125rem 1rem;
+    padding-block: 0.625rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hours-row dt {
+    font-weight: 600;
+  }
+
+  .hours-row dd {
+    margin: 0 0 0 auto;
+    color: var(--fg-muted);
+    text-align: right;
+    white-space: nowrap;
+  }
+</style>

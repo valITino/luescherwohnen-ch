@@ -7,8 +7,12 @@
 
 <p class="preview-note" data-preview-note>
   <span class="preview-dot" aria-hidden="true"></span>
-  <span>
+  <span class="preview-text preview-long">
     <slot>Vorschau: Diese Website ist ein Entwurf. Das Formular sendet hier nichts.</slot>
+  </span>
+  {/* Auf schmalen Bildschirmen die kurze Fassung, damit nichts abgeschnitten wird. */}
+  <span class="preview-text preview-short">
+    <slot name="short">Vorschau: Entwurf, Formular sendet nichts.</slot>
   </span>
 </p>
 
@@ -32,10 +36,24 @@
     line-height: 1.2;
   }
 
-  .preview-note span:last-child {
+  .preview-text {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .preview-short {
+    display: none;
+  }
+
+  @media (max-width: 34rem) {
+    .preview-long {
+      display: none;
+    }
+
+    .preview-short {
+      display: inline;
+    }
   }
 
   .preview-dot {

@@ -19,6 +19,10 @@
     "./astro-env": {
       "types": "./src/astro-env.d.mts",
       "default": "./src/astro-env.mjs"
+    },
+    "./early-script": {
+      "types": "./src/early-script.d.mts",
+      "default": "./src/early-script.mjs"
     }
   },
   "scripts": {

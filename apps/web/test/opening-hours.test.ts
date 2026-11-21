@@ -30,7 +30,8 @@ describe('Öffnungszeiten', () => {
     expect(hoursFor(hours, 1)).toBeNull();
     expect(hoursFor(hours, 0)).toBeNull();
     expect(hoursFor(hours, 2)).toEqual({ open: 600, close: 1110 });
-    expect(hoursFor(hours, 6)).toEqual({ open: 600, close: 960 });
+    // Samstag ab 9:00 Uhr (Entscheid 47)
+    expect(hoursFor(hours, 6)).toEqual({ open: 540, close: 960 });
   });
 
   it('liest Wochentag und Uhrzeit in Zürich, auch über die Zeitumstellung', () => {
@@ -54,8 +55,23 @@ describe('Öffnungszeiten', () => {
 
   it('vor der Öffnung am selben Tag: «öffnet heute»', () => {
     const status = statusAt(hours, zurich('2026-11-28T08:00:00'));
-    expect(status).toEqual({ open: false, next: { day: 6, at: '10:00', inDays: 0 } });
-    expect(statusText(status)).toBe('Geschlossen · öffnet heute 10:00');
+    expect(status).toEqual({ open: false, next: { day: 6, at: '09:00', inDays: 0 } });
+    expect(statusText(status)).toBe('Geschlossen · öffnet heute 09:00');
+  });
+
+  it('am Samstag ab 9:00 Uhr geöffnet, eine Minute vorher noch nicht', () => {
+    expect(statusAt(hours, zurich('2026-11-28T08:59:00'))).toEqual({
+      open: false,
+      next: { day: 6, at: '09:00', inDays: 0 },
+    });
+    const status = statusAt(hours, zurich('2026-11-28T09:00:00'));
+    expect(status).toEqual({ open: true, until: '16:00' });
+    expect(statusText(status)).toBe('Geöffnet bis 16:00');
+    // Unter der Woche bleibt es bei 10:00 Uhr.
+    expect(statusAt(hours, zurich('2026-11-27T09:30:00'))).toEqual({
+      open: false,
+      next: { day: 5, at: '10:00', inDays: 0 },
+    });
   });
 
   it('am Samstagabend: nächste Öffnung am Dienstag', () => {

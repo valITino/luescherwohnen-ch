@@ -1,6 +1,6 @@
 ---
 /**
- * 07 Kontakt: Kontaktwege, Öffnungszeiten und Formular auf einer grossen Bühne.
+ * 05 Kontakt: Kontaktwege, Öffnungszeiten und Formular auf einer grossen Bühne.
  *
  * Das Formular erscheint nur, wenn ein Empfänger gesetzt ist (PUBLIC_CONTACT_ENDPOINT) oder es
  * simuliert antwortet (Vorschau). Ohne Empfänger stehen dort die direkten Wege: Anrufen,
@@ -9,10 +9,11 @@
  */
 import Button from '@luescher/ui/components/Button.astro';
 import Icon from '@luescher/ui/components/Icon.astro';
-import { company, hours, href, mapUrl, sites } from '../../config/site.ts';
+import { company, href, mapUrl, sites } from '../../config/site.ts';
 import { ANLIEGEN, CONTACT_LIMITS } from '../../lib/contact-form.ts';
-import { clock } from '../../lib/opening-hours.ts';
 import SectionHead from '../SectionHead.astro';
+import OpeningHours from '../OpeningHours.astro';
+import Termin from '../Termin.astro';
 
 const mode = sites.contact.mode;
 const fields = {
@@ -26,9 +27,22 @@ const fields = {
 
 <section data-lazy class="sheet kontakt" id="kontakt" aria-labelledby="kontakt-title">
   <div class="wrap">
-    <div class="stage kontakt-grid">
+    <div class="stage kontakt-grid" data-enter>
+      {/*
+        Der Kreis schliesst sich: Wenn der Kontakt ins Bild kommt, öffnet sich oben rechts einmal
+        eine grüne Scheibe wie die Blende des Fotos im Hero (reveal.ts setzt data-enter).
+      */}
+      <span class="kontakt-aura" aria-hidden="true">
+        <span class="kontakt-disc"></span>
+      </span>
       <div class="kontakt-info">
-        <SectionHead num="07" kicker="Kontakt" title="Wir freuen uns auf Sie." id="kontakt-title" />
+        <SectionHead num="05" kicker="Kontakt" title="Wir freuen uns auf Sie." id="kontakt-title" />
+        {/* Der Live-Status wie oben im Hero: Die Seite endet mit dem Signal, mit dem sie beginnt. */}
+        <p class="hours-status" data-open-status hidden>
+          <i class="dot" aria-hidden="true"></i>
+          <span data-open-status-text></span>
+          <span class="hours-status-note">(laut Öffnungszeiten)</span>
+        </p>
 
         <dl class="kontakt-list">
           <div>
@@ -73,52 +87,36 @@ const fields = {
               </a>
             </dd>
           </div>
+          <div>
+            <dt class="label-up">
+              <Icon name="truck" size={16} />
+              Lager
+            </dt>
+            <dd>
+              <address>
+                Ringstrasse 13
+                <br />
+                5432 Neuenhof
+              </address>
+            </dd>
+          </div>
         </dl>
 
-        <div class="kontakt-hours">
-          <h3 class="label-up">
-            <Icon name="clock" size={16} />
-            Öffnungszeiten
-          </h3>
-          <table class="hours-table">
-            <tbody>
-              {hours.map((row) => (
-                <tr>
-                  <th scope="row">{row.label}</th>
-                  <td class="mono">
-                    {row.hours
-                      ? `${clock(row.hours.open)}–${clock(row.hours.close)} Uhr`
-                      : 'geschlossen'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p class="hours-status" data-open-status hidden>
-            <i class="dot" aria-hidden="true"></i>
-            <span data-open-status-text></span>
-            <span class="hours-status-note">(laut Öffnungszeiten)</span>
-          </p>
-        </div>
+        {mode !== 'off' && (
+          <OpeningHours>
+            <Termin />
+          </OpeningHours>
+        )}
       </div>
 
       <div class="kontakt-panel">
         {mode === 'off' ? (
           <div class="kontakt-direct">
-            <p class="title">Am schnellsten erreichen Sie uns direkt.</p>
-            <p class="meta">
-              Rufen Sie an, schreiben Sie uns eine E-Mail oder besuchen Sie uns im Geschäft in
-              {company.city}.
-            </p>
+            <Termin />
+            <OpeningHours />
             <div class="kontakt-direct-actions">
               <Button href={`tel:${company.phone.tel}`} icon="phone" block>
                 Anrufen
-              </Button>
-              <Button href={`mailto:${company.email}`} variant="secondary" icon="mail" block>
-                E-Mail schreiben
-              </Button>
-              <Button href={mapUrl} variant="secondary" icon="route" block rel="noopener">
-                Route planen
               </Button>
             </div>
           </div>
@@ -296,7 +294,8 @@ const fields = {
                 ></p>
               </div>
 
-              <!-- Honeypot: für Menschen unsichtbar und nicht per Tab erreichbar -->
+              {/* Honeypot: für Menschen unsichtbar und nicht per Tab erreichbar. Als
+                  JSX-Kommentar: Ein HTML-Kommentar stünde in der Seite und verriete das Feld. */}
               <div class="hp" aria-hidden="true">
                 <label>
                   Website (bitte leer lassen)
@@ -330,7 +329,9 @@ const fields = {
                 <Icon name="check" size={28} />
               </span>
               <p class="form-success-text">
-                Danke für Ihre Nachricht! Wir melden uns so bald wie möglich bei Ihnen.
+                {mode === 'mock'
+                  ? 'Vorschau: Ihre Angaben sind vollständig. In dieser Demo wurde nichts gesendet. Für eine echte Anfrage rufen Sie uns bitte an oder schreiben Sie uns eine E-Mail.'
+                  : 'Danke für Ihre Nachricht! Wir melden uns so bald wie möglich bei Ihnen.'}
               </p>
             </div>
           </>
@@ -347,9 +348,83 @@ const fields = {
   }
 
   .kontakt-grid {
+    position: relative;
+    isolation: isolate;
     display: grid;
     gap: clamp(2.5rem, 6vw, 4rem);
     padding: clamp(1.5rem, 0.6rem + 3.6vw, 4.5rem);
+  }
+
+  /*
+   * Die Scheibe liegt in einer eigenen Ebene, die sie an der Bühne abschneidet. Die Bühne selbst
+   * schneidet nichts ab: Ragte je ein Inhalt hinaus, bliebe er sichtbar und fiele in den Tests
+   * auf (cutOff, boxOverflow), statt still zu verschwinden.
+   * Nur ab 64rem: Auf schmalen Bildschirmen läge der Bogen dicht an der Überschrift.
+   */
+  .kontakt-aura {
+    display: none;
+  }
+
+  @media (min-width: 64rem) {
+    .kontakt-aura {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      display: block;
+      overflow: clip;
+      border-radius: inherit;
+      pointer-events: none;
+    }
+
+    .kontakt-disc {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: min(44rem, 60vw);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background-image: radial-gradient(
+        circle,
+        rgb(var(--leaf-rgb) / 0.2) 0%,
+        rgb(var(--leaf-rgb) / 0) 70%
+      );
+      box-shadow:
+        inset 0 0 0 1px rgb(var(--leaf-rgb) / 0.35),
+        inset 0 0 0 0.75rem rgb(var(--leaf-rgb) / 0.06);
+      clip-path: circle(50% at 50% 50%);
+      pointer-events: none;
+      transform: translate(38%, -38%);
+    }
+
+    .kontakt-grid[data-enter='wait'] .kontakt-disc {
+      opacity: 0;
+    }
+
+    .kontakt-grid[data-enter='in'] .kontakt-disc {
+      animation: kontakt-aperture var(--dur-5) var(--ease-out) 80ms backwards;
+    }
+  }
+
+  /*
+   * Mit dem Auftritt des Kontakts atmet auch der Punkt des Öffnungsstatus (wie oben im Hero,
+   * components.css), wenn man ihn sieht, nicht schon eine Bildschirmhöhe vorher.
+   */
+  .kontakt-grid[data-enter='in'] .hours-status :global(.dot-ok)::after {
+    animation: dot-breath 2s var(--ease-out) 600ms 2;
+  }
+
+  /* Wie die Blende im Hero: aus der Mitte auf, dabei aus der Nähe zurück (Hero.astro). */
+  @keyframes kontakt-aperture {
+    from {
+      clip-path: circle(30% at 50% 50%);
+      opacity: 0;
+      transform: translate(38%, -38%) scale(1.1);
+    }
+  }
+
+  :global(html[data-motion='off']) .kontakt-disc {
+    opacity: 1;
+    animation: none;
   }
 
   .kontakt-info {
@@ -371,8 +446,7 @@ const fields = {
     border-bottom: 1px solid var(--steel);
   }
 
-  .kontakt-list dt,
-  .kontakt-hours h3 {
+  .kontakt-list dt {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -407,41 +481,14 @@ const fields = {
 
   /* ---------- Öffnungszeiten ---------- */
 
-  .kontakt-hours {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .hours-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: var(--fs-body);
-  }
-
-  .hours-table th,
-  .hours-table td {
-    padding-block: 0.625rem;
-    border-bottom: 1px solid var(--border);
-    text-align: left;
-    vertical-align: baseline;
-  }
-
-  .hours-table th {
-    padding-right: 1rem;
-    font-weight: 600;
-  }
-
-  .hours-table td {
-    color: var(--fg-muted);
-    text-align: right;
-    white-space: nowrap;
-  }
-
   .hours-status {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.25rem 0.625rem;
+    margin-top: -0.5rem;
+    color: var(--fg-strong);
+    font-size: var(--fs-lead);
     font-weight: 600;
   }
 

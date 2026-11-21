@@ -1,5 +1,5 @@
 {
   "extends": "@luescher/config/tsconfig.astro.json",
-  "include": [".astro/types.d.ts", "src/**/*", "env.d.ts"],
+  "include": [".astro/types.d.ts", "src/**/*", "test/**/*", "env.d.ts"],
   "exclude": ["dist", "node_modules"]
 }

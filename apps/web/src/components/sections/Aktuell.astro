@@ -1,9 +1,9 @@
 ---
 /**
- * 05 Aktuell: drei Beiträge der bisherigen Startseite (docs/Homepage.docx, Bildschirmfotos).
- * Texte gekürzt, Aussagen unverändert. Aktualität bestätigen (docs/TODO.md).
- * Das Interview stammt aus der Zeitschrift «Einrichten Schweiz»: Hier steht nur ein kurzes,
- * belegtes Zitat mit Quelle, kein Nachdruck.
+ * 03 Aktuell: zwei Beiträge der bisherigen Startseite (docs/Homepage.docx, Bildschirmfotos) als
+ * Bildgeschichten: Foto, Überschrift, ein Satz; der Rest hinter «Mehr lesen» (bleibt im HTML).
+ * Texte gekürzt, Aussagen unverändert. Aktualität bestätigen (docs/TODO.md). Das Zitat aus dem
+ * Interview steht jetzt bei «Über uns», neben dem Porträt (Entscheid 45).
  */
 import { Picture } from 'astro:assets';
 import Icon from '@luescher/ui/components/Icon.astro';
@@ -14,16 +14,16 @@ import SectionHead from '../SectionHead.astro';
 
 <section data-lazy class="sheet sheet-paper" id="aktuell" aria-labelledby="aktuell-title">
   <div class="wrap">
-    <SectionHead num="05" kicker="Aktuell" title="Neu bei uns." id="aktuell-title" />
+    <SectionHead num="03" kicker="Aktuell" title="Neu bei uns." id="aktuell-title" />
 
     <div class="stories">
       <article class="card story">
-        <div class="story-media">
+        <div class="story-media enter-unveil" data-enter>
           <Picture
             src={druck}
             formats={['avif', 'webp']}
-            widths={[360, 600, 900]}
-            sizes="(min-width: 64rem) 28rem, (min-width: 48rem) 45vw, 100vw"
+            widths={[360, 600, 1000]}
+            sizes="(min-width: 64rem) 43rem, (min-width: 48rem) 45vw, 100vw"
             alt="Ausstellungsecke mit 3D-gedruckten Sesseln, Hocker und Beistelltisch auf orangem Teppich"
             class="story-photo"
             loading="lazy"
@@ -36,25 +36,33 @@ import SectionHead from '../SectionHead.astro';
           </span>
           <h3 class="display h3 story-title">Es geht auch anders.</h3>
           <p>
-            Auch wir übernehmen Verantwortung und stehen zu unserer Haltung, möglichst nachhaltige
-            Produkte zu verkaufen. Neu im Sortiment: Designmöbel aus Norddeutschland, aus
-            überwiegend recycelten Materialien energieeffizient und ressourcenschonend im 3D-Druck
-            hergestellt.
+            Neu im Sortiment: Designmöbel aus Norddeutschland, aus überwiegend recycelten
+            Materialien energieeffizient und ressourcenschonend im 3D-Druck hergestellt.
           </p>
-          <p class="story-note">
-            Schauen Sie sich die Produkte in der Ausstellung an, berühren Sie sie und sitzen Sie
-            Probe.
-          </p>
+          <details class="more">
+            <summary>
+              <span class="more-icon" aria-hidden="true"></span>
+              <span class="more-closed">Mehr lesen</span>
+              <span class="more-opened">Weniger</span>
+              <span class="sr-only">: Nachhaltigkeit</span>
+            </summary>
+            <div class="more-body">
+              <p>
+                Auch wir übernehmen Verantwortung und stehen zu unserer Haltung, möglichst
+                nachhaltige Produkte zu verkaufen.
+              </p>
+            </div>
+          </details>
         </div>
       </article>
 
       <article class="card story">
-        <div class="story-media">
+        <div class="story-media enter-unveil" data-enter>
           <Picture
             src={klang}
             formats={['avif', 'webp']}
-            widths={[360, 600, 900]}
-            sizes="(min-width: 64rem) 28rem, (min-width: 48rem) 45vw, 100vw"
+            widths={[360, 600, 1000]}
+            sizes="(min-width: 64rem) 43rem, (min-width: 48rem) 45vw, 100vw"
             alt="Rote Klangbox Senn und Klangbox Huuri aus Holz auf einem Sims mit Herbstlaub"
             class="story-photo"
             loading="lazy"
@@ -68,34 +76,23 @@ import SectionHead from '../SectionHead.astro';
           <h3 class="display h3 story-title">Entspannen und Energie tanken.</h3>
           <p>
             Unsere Klangboxen aus Holz entführen Sie mit wohltuenden Naturklängen weit weg vom
-            hektischen Alltag. Senn wird aus Schweizer Arvenholz, Huuri aus Schweizer Eichenholz
-            gefertigt. Beide haben einen Bewegungssensor: Kommen Sie näher, erklingen Waldklänge,
-            ein Kinderlied oder Kuhglocken und Naturjutz.
+            hektischen Alltag.
           </p>
-        </div>
-      </article>
-
-      <article class="card story story-quote">
-        <div class="story-body">
-          <span class="tag">
-            <Icon name="newspaper" size={14} />
-            Interview
-          </span>
-          <h3 class="display h3 story-title">Interview zum Bettenkauf.</h3>
-          <blockquote class="quote">
-            <p>
-              «Wichtig ist, dass sich beide Parteien – Verkäufer und Kundschaft – Zeit nehmen für
-              das Thema. Dass sie einander zuhören und Fragen stellen.»
-            </p>
-            <footer class="meta">
-              Michael Längle in «Einrichten Schweiz», Ausgabe 125, dem Organ des Verbandes
-              einrichtenschweiz
-            </footer>
-          </blockquote>
-          <p class="story-note">
-            Worauf es für einen guten und gesunden Schlaf wirklich ankommt, erklären wir Ihnen gerne
-            persönlich in der Ausstellung.
-          </p>
+          <details class="more">
+            <summary>
+              <span class="more-icon" aria-hidden="true"></span>
+              <span class="more-closed">Mehr lesen</span>
+              <span class="more-opened">Weniger</span>
+              <span class="sr-only">: Klangboxen</span>
+            </summary>
+            <div class="more-body">
+              <p>
+                Senn wird aus Schweizer Arvenholz, Huuri aus Schweizer Eichenholz gefertigt. Beide
+                haben einen Bewegungssensor: Kommen Sie näher, erklingen Waldklänge, ein Kinderlied
+                oder Kuhglocken und Naturjutz.
+              </p>
+            </div>
+          </details>
         </div>
       </article>
     </div>
@@ -118,7 +115,7 @@ import SectionHead from '../SectionHead.astro';
   .story-media {
     aspect-ratio: 4 / 3;
     overflow: hidden;
-    background-color: var(--sand);
+    /* Sandfläche bis zum Bild: .enter-unveil in components.css */
   }
 
   .story-media :global(.story-photo) {
@@ -140,62 +137,13 @@ import SectionHead from '../SectionHead.astro';
     color: var(--fg-muted);
   }
 
-  .story-body .story-note {
-    color: var(--fg-strong);
-    font-weight: 600;
-  }
-
   .story-body :global(.tag .icon) {
     color: var(--leaf-deep);
-  }
-
-  /* Zitat-Karte: Sage statt Bild */
-  .story-quote {
-    grid-template-rows: 1fr;
-    background-color: var(--sage);
-    background-image: radial-gradient(
-      28rem 20rem at 100% 0%,
-      rgb(var(--paper-rgb) / 0.8),
-      transparent 70%
-    );
-  }
-
-  .quote {
-    display: grid;
-    gap: 0.875rem;
-    padding-left: 1.25rem;
-    border-left: 3px solid var(--leaf-edge);
-  }
-
-  .quote p {
-    color: var(--charcoal);
-    font-size: var(--fs-lead);
-    font-weight: 500;
-    letter-spacing: -0.015em;
-    line-height: 1.36;
-  }
-
-  .quote .meta {
-    color: var(--moss);
   }
 
   @media (min-width: 48rem) {
     .stories {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .story-quote {
-      grid-column: span 2;
-    }
-  }
-
-  @media (min-width: 64rem) {
-    .stories {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .story-quote {
-      grid-column: auto;
     }
   }
 </style>

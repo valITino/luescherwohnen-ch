@@ -34,12 +34,7 @@ export interface RobotsOptions {
  */
 export function robotsTxt({ host, mode, sitemap }: RobotsOptions): string {
   if (mode === 'closed') {
-    return [
-      `# ${host} (Vorschau): nichts für Suchmaschinen`,
-      'User-agent: *',
-      'Disallow: /',
-      '',
-    ].join('\n');
+    return ['User-agent: *', 'Disallow: /', ''].join('\n');
   }
   if (mode === 'search-only') {
     return [
@@ -57,17 +52,14 @@ export function robotsTxt({ host, mode, sitemap }: RobotsOptions): string {
       '',
     ].join('\n');
   }
-  return [
-    `# ${host}`,
-    '# Alles darf gelesen werden. Seiten, die nicht in Suchergebnisse gehören, tragen «noindex»',
-    '# und stehen bewusst nicht unter Disallow: Ein Crawler, der eine Seite nicht abrufen darf,',
-    '# sieht ihr «noindex» nie.',
-    '',
-    'User-agent: *',
-    'Allow: /',
-    '',
-    ...(sitemap ? [`Sitemap: ${sitemap}`, ''] : []),
-  ].join('\n');
+  // Offen: nur die Regeln, die Google und Bing auswerten (user-agent, allow, sitemap). Seiten,
+  // die nicht in Suchergebnisse gehören, tragen «noindex» und stehen bewusst nicht unter
+  // Disallow: Ein Crawler, der eine Seite nicht abrufen darf, sieht ihr «noindex» nie. Kein
+  // Crawl-delay (Google beachtet es nicht), kein Host (nur Yandex), keine Sperre für /_astro/
+  // (CSS und Skripte braucht die Darstellung).
+  return ['User-agent: *', 'Allow: /', '', ...(sitemap ? [`Sitemap: ${sitemap}`, ''] : [])].join(
+    '\n',
+  );
 }
 
 export function securityTxt(origin: string, contact: string, now: Date = new Date()): string {
@@ -90,7 +82,7 @@ export function humansTxt(site: string): string {
     'Lüscher Wohnen AG, Inneneinrichtung in Baden',
     '',
     '/* SITE */',
-    `Site: ${site}`,
+    `Site: ${stripTrailingSlashes(site)}/`,
     'Sprache: Deutsch (Schweiz)',
     'Technik: Astro, Tailwind CSS, GSAP, Lenis',
     'Schriften: Manrope und Geist Mono (SIL Open Font License)',

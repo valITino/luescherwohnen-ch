@@ -1,7 +1,8 @@
 ---
 /**
  * 404-Block: Nummer, Überschrift, kurze Erklärung, Weg zurück.
- * Auftritt beim Laden: Die «404» rückt einmal sanft an ihren Platz (nur transform/opacity).
+ * Auftritt beim Laden: Die «404» rückt einmal sanft von leicht unten an ihren Platz (nur
+ * transform, ohne Drehung, weich bremsend).
  */
 import Button from './Button.astro';
 
@@ -54,12 +55,12 @@ const { href, label } = Astro.props;
   .notfound-code {
     display: inline-block;
     color: var(--leaf-deep);
-    animation: nf-settle 640ms var(--ease) 200ms backwards;
+    animation: nf-settle var(--dur-4) var(--ease-expo) 200ms backwards;
   }
 
   @keyframes nf-settle {
     from {
-      transform: translateY(0.18em) rotate(-4deg);
+      transform: translateY(0.18em);
     }
   }
 </style>
