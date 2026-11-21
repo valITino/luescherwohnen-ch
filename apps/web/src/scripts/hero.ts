@@ -4,8 +4,8 @@
  * Auf grossen Bildschirmen bleibt der Hero kurz stehen (CSS: sticky). Auf dieser Strecke tritt
  * die erste Zeile zurück, und das Bild rückt etwas näher. Auf kleinen Bildschirmen scrollt der
  * Hero normal. Bei reduzierter Bewegung hängt nichts am Scrollen, ebenso, solange jemand die
- * Bewegung angehalten hat (das Anpinnen bleibt, damit die Seite nicht springt). Alles hier ist
- * Zugabe: Die Inhalte stehen im Markup.
+ * Bewegung angehalten hat: Dann steht der Hero auch nicht mehr, und die Scrollposition gleicht
+ * aus, dass die Seite kürzer wird. Alles hier ist Zugabe: Die Inhalte stehen im Markup.
  */
 import { motionAllowed, motionPaused, onceInView, onMotionPausedChange } from '@luescher/ui/motion';
 import { hours } from '../config/hours.ts';
@@ -41,9 +41,10 @@ export function initOpenStatus(element: HTMLElement): () => void {
   const start = () => {
     if (!started) tick();
   };
-  // Erst rechnen, wenn die Anzeige in die Nähe kommt (Zeitzonen-Daten kosten beim ersten Mal).
+  // Erst rechnen, wenn die Anzeige in die Nähe kommt (Zeitzonen-Daten kosten beim ersten Mal),
+  // eine Bildschirmhöhe vorher: Erscheint sie erst im Bild, schiebt sie, was darunter steht.
   // Beobachtet wird der Behälter: Die Anzeige selbst ist bis dahin verborgen und hat keine Fläche.
-  onceInView(element.parentElement ?? element, start, { threshold: 0, rootMargin: '200px 0px' });
+  onceInView(element.parentElement ?? element, start, { threshold: 0, rootMargin: '100% 0px' });
   return start;
 }
 
@@ -60,9 +61,24 @@ export function initHero(root: HTMLElement): void {
   if (!motionAllowed() || !track) return;
 
   const pin = window.matchMedia('(min-width: 64rem) and (min-height: 40rem)');
-  const applyPin = () => {
-    if (pin.matches) root.dataset.pinned = '';
+  /*
+   * Angepinnt nur mit Bewegung: Angehalten stünde der Hero sonst eine Dreiviertel-Bildschirmhöhe
+   * lang still, während man scrollt. `keepView`: Was im Bild ist, bleibt an seinem Platz. Gemessen
+   * wird, wohin der Abschnitt unter dem Hero rückt, und die Scrollposition gleicht das aus (hat der
+   * Browser es schon selbst getan, Scroll Anchoring, bleibt nichts zu tun). Ganz oben bleibt man
+   * oben.
+   */
+  const applyPin = (keepView = false) => {
+    const wanted = pin.matches && !motionPaused();
+    if (wanted === 'pinned' in root.dataset) return;
+    const below = keepView && window.scrollY > 0 ? root.nextElementSibling : null;
+    const before = below?.getBoundingClientRect().top ?? 0;
+    if (wanted) root.dataset.pinned = '';
     else delete root.dataset.pinned;
+    if (!below) return;
+    const shift = below.getBoundingClientRect().top - before;
+    if (Math.abs(shift) < 1) return;
+    window.scrollTo({ top: Math.max(0, window.scrollY + shift), behavior: 'instant' });
   };
   applyPin();
   pin.addEventListener('change', () => {
@@ -98,6 +114,10 @@ export function initHero(root: HTMLElement): void {
     { passive: true },
   );
   window.addEventListener('resize', update, { passive: true });
-  onMotionPausedChange(update);
+  // Vor smooth.ts angemeldet: Lenis endet erst danach bzw. beginnt erst an der neuen Stelle.
+  onMotionPausedChange(() => {
+    applyPin(true);
+    update();
+  });
   update();
 }

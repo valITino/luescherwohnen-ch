@@ -38,19 +38,31 @@ const alreadySeen = (entry: IntersectionObserverEntry) => {
 const MAX_INDEX = 3;
 
 /**
- * Ein Bild öffnet sich erst, wenn ein Viertel seines Rahmens im Bild ist. Früher, gleich am
- * unteren Rand, stiege es grösstenteils unter dem Rand auf: Zu sehen wäre nur, wie zuletzt seine
- * Oberkante ankommt.
+ * Ein Bild öffnet sich erst, wenn ein Viertel seines Rahmens im Bild ist, bei hohen Rahmen (das
+ * Porträt) schon bei einem Achtel der Fensterhöhe. Früher, gleich am unteren Rand, stiege es
+ * grösstenteils unter dem Rand auf: Zu sehen wäre nur, wie zuletzt seine Oberkante ankommt. Später
+ * stünde ein hoher Rahmen lange leer im Bild.
  */
 const UNVEIL_AT = 0.25;
-/** Bleibt ein Rahmen knapp darunter stehen, öffnet sich das Bild nach dieser Zeit trotzdem. */
-const UNVEIL_PARK_MS = 700;
+const UNVEIL_VIEW = 0.12;
+/** Feine Stufen, damit der Observer auch den Anteil eines hohen Rahmens rechtzeitig meldet. */
+const UNVEIL_STEPS = Array.from({ length: 26 }, (_, step) => step / 100);
+/**
+ * Bleibt ein Rahmen knapp darunter stehen, öffnet sich das Bild nach dieser Zeit trotzdem. Kurz:
+ * Länger zu warten zeigt vom Aufsteigen nicht mehr, der Rahmen stünde nur länger leer da.
+ */
+const UNVEIL_PARK_MS = 250;
 /**
  * So lange darf ein Bild, das noch lädt (langsames Netz, schnelles Wischen), seinen Auftritt
- * hinauszögern. Danach steht es ohne Auftritt da und erscheint, sobald es geladen ist, auf der
- * Sandfläche, statt dass der Ausschnitt über einen leeren Rahmen steigt und das Foto nachspringt.
+ * hinauszögern. Danach verzichtet es darauf (`late`) und blendet ein, sobald es geladen ist
+ * (`loaded`), statt dass der Ausschnitt über einen leeren Rahmen steigt und das Foto nachspringt.
  */
 const IMAGE_WAIT_MS = 500;
+
+/** Steht genug vom Rahmen im Bild, dass sein Bild sich öffnen darf? Liest nur Gemessenes. */
+const unveilReached = (entry: IntersectionObserverEntry) =>
+  entry.intersectionRect.height >=
+  Math.min(entry.boundingClientRect.height * UNVEIL_AT, window.innerHeight * UNVEIL_VIEW) - 1;
 
 /**
  * Die Zeilen bleiben während des Auftritts genau so, wie der Browser die Überschrift umbricht.
@@ -114,8 +126,14 @@ export function initReveals(): void {
         observer.unobserve(title);
         // Unterwegs zu einer Marke: nicht teilen, die Überschrift steht einfach da.
         if (jumping()) continue;
+        // Der Name für Screenreader bleibt der Text ohne den sichtbar gesetzten Trennstrich.
+        const name = (title.textContent ?? '')
+          .replace(/\u00AD/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
         const restore = holdLines(title);
         const split = SplitText.create(title, { type: 'lines', mask: 'lines', linesClass: 'ln' });
+        if (title.hasAttribute('aria-label')) title.setAttribute('aria-label', name);
         // Der Kicker führt (SectionHead.astro), die Zeilen folgen 60 ms später.
         const tween = gsap.from(split.lines, {
           yPercent: 118,
@@ -154,46 +172,54 @@ export function initReveals(): void {
 /**
  * Kleine Auftritte, die das CSS selbst spielt (Kicker tippt sich ein, Bilder öffnen sich, der
  * Sucher stellt das Porträt scharf): Elemente mit `data-enter` warten ausserhalb des Bildes
- * (`wait`) und bekommen `in`, sobald sie hereinkommen, Bilder erst ab einem Viertel. Was beim
- * Start schon zu sehen ist, bleibt einfach stehen. Ohne dieses Skript (reduzierte Bewegung, kein
+ * (`wait`) und bekommen `in`, sobald sie hereinkommen, Bilder erst, wenn genug vom Rahmen zu
+ * sehen ist (unveilReached). Was beim Start schon zu sehen ist, bleibt einfach stehen. Ohne dieses Skript (reduzierte Bewegung, kein
  * JavaScript) ist alles von Anfang an sichtbar.
  */
 function initEntrances(): { resolveAll(): void } {
   const elements = document.querySelectorAll<HTMLElement>('main [data-enter]');
+  // Rahmen knapp unter der Schwelle und ihr gemeinsamer Zeitgeber (eine Folge je Meldung)
   const parked = new Map<HTMLElement, number>();
   let first = true;
 
-  const unpark = (element: HTMLElement) => {
-    window.clearTimeout(parked.get(element));
-    parked.delete(element);
-  };
+  const unpark = (element: HTMLElement) => parked.delete(element);
 
   /*
    * Zustand setzen. Ein Auftritt, der ein Bild umschliesst (der Sucher um das Porträt), folgt
-   * dem Bild: Ecken, Linie und Bildtext beginnen, wenn das Foto aufsteigt.
+   * dem Bild: Ecken, Linie und Bildtext beginnen, wenn das Foto aufsteigt. Kommt das Foto zu spät
+   * (`late`), stehen sie einfach da.
    */
-  const settle = (element: HTMLElement, state: '' | 'in') => {
+  const settle = (element: HTMLElement, state: '' | 'in' | 'late') => {
     element.dataset.enter = state;
     if (!element.classList.contains('enter-unveil')) return;
     const outer = element.parentElement?.closest<HTMLElement>('main [data-enter="wait"]');
     if (!outer) return;
     observer.unobserve(outer);
-    outer.dataset.enter = state;
+    outer.dataset.enter = state === 'in' ? 'in' : '';
   };
 
   const awaitImage = (element: HTMLElement, image: HTMLImageElement) => {
     let timer = 0;
-    const done = (loaded: boolean) => {
+    const stop = () => {
       window.clearTimeout(timer);
       image.removeEventListener('load', onLoad);
       image.removeEventListener('error', onError);
-      // Inzwischen angehalten (resolveAll): Es steht schon alles.
-      if (element.dataset.enter !== 'wait') return;
-      settle(element, loaded && !jumping() ? 'in' : '');
     };
-    const onLoad = () => done(true);
-    const onError = () => done(false);
-    timer = window.setTimeout(() => done(false), IMAGE_WAIT_MS);
+    const onLoad = () => {
+      stop();
+      // Inzwischen angehalten (resolveAll): Es steht schon alles.
+      if (element.dataset.enter === 'wait') settle(element, jumping() ? '' : 'in');
+      else if (element.dataset.enter === 'late') element.dataset.enter = 'loaded';
+    };
+    const onError = () => {
+      stop();
+      if (element.dataset.enter === 'wait' || element.dataset.enter === 'late') {
+        settle(element, '');
+      }
+    };
+    timer = window.setTimeout(() => {
+      if (element.dataset.enter === 'wait') settle(element, 'late');
+    }, IMAGE_WAIT_MS);
     image.addEventListener('load', onLoad);
     image.addEventListener('error', onError);
   };
@@ -211,6 +237,19 @@ function initEntrances(): { resolveAll(): void } {
     settle(element, 'in');
   };
 
+  /*
+   * Rahmen, die in derselben Meldung knapp unter der Schwelle bleiben, teilen sich einen
+   * Zeitgeber: Öffnen sie sich, dann wie eine Folge nacheinander. Wer inzwischen gegangen oder
+   * schon aufgetreten ist, fällt heraus.
+   */
+  const park = (batch: HTMLElement[]) => {
+    const timer = window.setTimeout(() => {
+      let index = 0;
+      for (const element of batch) if (parked.get(element) === timer) enter(element, index++);
+    }, UNVEIL_PARK_MS);
+    for (const element of batch) parked.set(element, timer);
+  };
+
   const observer = new IntersectionObserver(
     (entries) => {
       // Eine Meldung, die erst nach dem Pausieren eintrifft, lässt nichts mehr warten.
@@ -218,6 +257,7 @@ function initEntrances(): { resolveAll(): void } {
       // Bilder, die in derselben Meldung hereinkommen, öffnen sich nacheinander (in der
       // Reihenfolge des Dokuments, also von links nach rechts). Ein einzelnes Bild startet sofort.
       let index = 0;
+      const parking: HTMLElement[] = [];
       for (const entry of entries) {
         const element = entry.target as HTMLElement;
         if (first) {
@@ -243,20 +283,16 @@ function initEntrances(): { resolveAll(): void } {
         const unveil = element.classList.contains('enter-unveil');
         // Umschliesst es ein Bild, das noch wartet, beginnt es mit diesem (settle).
         if (!unveil && element.querySelector('.enter-unveil[data-enter="wait"]')) continue;
-        if (unveil && entry.intersectionRatio < UNVEIL_AT) {
-          if (!parked.has(element)) {
-            parked.set(
-              element,
-              window.setTimeout(() => enter(element, 0), UNVEIL_PARK_MS),
-            );
-          }
+        if (unveil && !unveilReached(entry)) {
+          if (!parked.has(element)) parking.push(element);
           continue;
         }
         enter(element, unveil ? index++ : 0);
       }
+      if (parking.length > 0) park(parking);
       first = false;
     },
-    { rootMargin: '0px 0px -8% 0px', threshold: [0, UNVEIL_AT] },
+    { rootMargin: '0px 0px -8% 0px', threshold: UNVEIL_STEPS },
   );
 
   elements.forEach((element) => observer.observe(element));
@@ -269,10 +305,10 @@ function initEntrances(): { resolveAll(): void } {
      */
     resolveAll() {
       observer.disconnect();
-      for (const timer of parked.values()) window.clearTimeout(timer);
+      for (const timer of new Set(parked.values())) window.clearTimeout(timer);
       parked.clear();
       for (const element of document.querySelectorAll<HTMLElement>(
-        'main [data-enter="wait"], main [data-enter="in"]',
+        'main [data-enter="wait"], main [data-enter="in"], main [data-enter="late"]',
       )) {
         element.dataset.enter = '';
         // Ein Platz in einer Folge (placeInRow), dessen Auftritt nie begann, gilt nicht mehr.

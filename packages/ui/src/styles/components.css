@@ -497,8 +497,8 @@
   /*
    * Ein Bild steigt beim Hereinscrollen vom unteren Rand seines Rahmens nach oben ins Bild und
    * setzt sich dabei aus einem leichten Zoom (reveal.ts setzt data-enter, sobald ein Viertel des
-   * Rahmens zu sehen ist). Kommen mehrere zusammen ins Bild, folgen sie einander im Abstand von
-   * --stagger: reveal.ts nummeriert sie mit --enter-i.
+   * Rahmens zu sehen ist, bei hohen Rahmen ein Achtel der Fensterhöhe). Kommen mehrere zusammen ins
+   * Bild, folgen sie einander im Abstand von --stagger: reveal.ts nummeriert sie mit --enter-i.
    * Clip und Zoom sitzen beide auf dem Bild selbst, nicht auf dem Rahmen: So bewegt der Browser
    * eine einzige Ebene. Mit dem Clip am Rahmen fielen beim Wischen auf dem Handy gemessen doppelt
    * so viele Bilder aus (Entscheid 38).
@@ -506,7 +506,8 @@
    * Bild lädt der Browser nicht vor (loading="lazy"), es käme sonst erst beim Auftritt und spränge
    * dann mitten hinein (Entscheid 39). Der Rahmen ist so lange leer statt sandfarben: Das Foto
    * steigt aus dem Papier auf, statt in einen Platzhalter zu fallen. Ist es beim Auftritt noch
-   * nicht geladen, wartet reveal.ts kurz darauf; sonst steht es ohne Auftritt da (Entscheid 40).
+   * nicht geladen, wartet reveal.ts kurz darauf; kommt es später (late), blendet es ein, sobald es
+   * da ist (loaded), ohne dass der Rahmen vorher die Farbe wechselt (Entscheide 40 und 41).
    * Ohne Skript, bei reduzierter Bewegung und ohne Auftritt steht das Bild einfach da; die
    * Sandfläche füllt dann den Rahmen, bis das Bild geladen ist. Der Rahmen des Porträts behält
    * seine eigene Papierfläche (Ueber.astro).
@@ -515,17 +516,26 @@
     background-color: var(--sand);
   }
 
-  .enter-unveil:is([data-enter='wait'], [data-enter='in']) {
+  .enter-unveil:is(
+    [data-enter='wait'],
+    [data-enter='in'],
+    [data-enter='late'],
+    [data-enter='loaded']
+  ) {
     background-color: transparent;
   }
 
-  .enter-unveil[data-enter='wait'] img {
+  .enter-unveil:is([data-enter='wait'], [data-enter='late']) img {
     opacity: 0;
   }
 
   .enter-unveil[data-enter='in'] img {
     animation: unveil var(--dur-4) var(--ease-expo) calc(var(--enter-i, 0) * var(--stagger))
       backwards;
+  }
+
+  .enter-unveil[data-enter='loaded'] img {
+    animation: unveil-late var(--dur-3) var(--ease-out) backwards;
   }
 
   /*
@@ -540,6 +550,12 @@
 
     to {
       clip-path: inset(0);
+    }
+  }
+
+  @keyframes unveil-late {
+    from {
+      opacity: 0;
     }
   }
 

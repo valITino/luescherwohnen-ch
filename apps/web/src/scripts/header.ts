@@ -153,20 +153,40 @@ export function initHeader(lock: () => ScrollLock | null): void {
     const transition = event.viewTransition;
     if (!transition) return;
     if (motionPaused()) {
+      // Die Absage meldet sich sonst als unbehandelter Fehler in der alten Seite.
+      transition.ready.catch(() => undefined);
       // Chromium führt danach in der alten Seite kein Skript mehr aus (gemessen): Nach
       // skipTransition() darf nichts folgen, und dieser Zuhörer bleibt der einzige für pageswap.
       transition.skipTransition();
       return;
     }
     const activation = event.activation;
-    if (!activation) return;
-    const target = new URL(activation.entry.url ?? '', window.location.href);
-    if (activation.navigationType === 'traverse' || target.hash) {
+    // Ohne Navigation API ist das Ziel unbekannt: sicherheitshalber wie bei einer Marke.
+    if (
+      !activation ||
+      activation.navigationType === 'traverse' ||
+      new URL(activation.entry.url ?? '', window.location.href).hash
+    ) {
       header.classList.add('is-leaving');
     }
   });
   // Aus dem Verlauf zurück (bfcache): wieder wie neu geladen.
   window.addEventListener('pageshow', () => header.classList.remove('is-leaving'));
+
+  /*
+   * Erstes Bild der neuen Seite, bevor der Browser sie für den Übergang festhält. Steht sie schon
+   * unten (Direktlink zu einer Marke), ist die Kapsel bereits da und kommt mit der Seite, statt
+   * dass oben kurz die Leiste erscheint und dann die Kapsel aufspringt. Durch den Verlauf zurück
+   * oder vor zu einer Seite, die oben beginnt: Die neue Leiste steht sofort (global.css,
+   * Übergangstyp `stand`), die alte geht mit der alten Seite darunter. Ein Überblenden der beiden
+   * liesse den Header kurz grau werden.
+   */
+  window.addEventListener('pagereveal', (event) => {
+    update(false);
+    const transition = event.viewTransition;
+    const navigationType = window.navigation?.activation?.navigationType;
+    if (transition && navigationType === 'traverse' && !scrolled) transition.types?.add('stand');
+  });
 
   // --- Vollbild-Menü ---
   const toggle = header.querySelector<HTMLButtonElement>('[data-menu-toggle]');

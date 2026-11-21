@@ -72,8 +72,10 @@ picture > source {
  * grau; gemessen in Chromium, mit bremsender Kurve fast bei jedem Wechsel.)
  * Die Kapsel trägt den Namen nicht, ebenso wenig die Leiste einer Seite, die zu einer Marke oder
  * durch den Verlauf verlassen wird (header.ts): Dann geht der Header mit der alten Seite, und der
- * neue blendet für sich ein (--dur-2, bremsend). Das gilt auch zurück und vor zwischen zwei
- * Seiten, die oben stehen: Die alte Seite weiss nicht, wo die neue beginnt.
+ * neue blendet für sich ein (--dur-2, bremsend). Zurück und vor weiss erst die neue Seite, wo sie
+ * beginnt: Steht sie oben, setzt sie den Übergangstyp `stand` (header.ts), und ihre Leiste steht
+ * sofort, während die alte mit der alten Seite darunter weicht. Überblendet würde der Header dabei
+ * für einige Bilder grau (die alte Seite weicht schneller, als die neue Leiste einblendet).
  * Darunter weicht die alte Seite schnell (--dur-1, bremsend, nur Deckkraft), die neue setzt sich
  * 40 ms später weich bremsend von leicht unten. Die beiden liegen so kaum übereinander, und der
  * Wechsel geht nur einen Augenblick durch das Papier statt durch eine Doppelbelichtung.
@@ -117,6 +119,10 @@ picture > source {
 
   ::view-transition-new(site-bar):only-child {
     animation: var(--dur-2) var(--ease-out) both bar-in;
+  }
+
+  html:active-view-transition-type(stand)::view-transition-new(site-bar):only-child {
+    animation: none;
   }
 }
 

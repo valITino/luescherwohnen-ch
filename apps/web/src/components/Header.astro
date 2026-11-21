@@ -201,8 +201,8 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
   .bar-nav,
   .bar-cta-slot {
     transition:
-      opacity var(--dur-3) var(--ease-out) var(--bar-delay, 0s),
-      transform var(--dur-3) var(--ease-out) var(--bar-delay, 0s);
+      opacity var(--bar-dur, var(--dur-3)) var(--ease-out) var(--bar-delay, 0s),
+      transform var(--bar-dur, var(--dur-3)) var(--ease-out) var(--bar-delay, 0s);
   }
 
   .bar-nav {
@@ -263,11 +263,12 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     transform: translateX(-50%);
   }
 
+  /* Nur Deckkraft und Lage stehen sofort; die Farben beim Hover gleiten weiter. */
   .bar :global(.bar-logo):focus-visible,
   .bar-nav:has(:focus-visible),
   .bar-actions > :is(:focus-visible, :has(:focus-visible)) {
-    transition-duration: 0s;
-    transition-delay: 0s;
+    --bar-dur: 0s;
+    --bar-delay: 0s;
   }
 
   /*
@@ -327,8 +328,8 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     transition:
       border-color var(--dur-2) var(--ease),
       background-color var(--dur-2) var(--ease),
-      opacity var(--dur-3) var(--ease-out) var(--bar-delay, 0s),
-      transform var(--dur-3) var(--ease-out) var(--bar-delay, 0s);
+      opacity var(--bar-dur, var(--dur-3)) var(--ease-out) var(--bar-delay, 0s),
+      transform var(--bar-dur, var(--dur-3)) var(--ease-out) var(--bar-delay, 0s);
   }
 
   .bar-phone:hover {
@@ -380,8 +381,8 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     transition:
       border-color var(--dur-2) var(--ease),
       background-color var(--dur-2) var(--ease),
-      opacity var(--dur-3) var(--ease-out) var(--bar-delay, 0s),
-      transform var(--dur-3) var(--ease-out) var(--bar-delay, 0s);
+      opacity var(--bar-dur, var(--dur-3)) var(--ease-out) var(--bar-delay, 0s),
+      transform var(--bar-dur, var(--dur-3)) var(--ease-out) var(--bar-delay, 0s);
   }
 
   .menu-toggle:hover {

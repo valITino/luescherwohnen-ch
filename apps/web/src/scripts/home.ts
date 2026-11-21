@@ -5,7 +5,7 @@
  * erst, wenn jemand die Seite benutzt.
  * Das Kontaktformular lädt erst, wenn es in Sicht kommt.
  */
-import { motionAllowed, onceInView } from '@luescher/ui/motion';
+import { motionAllowed, onceInView, onMotionPausedChange } from '@luescher/ui/motion';
 import type { SmoothScroll } from '@luescher/ui/motion/smooth';
 import { initMotionToggle, initProgress } from './chrome.ts';
 import { initHeader } from './header.ts';
@@ -23,6 +23,21 @@ const idle = (callback: () => void) => {
 // ---------------------------------------------------------------- Sofort: der erste Eindruck
 
 initHeader(() => smooth);
+
+/*
+ * Hält jemand die Bewegung an, während ein Sprung zu einer Marke noch gleitet, kommt er sofort
+ * am Ziel an, statt mitten auf der Strecke stehen zu bleiben (die Adresse zeigt die Marke schon).
+ * Vor allen anderen angemeldet: vor dem Hero, der danach sein Anpinnen aufgibt, und vor
+ * smooth.ts, das Lenis beendet. Ein ausgleitendes Rad hält dagegen an, wo es gerade ist.
+ */
+onMotionPausedChange((paused) => {
+  const lenis = smooth?.lenis;
+  if (!paused || !('jump' in document.documentElement.dataset) || !lenis) return;
+  if (lenis.isScrolling !== 'smooth') return;
+  // Ziel ist die Marke der Adresse (targetScroll folgt bei Lenis dem Gleiten, nicht dem Ziel).
+  const mark = document.getElementById(window.location.hash.slice(1));
+  if (mark) lenis.scrollTo(mark, { immediate: true, force: true });
+});
 
 const hero = document.querySelector<HTMLElement>('[data-hero]');
 if (hero) initHero(hero);

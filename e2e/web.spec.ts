@@ -302,6 +302,8 @@ test.describe('Navigation', () => {
 
   test('Sprung aus der Leiste landet genau unter dem Header', async ({ page, isMobile }) => {
     test.skip(isMobile, 'Die Navigation in der Leiste gibt es nur am Desktop');
+    // Bei 1280 px Breite läge ein Fehler deutlich daneben (gemessen 35 px), bei 1440 px nur 3 px.
+    await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(`${PROD}/`);
     await page.evaluate(() => document.fonts.ready);
     await page.mouse.wheel(0, 10);
@@ -344,6 +346,11 @@ test.describe('Navigation', () => {
               .map((animation) => (animation.effect as KeyframeEffect | null)?.pseudoElement)
               .filter((pseudo) => pseudo?.includes('site-bar'));
             document.documentElement.dataset.testBar = parts.join(' ') || 'none';
+            document.documentElement.dataset.testTypes = [...transition.types].join(' ');
+            document.documentElement.dataset.testNamed = String(
+              getComputedStyle(document.querySelector('[data-header] .bar')!).viewTransitionName ===
+                'site-bar',
+            );
           },
           // Übersprungen: Dann gibt es nichts festzuhalten.
           () => undefined,
@@ -374,11 +381,42 @@ test.describe('Navigation', () => {
       expect(still).not.toContain('::view-transition-old(site-bar)');
       expect(still).not.toContain('::view-transition-new(site-bar)');
       // Zu einer Marke: Die neue Seite steht weiter unten (Kapsel). Die alte Leiste geht mit der
-      // alten Seite; nichts zieht die Kapsel auf die Breite der Leiste.
+      // alten Seite; nichts zieht die Kapsel auf die Breite der Leiste. Die Kapsel steht schon
+      // beim ersten Bild der neuen Seite und kommt mit ihr, statt dass oben kurz die Leiste
+      // erscheint.
       const toMark = await change('/impressum', '.bar-nav a[href="/#kontakt"]', /#kontakt$/);
-      expect(toMark, 'Übergang hat stattgefunden').not.toBeNull();
-      expect(toMark).not.toContain('::view-transition-old(site-bar)');
-      expect(toMark).not.toContain('::view-transition-group(site-bar)');
+      expect(toMark, 'Übergang hat stattgefunden').toBe('none');
+      expect(await page.locator('html').getAttribute('data-test-named')).toBe('false');
+
+      // Zurück zu einer Seite, die oben beginnt: Ihre Leiste steht sofort (Übergangstyp «stand»),
+      // statt über der weichenden alten einzublenden.
+      let back: string | null = null;
+      for (let attempt = 0; attempt < 5 && back === null; attempt++) {
+        await page.goto(`${origin}/impressum`);
+        await page.evaluate(() => document.fonts.ready);
+        await page.locator('[data-header] .bar-logo').first().click();
+        await expect(page).toHaveURL(/\/$/);
+        await page.waitForLoadState('load');
+        await page.waitForTimeout(600);
+        await page.evaluate(() => history.back());
+        await expect(page).toHaveURL(/\/impressum$/);
+        await page.waitForTimeout(600);
+        back = await page.locator('html').getAttribute('data-test-bar');
+      }
+      expect(back, 'Übergang hat stattgefunden').not.toBeNull();
+      expect(await page.locator('html').getAttribute('data-test-types')).toContain('stand');
+      expect(await page.locator('html').getAttribute('data-test-named')).toBe('true');
+      expect(back).not.toContain('::view-transition-new(site-bar)');
+
+      // Ohne Navigation API (pageswap ohne activation) gilt die sichere Annahme: Die alte Leiste
+      // geht mit der alten Seite, auch ohne bekanntes Ziel.
+      await page.addInitScript(() => {
+        Object.defineProperty(PageSwapEvent.prototype, 'activation', { get: () => null });
+      });
+      const blind = await change('/impressum', '.bar-nav a[href="/#kontakt"]', /#kontakt$/);
+      expect(blind, 'Übergang hat stattgefunden').not.toBeNull();
+      expect(blind).not.toContain('::view-transition-old(site-bar)');
+      expect(blind).not.toContain('::view-transition-group(site-bar)');
     } finally {
       await context.close();
       server.close();
@@ -769,11 +807,22 @@ test.describe('Bewegung und Chrome', () => {
         ring: active.matches(':focus-visible'),
         swapping: document.querySelector('[data-header]')!.matches('.is-swapping'),
         opacity,
+        transition: [
+          getComputedStyle(active).transitionProperty,
+          getComputedStyle(active).transitionDuration,
+        ],
       };
     });
     expect(after.phone).toBe(true);
     expect(after.ring).toBe(true);
     if (!after.swapping) expect(after.opacity).toBeGreaterThan(0.99);
+    // Sofort stehen nur Deckkraft und Lage; die Farben beim Hover gleiten weiter.
+    const [properties, durations] = after.transition.map((list) => list.split(', '));
+    const duration = (property: string) => parseFloat(durations![properties!.indexOf(property)]!);
+    expect(duration('opacity')).toBe(0);
+    expect(duration('transform')).toBe(0);
+    expect(duration('border-color')).toBeGreaterThan(0);
+    expect(duration('background-color')).toBeGreaterThan(0);
     await page.keyboard.press('Tab');
     expect(
       await page.evaluate(() => document.activeElement?.closest('.bar-actions') !== null),
@@ -870,8 +919,8 @@ test.describe('Bewegung und Chrome', () => {
       { timeout: 5_000 },
     );
     expect(await page.locator('[data-enter="wait"]').count()).toBe(0);
-    // Auftritte gab es wirklich (auch die Bilder), und jeder endet spätestens nach dem längsten
-    // Plan: 1200 ms (Linie im Sucher, Bilder 800 ms) plus höchstens drei Versätze von 70 ms.
+    // Auftritte gab es wirklich (auch die Bilder), und jeder endet spätestens nach 1410 ms: Die
+    // Linie im Sucher endet nach 1250 ms, Bilder nach 800 ms plus höchstens drei Versätze von 70 ms.
     expect(seen.map(({ name }) => name)).toContain('unveil');
     for (const { name, end } of seen) expect(end, name).toBeLessThanOrEqual(1200 + 3 * 70);
   });
@@ -919,6 +968,12 @@ test.describe('Bewegung und Chrome', () => {
         return lines.map((line) => line.replace(/\s+/g, ' ').trim());
       }, id);
       const title = page.locator(`#${id}`);
+      const name = await title.evaluate((element) =>
+        (element.textContent ?? '')
+          .replace(/\u00AD/g, '')
+          .replace(/\s+/g, ' ')
+          .trim(),
+      );
       await title.evaluate((element) =>
         window.scrollTo({
           top: element.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.6,
@@ -936,6 +991,8 @@ test.describe('Bewegung und Chrome', () => {
         ),
       );
       expect(split, id).toEqual(natural.map((line) => line.replace(/-$/, '')));
+      // Screenreader hören den Namen ohne den sichtbar gesetzten Trennstrich.
+      expect(await title.getAttribute('aria-label'), id).toBe(name);
       // Danach ist das Markup wieder wie vorher: kein Umbruch und kein Strich bleibt zurück.
       await expect(title.locator('.ln')).toHaveCount(0, { timeout: 3_000 });
       expect(await title.locator('br').count(), id).toBe(0);
@@ -1008,16 +1065,31 @@ test.describe('Bewegung und Chrome', () => {
     await page.waitForFunction((element) => element.querySelector('img')!.complete, frame!, {
       timeout: 5_000,
     });
+    // Festhalten, wie lange nach dem Hinstellen das Bild sich öffnet (im Browser gemessen).
+    await frame!.evaluate((element) => {
+      new MutationObserver(() => {
+        const frame = element as HTMLElement;
+        if (frame.dataset.enter !== 'in' || frame.dataset.testAfter) return;
+        frame.dataset.testAfter = String(
+          performance.now() - Number(document.documentElement.dataset.testShown),
+        );
+      }).observe(element, { attributes: true, attributeFilter: ['data-enter'] });
+    });
     // Ein Zehntel im Bild: Das Bild wartet noch.
+    await page.evaluate(() => {
+      document.documentElement.dataset.testShown = String(performance.now());
+    });
     await showShare(0.1);
     await nextFrames(page);
     expect(await frame!.evaluate((element) => (element as HTMLElement).dataset.enter)).toBe('wait');
-    // Bleibt der Rahmen dort stehen, öffnet sich das Bild nach kurzer Zeit trotzdem.
+    // Bleibt der Rahmen dort stehen, öffnet sich das Bild nach kurzer Zeit trotzdem: nach einer
+    // Viertelsekunde, nicht später (länger stünde der Rahmen nur leer da).
     await page.waitForFunction(
       (element) => (element as HTMLElement).dataset.enter === 'in',
       frame!,
       { timeout: 3_000 },
     );
+    expect(Number(await frame!.getAttribute('data-test-after'))).toBeLessThan(600);
     // Ein zweites Bild weiter unten: Ab gut einem Viertel öffnet es sich sofort.
     const next = await page.evaluateHandle(
       () =>
@@ -1047,6 +1119,58 @@ test.describe('Bewegung und Chrome', () => {
     );
   });
 
+  test('Hohe Rahmen: Das Porträt öffnet sich, bevor ein Viertel davon im Bild ist', async ({
+    page,
+  }) => {
+    await page.goto(`${PROD}/`);
+    await layOutAll(page);
+    await page.mouse.wheel(0, 200);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    await nextFrames(page);
+    const frame = page.locator('.portrait-frame.enter-unveil');
+    await expect(frame).toHaveAttribute('data-enter', 'wait');
+    // So stellen, dass `seen` Pixel über der Auslösekante stehen (8 % über dem Rand).
+    const show = (seen: number) =>
+      frame.evaluate((element, pixels) => {
+        const rect = element.getBoundingClientRect();
+        window.scrollTo({
+          top: window.scrollY + rect.top - window.innerHeight * 0.92 + pixels,
+          behavior: 'instant',
+        });
+      }, seen);
+    await show(-400);
+    await page.waitForFunction(
+      () => document.querySelector<HTMLImageElement>('.portrait-frame img')!.complete,
+      null,
+      { timeout: 5_000 },
+    );
+    // Gut ein Achtel der Fensterhöhe im Bild, weniger als ein Viertel des Rahmens: Das Bild öffnet
+    // sich sofort, ohne die Wartezeit am Rand (eine Viertelsekunde).
+    const share = await frame.evaluate((element) => {
+      const seen = window.innerHeight * 0.14;
+      return { seen, quarter: element.getBoundingClientRect().height / 4 };
+    });
+    expect(share.seen).toBeLessThan(share.quarter);
+    const after = await frame.evaluate(
+      (element, seen) =>
+        new Promise<number>((resolve) => {
+          const start = performance.now();
+          new MutationObserver(() => {
+            if ((element as HTMLElement).dataset.enter === 'in') resolve(performance.now() - start);
+          }).observe(element, { attributes: true, attributeFilter: ['data-enter'] });
+          const rect = element.getBoundingClientRect();
+          window.scrollTo({
+            top: window.scrollY + rect.top - window.innerHeight * 0.92 + seen,
+            behavior: 'instant',
+          });
+        }),
+      share.seen,
+    );
+    expect(after).toBeLessThan(200);
+  });
+
   test('Langsames Netz: Ein Bild, das noch lädt, steigt nicht über einen leeren Rahmen', async ({
     page,
   }) => {
@@ -1070,12 +1194,20 @@ test.describe('Bewegung und Chrome', () => {
       .elementHandle();
     expect(frame).not.toBeNull();
     expect(await frame!.evaluate((element) => element.querySelector('img')!.complete)).toBe(false);
-    // Festhalten, ob der Rahmen je «in» bekommt, solange das Bild fehlt.
+    // Festhalten, ob der Rahmen je «in» bekommt, solange das Bild fehlt, und wie das Bild
+    // erscheint, wenn es spät kommt.
     await frame!.evaluate((element) => {
       new MutationObserver(() => {
         const image = element.querySelector('img')!;
-        if ((element as HTMLElement).dataset.enter === 'in' && !image.complete) {
+        const state = (element as HTMLElement).dataset.enter;
+        if (state === 'in' && !image.complete) {
           document.documentElement.dataset.testRoseEmpty = '';
+        }
+        if (state === 'loaded') {
+          document.documentElement.dataset.testLate = image
+            .getAnimations()
+            .map((animation) => (animation as CSSAnimation).animationName)
+            .join(' ');
         }
       }).observe(element, { attributes: true, attributeFilter: ['data-enter'] });
     });
@@ -1087,18 +1219,28 @@ test.describe('Bewegung und Chrome', () => {
         behavior: 'instant',
       });
     });
-    // Nach kurzem Warten steht der Rahmen ohne Auftritt da, mit der Sandfläche bis zum Bild.
-    await page.waitForFunction((element) => (element as HTMLElement).dataset.enter === '', frame!, {
-      timeout: 2_000,
-    });
-    const state = await frame!.evaluate((element) => ({
-      background: getComputedStyle(element).backgroundColor,
-      image: getComputedStyle(element.querySelector('img')!).opacity,
-      loaded: element.querySelector('img')!.complete,
-    }));
-    expect(state.loaded).toBe(false);
-    expect(state.background).not.toBe('rgba(0, 0, 0, 0)');
-    expect(state.image).toBe('1');
+    // Nach kurzem Warten verzichtet das Bild auf seinen Auftritt («late»). Der Rahmen bleibt
+    // leer, statt bis zum Bild die Farbe zu wechseln.
+    await page.waitForFunction(
+      (element) => (element as HTMLElement).dataset.enter === 'late',
+      frame!,
+      { timeout: 2_000 },
+    );
+    const look = () =>
+      frame!.evaluate((element) => ({
+        background: getComputedStyle(element).backgroundColor,
+        image: getComputedStyle(element.querySelector('img')!).opacity,
+        loaded: element.querySelector('img')!.complete,
+      }));
+    expect(await look()).toEqual({ background: 'rgba(0, 0, 0, 0)', image: '0', loaded: false });
+    // Ist es da, blendet es ein (nur die Deckkraft) und steht dann ganz.
+    await page.waitForFunction(
+      (element) => (element as HTMLElement).dataset.enter === 'loaded',
+      frame!,
+      { timeout: 6_000 },
+    );
+    await expect(page.locator('html')).toHaveAttribute('data-test-late', 'unveil-late');
+    await expect.poll(look).toEqual({ background: 'rgba(0, 0, 0, 0)', image: '1', loaded: true });
     await expect(page.locator('html')).not.toHaveAttribute('data-test-rose-empty');
     await page.unrouteAll({ behavior: 'ignoreErrors' });
   });
@@ -1228,6 +1370,83 @@ test.describe('Bewegung und Chrome', () => {
     expect(await page.locator('html.lenis').count()).toBe(isMobile ? 0 : 1);
     await midway();
     await expect.poll(dimmed).toBeGreaterThan(0);
+  });
+
+  test('Bewegung pausiert mitten im Sprung: Er kommt trotzdem an', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'Die Navigation in der Leiste gibt es nur am Desktop');
+    await page.goto(`${PROD}/`);
+    await page.evaluate(() => document.fonts.ready);
+    await page.mouse.wheel(0, 10);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    await nextFrames(page);
+    await page.locator('.bar-nav a[href="#kontakt"]').click();
+    await page.waitForTimeout(200);
+    // Noch unterwegs: Lenis gleitet gut anderthalb Sekunden durch die Seite.
+    const midway = await page.evaluate(() => window.scrollY);
+    const goal = await page.evaluate(
+      () => document.querySelector('#kontakt')!.getBoundingClientRect().top + window.scrollY,
+    );
+    expect(goal - midway).toBeGreaterThan(1000);
+    await page.locator('[data-motion-toggle]').click();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
+    await nextFrames(page);
+    const offset = await page.evaluate(() => {
+      const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop);
+      return document.querySelector('#kontakt')!.getBoundingClientRect().top - padding;
+    });
+    expect(Math.abs(offset)).toBeLessThanOrEqual(2);
+  });
+
+  test('Bewegung pausiert: Der Hero hält nicht mehr an, die Ansicht bleibt', async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'Angepinnt wird der Hero nur auf grossen Bildschirmen');
+    await page.goto(`${PROD}/`);
+    await layOutAll(page);
+    await page.mouse.wheel(0, 200);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    const hero = page.locator('[data-hero]');
+    await expect(hero).toHaveAttribute('data-pinned', '');
+    const toggle = page.locator('[data-motion-toggle]');
+    const anchor = page.locator('#sortiment');
+    const top = () => anchor.evaluate((element) => element.getBoundingClientRect().top);
+    const bringUp = async () => {
+      await anchor.evaluate((element) =>
+        window.scrollTo({
+          top: element.getBoundingClientRect().top + window.scrollY - 200,
+          behavior: 'instant',
+        }),
+      );
+      await nextFrames(page);
+      return top();
+    };
+    // Anhalten mitten auf der Seite: Der Hero gibt sein Anpinnen auf, was im Bild ist, bleibt.
+    const before = await bringUp();
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
+    await expect(hero).not.toHaveAttribute('data-pinned');
+    expect(Math.abs((await top()) - before)).toBeLessThanOrEqual(1);
+    // Ganz oben bewegt schon das erste Scrollen den Inhalt (keine stille Strecke).
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    await nextFrames(page);
+    const title = page.locator('#hero-title');
+    const start = await title.evaluate((element) => element.getBoundingClientRect().top);
+    await page.evaluate(() => window.scrollTo({ top: 100, behavior: 'instant' }));
+    await nextFrames(page);
+    const moved = start - (await title.evaluate((element) => element.getBoundingClientRect().top));
+    expect(Math.abs(moved - 100)).toBeLessThanOrEqual(1);
+    // Fortsetzen: wieder angepinnt, und wieder bleibt die Ansicht, wo sie ist.
+    const again = await bringUp();
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'on');
+    await expect(hero).toHaveAttribute('data-pinned', '');
+    expect(Math.abs((await top()) - again)).toBeLessThanOrEqual(1);
   });
 
   test('Anhalten und Fortsetzen: Der Auftakt spielt nicht weiter', async ({ page }) => {
