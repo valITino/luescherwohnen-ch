@@ -16,17 +16,79 @@ import { join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const MODULE = /<script type="module" src="([^"]+)"><\/script>/g;
-const STATIC_IMPORT =
-  /(?:^|[;}\s])(?:import\s*(?:[\w${}*,\s]+from\s*)?|export\s*[\w${}*,\s]*from\s*)["'](\.{1,2}\/[^"']+)["']/g;
+
+/** Was zwischen `import` bzw. `export` und dem Pfad stehen kann: Namen, Klammern, Stern, Komma, Leerraum. */
+const CLAUSE = /[\w${}*,\s]/;
+const SPACE = /\s/;
+/** Vor dem Schlüsselwort: Anfang der Datei, Ende einer Anweisung oder eines Blocks, Leerraum. */
+const BEFORE_KEYWORD = /[;}\s]/;
+
+/** @param {string | undefined} char */
+const isQuote = (char) => char === '"' || char === "'";
+
+/**
+ * Steht `word` bei `at` als Schlüsselwort, also am Anfang oder nach `;`, `}` oder Leerraum?
+ * @param {string} code
+ * @param {number} at
+ * @param {string} word
+ */
+const keywordAt = (code, at, word) =>
+  code.startsWith(word, at) && (at === 0 || BEFORE_KEYWORD.test(code[at - 1] ?? ''));
+
+/**
+ * Endet der Lauf `code[start, end)` in einem statischen Import oder Export, dessen Pfad gleich
+ * folgt? Zwei Formen: `import"./a.js"` und `import … from"./a.js"` bzw. `export … from"./a.js"`.
+ * @param {string} code
+ * @param {number} start
+ * @param {number} end
+ */
+function endsInImport(code, start, end) {
+  let tail = end;
+  while (tail > start && SPACE.test(code[tail - 1] ?? '')) tail -= 1;
+  // Nur der Pfad, ohne Namen: import"./a.js"
+  if (tail - start >= 6 && keywordAt(code, tail - 6, 'import')) return true;
+  if (tail - start < 4 || !code.startsWith('from', tail - 4)) return false;
+  // … from: Davor steht im selben Lauf ein `export` oder ein `import` mit mindestens einem Zeichen
+  // bis zum `from` (das Schlüsselwort ist sechs Zeichen lang, `from` vier).
+  for (let at = start; at + 10 <= tail; at += 1) {
+    if (keywordAt(code, at, 'export')) return true;
+    if (at + 10 < tail && keywordAt(code, at, 'import')) return true;
+  }
+  return false;
+}
 
 /**
  * Die Module, die eine Datei statisch einbindet (relative Pfade wie "./header.js").
  * Dynamische Importe (`import("./scroll.js")`) zählen nicht: Sie laden erst bei Bedarf.
+ *
+ * Ein Durchgang von vorn nach hinten, jedes Zeichen wird höchstens zweimal angesehen. Als ein
+ * einziger regulärer Ausdruck brauchte dieselbe Suche bei vielen Leerzeichen nach `import`
+ * quadratische Zeit (CodeQL js/polynomial-redos, gemessen: doppelte Länge, vierfache Zeit).
  * @param {string} code
  * @returns {string[]}
  */
 export function staticImports(code) {
-  return [...new Set([...code.matchAll(STATIC_IMPORT)].map((match) => match[1] ?? ''))];
+  /** @type {Set<string>} */
+  const found = new Set();
+  let index = 0;
+  while (index < code.length) {
+    // Ein Lauf von Zeichen, wie sie zwischen Schlüsselwort und Pfad stehen können.
+    const start = index;
+    while (index < code.length && CLAUSE.test(code[index] ?? '')) index += 1;
+    if (!isQuote(code[index]) || !endsInImport(code, start, index)) {
+      index += 1;
+      continue;
+    }
+    // Der Pfad reicht bis zum nächsten Anführungszeichen.
+    let close = index + 1;
+    while (close < code.length && !isQuote(code[close])) close += 1;
+    const path = code.slice(index + 1, close);
+    const relative =
+      (path.startsWith('./') && path.length > 2) || (path.startsWith('../') && path.length > 3);
+    if (close < code.length && relative) found.add(path);
+    index = close + 1;
+  }
+  return [...found];
 }
 
 /**

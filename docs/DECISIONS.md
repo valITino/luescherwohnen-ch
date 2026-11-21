@@ -519,6 +519,14 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
   - **Tests.** Vier neue e2e-Tests (schnell hin und zurück; das alte Foto bleibt, bis das neue es
     deckt; «Nächster Raum» nach 25 Wechseln; axe nach einer Wahl, mit anderem Raum, anderem Jahr
     und geöffnetem «Mehr lesen»), zwei erweitert (Meldung bei Räumen und Jahren).
+  - **Befund von CodeQL am Pull Request** (`js/polynomial-redos`, hoch): Der reguläre Ausdruck,
+    mit dem der Build-Schritt `early-script` die statischen Importe eines Moduls sucht, brauchte
+    bei vielen Leerzeichen nach `import` quadratische Zeit (nachgemessen: 4000 Tabulatoren 11 ms,
+    32000 Tabulatoren 673 ms). Er liest nur die eigenen Bündel beim Bauen, ein Angriff ist nicht
+    in Sicht; behoben ist es trotzdem, wie schon bei `stripTrailingSlashes`: Die Suche ist jetzt
+    ein einziger Durchgang ohne Rücksprünge. Gegengeprüft: gleiche Treffer wie zuvor in 113
+    Dateien (Bündel, Quellen, eine Bibliothek), das HTML beider Builds Byte für Byte gleich, drei
+    neue Unit-Tests (alle Formen, Ausschlüsse, 400000 Leerzeichen in unter zwei Sekunden).
   - **Ohne Befund** blieben: Auftritte und Sprünge (`reveal.ts`, `home.ts`), Header und
     Seitenwechsel, Formular und seine Regeln, strukturierte Daten und robots.txt, CSP und
     Security-Header, Dockerfile und nginx (das Zugriffslog entspricht der Datenschutzerklärung:
