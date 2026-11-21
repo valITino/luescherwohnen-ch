@@ -484,3 +484,42 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
     schlägt fehl, sobald ein e2e-Test `skip`, `fixme` oder `only` verwendet; die Regel steht
     jetzt auch in `CLAUDE.md` (Abschnitt 2b), zusammen mit «jede Angabe einmal» und den Regeln
     für Suchmaschinen aus Entscheid 45.
+- **48.** **Durchsicht des ganzen Repositorys vor dem Zusammenführen** (Auftrag des
+  Repository-Inhabers vom 21.11.2026): Skripte, Markup, Styles, Build, Container, Tests und
+  Dokumente gelesen. Drei Fehler im Baustein «Eins wählen, eins sehen» (`choice.ts`, Entscheid 45),
+  alle im Browser nachgestellt, behoben und mit Tests belegt, die auf dem Stand davor (`bb79e05`)
+  fehlschlagen:
+  - **Der Text eines Raums blieb verborgen.** Wer schnell hin und zurück wechselte (zweiter Raum,
+    innert 0,8 s zurück zum ersten; mit dem Zeiger über der Liste passiert das von selbst), sah
+    das Foto ohne seinen Text: Der erste Raum behielt die Marke der «alten» Tafel
+    (`data-leaving`). Jetzt legt eine Tafel sie ab, sobald sie wieder gewählt ist.
+  - **Das alte Foto verschwand zu früh.** Erledigt war der Wechsel beim ersten Ende eines
+    Auftritts, und das ist der Text (0,4 s). Das neue Foto war dann erst zu 97,6 % offen
+    (gemessen: nach 433 ms fehlten oben 2,4 %), dort schien 0,4 s lang ein Streifen Hintergrund
+    durch. Jetzt gilt der Wechsel erst als erledigt, wenn alle Auftritte der neuen Tafel zu Ende
+    sind (gemessen: 827 ms, Foto ganz offen).
+  - **«Nächster Raum» geriet unter das Foto.** Jede neue Tafel bekam eine höhere Ebene; nach rund
+    19 Wechseln lag sie über dem Knopf (Ebene 20), ein Klick traf das Foto. Jetzt haben die Tafeln
+    einen eigenen Stapel (`isolation: isolate` an der Liste), und er beginnt wieder unten, sobald
+    ein Wechsel zur Ruhe kommt.
+  - **Meldung für Screenreader.** «Nächster Raum» und «Weiter» wechseln die Tafel, ohne dass der
+    Fokus den Knopf verlässt. Eine leise Meldung (`role="status"`, entsteht im Skript) sagt, was
+    jetzt zu sehen ist: «Polstermöbel, 2 von 7». Bei einer Wahl am Kopf bleibt sie leer, dort sagt
+    es der Knopf selbst (`aria-expanded`). Der Test mit echtem Screenreader steht weiter aus
+    (`docs/TODO.md`).
+  - **Kleineres.** Der Hinweis zum Honeypot stand als HTML-Kommentar in der ausgelieferten Seite
+    der Vorschau und verriet das Feld (jetzt ein JSX-Kommentar, der nicht ausgeliefert wird). Im
+    Druck standen «Nächster Raum» und die grosse Jahreszahl ein zweites Mal. Der Styleguide zeigt
+    jetzt auch «Mehr lesen» und den Status. Entfernt: der ungenutzte Zähler `count-up.ts` (Zähler
+    sind laut `docs/DESIGN.md` bewusst nicht Teil der Website) und eine Regel am Band, die nie
+    griff (im Band gibt es nichts zu fokussieren). Kommentare berichtigt, die nicht mehr stimmten
+    (`header.ts`: Das Skript läuft seit Entscheid 44 vor dem ersten Bild; `haltung.ts`,
+    `opening-hours.ts`, `site.ts`, `index.css`); eine unbelegte Aussage über FAQ-Markup in
+    `structured-data.ts` gestrichen.
+  - **Tests.** Vier neue e2e-Tests (schnell hin und zurück; das alte Foto bleibt, bis das neue es
+    deckt; «Nächster Raum» nach 25 Wechseln; axe nach einer Wahl, mit anderem Raum, anderem Jahr
+    und geöffnetem «Mehr lesen»), zwei erweitert (Meldung bei Räumen und Jahren).
+  - **Ohne Befund** blieben: Auftritte und Sprünge (`reveal.ts`, `home.ts`), Header und
+    Seitenwechsel, Formular und seine Regeln, strukturierte Daten und robots.txt, CSP und
+    Security-Header, Dockerfile und nginx (das Zugriffslog entspricht der Datenschutzerklärung:
+    ohne IP-Adresse und ohne Angaben zum Browser), Workflows.

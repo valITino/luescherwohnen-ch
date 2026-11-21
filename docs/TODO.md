@@ -76,7 +76,8 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
 ## Prüfungen, die noch Menschen brauchen
 
 - [ ] Manueller Tastatur- und Screenreader-Test (NVDA/VoiceOver) der Kernflüsse (WEB-Q-001); axe
-      deckt nur einen Teil von WCAG 2.2 AA ab.
+      deckt nur einen Teil von WCAG 2.2 AA ab. Dabei auch hören, ob «Nächster Raum» und «Weiter»
+      ihre Meldung ansagen («Polstermöbel, 2 von 7», Entscheid 48).
 - [ ] Sichtprüfung auf echten Geräten (iOS Safari, Android Chrome, Windows/Edge).
 - [ ] Repository-Einstellungen (nur mit Admin-Recht, von hier nicht prüfbar): Pages-Quelle
       «GitHub Actions»; Environment `github-pages` nur für `main` (`docs/DEPLOY.md`, Abschnitt 1).

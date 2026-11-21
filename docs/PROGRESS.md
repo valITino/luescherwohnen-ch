@@ -89,6 +89,14 @@ ihrem Feld (jetzt eine Liste, deren Zeilen selbst umbrechen); neuer Wächter `bo
 die Layout-Tests prüfen auch die Startseite der Produktion. Drei neue e2e-Tests, vier neue
 Unit-Tests, die Prüfung der strukturierten Daten erweitert.
 
+Durchsicht des ganzen Repositorys vor dem Zusammenführen (`docs/DECISIONS.md` 48): drei Fehler
+in «Raum für Raum» gefunden, im Browser nachgestellt und behoben (Text blieb nach schnellem Hin
+und Zurück verborgen; das alte Foto verschwand, bevor das neue ganz offen war; «Nächster Raum»
+lag nach rund 19 Wechseln unter dem Foto). Dazu eine leise Meldung für Screenreader bei «Weiter»,
+«Mehr lesen» und Status im Styleguide, Druckansicht ohne Doppel, kein Hinweis auf den Honeypot
+im ausgelieferten HTML, toter Code und veraltete Kommentare entfernt. Vier neue e2e-Tests, zwei
+erweitert; die neuen schlagen auf dem Stand davor fehl.
+
 ## 20.11.2026: Demo nach dem PSYber-System
 
 Auftrag des Repository-Inhabers: Stil, Design, Format und Logik von `valITino/PsySec`

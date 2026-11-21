@@ -122,7 +122,11 @@ acht Breiten). E-Mail-Adressen dürfen nur am «@» umbrechen (`<wbr>`).
   Texte und Bilder stehen im HTML. Genutzt im Sortiment («Raum für Raum», Index links, Foto mit
   Text rechts; mit feinem Zeiger zeigt schon kurzes Verweilen den Raum) und in der
   Firmengeschichte («Jahr für Jahr», Achse mit sechs Jahren, eine grüne Linie wächst bis zum
-  gewählten Jahr). Gewechselt wird nur durch eine Wahl, nie durch Scrollen.
+  gewählten Jahr). Gewechselt wird nur durch eine Wahl, nie durch Scrollen. Die alte Tafel bleibt
+  stehen, bis alle Auftritte der neuen zu Ende sind (das neue Foto deckt das alte ganz); die
+  Tafeln liegen in einem eigenen Stapel (`isolation: isolate`), «Weiter» immer darüber. «Weiter»
+  behält den Fokus und meldet Screenreadern leise, was jetzt zu sehen ist («Polstermöbel, 2 von
+  7», `role="status"`).
 - **Mehr lesen** (`.more`, natives `<details>`): Was nicht jeder lesen muss, steht hinter einer
   leisen Zeile mit Plus, das zum Minus wird. Der Text steht im HTML (für Suchmaschinen
   gleichwertig) und erscheint beim Öffnen sofort, ohne Einblenden.
