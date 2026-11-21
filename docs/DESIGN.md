@@ -214,19 +214,27 @@ Alles andere ist leise:
    (`clip-path` und `scale` am Bild selbst, `--dur-4`, `--ease-expo`). Am Bild statt am Rahmen,
    weil der Browser dann nur eine Ebene bewegt: Beim Wischen auf dem Handy fielen so gemessen
    halb so viele Bilder aus. Es beginnt, sobald ein Viertel des Rahmens zu sehen ist, bei hohen
-   Rahmen (Porträt) schon bei 12 % der Fensterhöhe; bleibt der Rahmen knapp darunter stehen,
-   nach 250 ms. So ist das Aufsteigen zu sehen, statt grösstenteils unter dem Rand zu geschehen,
-   und kein Rahmen steht lange leer im Bild. Solange es wartet, ist das Bild nur durchsichtig
-   (nicht beschnitten, sonst lädt der Browser es nicht vor), und der Rahmen ist leer statt
-   sandfarben. Lädt das Foto beim Auftritt noch (langsames Netz), wartet die Enthüllung bis zu
-   500 ms; danach verzichtet sie darauf, der Rahmen bleibt leer, und das Foto blendet ein, sobald
-   es da ist (`--dur-3`, nur Deckkraft). Bilder, die zusammen ankommen, folgen einander im Abstand
-   `--stagger` (höchstens drei Versätze), auch wenn sie zusammen knapp unter der Schwelle warten.
+   Rahmen (höher als gut die halbe Fensterhöhe, etwa das Porträt) schon bei 12 % der
+   Fensterhöhe; bleibt der Rahmen knapp darunter stehen, nach 250 ms. Hält man an, während ein
+   Rahmen erst im untersten Streifen steht (unter der Schwelle, mindestens 16 px im Bild), nach
+   300 ms Ruhe. Steht erst der obere Teil des Bildes im Fenster, beginnt der Ausschnitt an der
+   Fensterkante statt am unteren Rand des Rahmens (`--unveil-from`, mit dem Zoom verrechnet): So
+   spielt sich das ganze Aufsteigen dort ab, wo man hinsieht, und kein Rahmen steht lange leer
+   im Bild. Solange es wartet, ist das Bild nur durchsichtig (nicht beschnitten, sonst lädt der
+   Browser es nicht vor), und der Rahmen ist leer statt sandfarben. Lädt das Foto beim Auftritt
+   noch (langsames Netz), wartet die Enthüllung bis zu 500 ms; danach verzichtet sie darauf, der
+   Rahmen bleibt leer, und das Foto blendet ein, sobald es da ist (`--dur-3`, nur Deckkraft).
+   Kommt es auch nach drei weiteren Sekunden nicht, zeigt der Rahmen wieder seine Sandfläche.
+   Bilder, die zusammen ankommen, folgen einander im Abstand `--stagger` (höchstens drei
+   Versätze), auch wenn sie zusammen knapp unter der Schwelle warten.
 4. **Über uns**: Der Sucher beginnt mit dem Foto. Die unteren Ecken rücken nach 140 ms weich an
    ihren Platz (`--dur-4`, `--ease-expo`), die oberen erst nach 420 ms, wenn das aufsteigende Foto
    sie erreicht (vorher wären sie hell auf hellem Rahmen); ab 450 ms tastet eine grüne Linie das
-   Bild einmal ab (nur `transform`, `--dur-4`), knapp hinter der Oberkante des Fotos. Die Werte
-   erscheinen im Abstand `--stagger`.
+   Bild einmal ab (nur `transform`, `--dur-4`), knapp hinter der Oberkante des Fotos. Ecken und
+   Linie liegen auf dem Foto, nicht auf dem ganzen Rahmen: Die Linie endet an der Unterkante des
+   Fotos, statt durch den Bildtext zu laufen. Am Desktop füllt das Foto den Rahmen bis zum
+   Bildtext (der Rahmen ist so hoch wie die Spalte daneben). Die Werte erscheinen im Abstand
+   `--stagger`.
 5. **Haltung**: Die Wörter werden beim Scrollen dunkel, jedes mit weichem Ein- und Auslauf
    (angehalten: volle Deckkraft).
 6. **Service**: Die Überschrift bleibt am Desktop stehen, die Schritte ziehen vorbei.
@@ -237,13 +245,19 @@ Alles andere ist leise:
    klar (ein benanntes Element begrenzt die Unschärfe seiner Kinder). Verlässt man die Seite aus
    der Kapsel, zu einer Marke (`/#kontakt`), durch den Verlauf oder ohne Navigation API (Ziel
    unbekannt), geht der Header mit der alten Seite (`header.ts`, `is-leaving`), und der neue
-   blendet für sich ein (`--dur-2`). Die neue Seite stellt ihre Form schon im ersten Bild ein
-   (`pagereveal`): Beginnt sie unten, kommt die Kapsel mit der Seite, statt dass oben kurz die
-   Leiste erscheint. Zurück und vor zu einer Seite, die oben beginnt, setzt sie den Übergangstyp
-   `stand`: Ihre Leiste steht sofort, die alte weicht darunter (überblendet würde der Header
-   einige Bilder lang grau). Stehen beide oben, werden alte und neue Leiste nicht überblendet: Die neue
-   steht vom ersten Bild an (eine Überblendung gleicher Bilder kann im ersten Bild aus dem Takt
-   geraten, dann wird die Leiste für ein Bild grau). Die alte Seite weicht schnell (`--dur-1`,
+   blendet für sich ein (`--dur-2`). Die neue Seite stellt ihre Form in `pagereveal` ein: Beginnt
+   sie unten, kommt die Kapsel mit der Seite, statt dass oben kurz die Leiste erscheint; kam auch
+   die alte Seite als Kapsel, trägt die Kapsel für den Wechsel einen eigenen Namen
+   (`site-capsule`, `is-handing`), und die beiden bleiben als Paar stehen. Das gelingt nur, wenn
+   das Skript der neuen Seite vor ihrem ersten Bild läuft, und darauf wartet der Browser nicht
+   immer (gemessen: bei wiederholtem Besuch meist, beim ersten Besuch und auf langsamen Geräten
+   oft nicht). Dann kommt die neue Seite erst oben an und springt zur Marke, und der Header
+   wechselt mit ihr, wie vor dieser Verbesserung. Zurück und vor (und ohne Navigation API) zu
+   einer Seite, die oben beginnt, setzt sie den Übergangstyp `stand`, auch nachträglich, wenn ihr
+   Skript spät lief: Ihre Leiste steht sofort, die alte weicht darunter (überblendet würde der
+   Header einige Bilder lang grau). Stehen beide oben, werden alte und neue Leiste nicht
+   überblendet: Die neue steht vom ersten Bild an (eine Überblendung gleicher Bilder kann im
+   ersten Bild aus dem Takt geraten, dann wird die Leiste für ein Bild grau). Die alte Seite weicht schnell (`--dur-1`,
    `--ease-out`), die neue setzt sich 40 ms später von leicht unten (480 ms, `--ease-expo`); so
    liegen die beiden kaum übereinander.
 9. **Kleinigkeiten**: Der Hover-Schein der Buttons liegt auf einer eigenen Ebene (`::after`) und
@@ -277,10 +291,14 @@ Alles andere ist leise:
   (`data-rested`), nimmt den Scroll-Verlauf weg und gibt das Anpinnen auf, sonst stünde der Hero
   eine Dreiviertel-Bildschirmhöhe lang still (die Scrollposition gleicht die kürzere Seite aus,
   was im Bild ist, bleibt); `haltung.ts` zeigt alle Wörter ganz; `reveal.ts` löst alle
-  wartenden und erfolgten Auftritte auf (`data-enter=""`); Komponenten setzen ihre laufenden
-  Auftritte ans Ende (Rückfall in CSS). Beim Fortsetzen laufen Dauerbewegung, Lenis und die
-  Effekte am Scrollen wieder, Auftritte spielen nicht ein zweites Mal (geprüft in
-  `e2e/web.spec.ts`). Der Schalter gilt nur für die aktuelle Seite: Ohne Web-Speicher kann ihn
+  wartenden und erfolgten Auftritte auf (`data-enter=""`, auch ein spät eingeblendetes Foto);
+  Komponenten setzen ihre laufenden Auftritte ans Ende (Rückfall in CSS). Ein gleitender Sprung
+  kommt nur an, solange niemand mit dem Rad übernommen hat; dann bleibt die Seite, wo sie ist.
+  Beim Fortsetzen laufen Dauerbewegung, Lenis und die Effekte am Scrollen wieder, Auftritte
+  spielen nicht ein zweites Mal (geprüft in `e2e/web.spec.ts`). Steht man dabei im Hero, gleiten
+  erste Zeile und Bild an den Punkt, den das wieder angepinnte Scrollen vorgibt (`--dur-3`,
+  `data-settling`), statt in einem Bild dorthin zu springen. Kommt man aus dem Verlauf auf eine
+  angehaltene Seite zurück (bfcache), überspringt sie den Übergang. Der Schalter gilt nur für die aktuelle Seite: Ohne Web-Speicher kann ihn
   die nächste Seite nicht kennen.
 - **Ohne JavaScript** gibt es keinen Wartezustand; CSS-Auftritte (Hero, 404) enden sichtbar.
 - **Sprünge** (`data-jump` am `<html>`, `home.ts`): Was unterwegs oder am Ziel ins Bild kommt,
@@ -289,7 +307,7 @@ Alles andere ist leise:
   Vor dem Sprung steht alles, was die Seite oberhalb des Ziels noch verlängern würde (Teile mit
   `data-lazy`, Öffnungsstatus): Sonst endete das Gleiten zu tief.
 - **CSP**: keine `style`-Attribute im Markup; Skripte dürfen `element.style` und eigene
-  Custom Properties setzen (z. B. `--enter-i`).
+  Custom Properties setzen (z. B. `--enter-i`, `--unveil-from`).
 - **Keine weitere Bibliothek**: GSAP mit SplitText und Lenis (lerp 0.1) genügen. Lenis läuft nur
   mit Maus oder Trackpad: Auf Geräten, die man nur mit dem Finger bedient, scrollt der Browser
   selbst (Lenis hängte sich sonst mit blockierenden Zuhörern an jede Berührung), Sprünge zu

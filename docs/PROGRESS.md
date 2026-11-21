@@ -45,8 +45,18 @@ Vierte Prüfrunde gegen `3bcbbd6` (fünf Blickwinkel, `docs/DECISIONS.md` 41). D
 dritten Runde schlagen auf `f1173cc` alle aus dem beabsichtigten Grund fehl. Behoben: zwei
 Befunde «mittel» zur Bild-Enthüllung (Wartezeit am Rand 700 → 250 ms, hohe Rahmen ab 12 % der
 Fensterhöhe), dazu Anhalten mitten im Sprung, stiller Hero bei angehaltener Bewegung, Header beim
-Seitenwechsel zu einer Marke und zurück, spätes Foto blendet ein und weitere kleine Punkte. Vier
-neue e2e-Tests (einer auf Desktop und Handy, drei nur am Desktop), fünf bestehende geschärft.
+Seitenwechsel zu einer Marke und zurück, spätes Foto blendet ein und weitere kleine Punkte. Drei
+neue e2e-Tests (einer auf Desktop und Handy, zwei nur am Desktop), sechs bestehende geschärft
+(berichtigt in der fünften Runde).
+
+Fünfte Prüfrunde gegen `ab7e9e9` (vier Blickwinkel, `docs/DECISIONS.md` 42). Die neuen Tests der
+vierten Runde schlagen auf `3bcbbd6` aus dem beabsichtigten Grund fehl; einer davon war wackelig
+(der Browser zeigt die neue Seite mitunter vor ihrem Skript). Behoben: Test und Dokumentation
+zum Seitenwechsel, Kapsel bleibt von Seite zu Seite stehen, spät geladenes Foto blendet nach dem
+Fortsetzen nicht nochmals ein, Bilder steigen an der Fensterkante auf und öffnen sich auch im
+untersten Streifen, das Porträt am Desktop ohne leeres Band, dazu sieben kleinere Punkte. Sechs
+neue e2e-Tests (vier auf Desktop und Handy, zwei nur am Desktop), drei bestehende geschärft;
+der Test zum Seitenwechsel lief danach zwölfmal hintereinander grün.
 
 ## 20.11.2026: Demo nach dem PSYber-System
 

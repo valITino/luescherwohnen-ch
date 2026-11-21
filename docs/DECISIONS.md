@@ -273,3 +273,56 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
     Tests, die Website liest ihn nie); die Leiste liegt am Desktop auf einem halben Pixel und
     wirkt während des Übergangs minimal weich; beim Laden mit Direktlink zählt der sofortige
     Formwechsel mitunter als Layoutverschiebung.
+- **42.** **Fünfte Prüfrunde** gegen `3bcbbd6` und `ab7e9e9` (vier Blickwinkel; die Befunde ab
+  «mittel» von je zwei Gegenprüfungen bestätigt, weitere zwei «mittel» über der Grenze selbst
+  nachgemessen; die neuen Tests aus Entscheid 41 schlagen auf `3bcbbd6` aus dem beabsichtigten
+  Grund fehl).
+  - **Header beim Seitenwechsel nur, wenn das Skript rechtzeitig läuft** (mittel, neu in
+    `8a1073c`): Der Zuhörer für `pagereveal` sitzt im Modul der Seite, und der Browser zeigt die
+    neue Seite mitunter, bevor es läuft (gemessen: bei wiederholtem Besuch 2 bis 8 %, beim ersten
+    Besuch 40 bis 60 %, vierfach gedrosselt fast immer). Dann steht die Seite noch oben, und der
+    Header wechselt wie vorher; schlechter als vorher wird nichts. Entscheid 39 hatte `pagereveal`
+    aus genau diesem Grund verworfen; die Dokumentation versprach es nun als sicher, und der
+    e2e-Test schlug in rund jedem fünften Lauf fehl. Jetzt: Die Dokumentation nennt es eine
+    Verbesserung, die nicht immer greift; der Test verwirft Versuche, in denen das Skript zu spät
+    lief (er schlägt auf dem alten Stand weiter fehl); läuft das Skript spät, setzt es den Typ
+    `stand` nachträglich am laufenden Übergang (`document.activeViewTransition`). Verworfen: das
+    Modul im Kopf mit `blocking="render"` laden (behebt es, kostet auf einem langsamen Handy beim
+    ersten Besuch 170 ms bis zum ersten Bild) und ein zweites, klassisches Skript nur für diesen
+    Fall (doppelte Logik für einen Moment, der vorher genauso aussah).
+  - **Kapsel zu Kapsel bleibt stehen** (mittel, neu in `8a1073c`): Vom Ende einer Unterseite zu
+    einer Marke (Kapsel auf beiden Seiten, auch über das Menü auf dem Handy) blendete die Kapsel
+    mit der alten Seite aus und mit der neuen ein, einen Augenblick fast leer. Jetzt trägt sie
+    nur während des Wechsels den Namen `site-capsule` (`is-handing`): Kommen beide als Kapsel,
+    bilden sie ein Paar und stehen; sonst geht bzw. kommt sie mit ihrer Seite. Ihr Milchglas ist
+    dabei eine halbe Sekunde lang mattes Papier (82 % deckend, kaum zu sehen).
+  - **Spät geladenes Foto nach dem Fortsetzen** (klein, neu in `8a1073c`): Anhalten setzte den
+    Zustand `loaded` nicht zurück, beim Fortsetzen blendete das Foto nochmals aus dem Leeren ein
+    (nur ab 1280 px sichtbar, wo der Schalter in der Ecke schwebt). Jetzt löst das Anhalten jeden
+    Zustand ausser `""` auf, auch künftige.
+  - **Aufsteigen an der Fensterkante** (klein, Abwägung seit Entscheid 40): Beim Auslösen steht
+    erst der obere Teil des Rahmens im Bild; drei Viertel des schnellen Aufsteigens geschahen
+    darunter, zu sehen war nur das langsame Ende. Jetzt beginnt der Ausschnitt an der
+    Fensterkante (mit dem Zoom verrechnet), das ganze Aufsteigen ist zu sehen. Dazu öffnen sich
+    Rahmen, die im untersten Streifen (unter der Schwelle) stehen bleiben, nach 300 ms Ruhe; sie
+    blieben sonst bis zum nächsten Scrollen leer (Bestand). Gezählt wird die Ruhe, nicht die Zeit
+    im Bild: Wer weiterscrollt, sieht das Bild erst an der Schwelle aufsteigen, über mehr Fläche.
+  - **Porträt am Desktop** (mittel, Bestand seit `b23adb8`): Der Rahmen ist so hoch wie die Spalte
+    daneben, das Foto war auf 44rem begrenzt: Darunter stand ein leeres Band von 148 px, die
+    unteren Ecken lagen weiss auf weiss darin, und die Linie lief durch «Geschäftsleiter». Jetzt
+    füllt das Foto den Rahmen bis zum Bildtext, Ecken und Linie liegen in der Zeile des Fotos.
+  - **Kleinere:** Ohne Navigation API stand die Leiste von oben nach oben nicht mehr, sie blendete
+    grau über (neu in `8a1073c`; betrifft Safari mit Übergängen zwischen Dokumenten): Die neue
+    Seite setzt `stand` jetzt auch, wenn die Art des Wechsels unbekannt ist. Hat das Rad einen
+    Sprung übernommen, holt Anhalten die Seite nicht mehr gegen das Rad zur Marke zurück. Setzt
+    man im Hero fort, gleiten erste Zeile und Bild an ihren Punkt (`data-settling`, `--dur-3`),
+    statt in einem Bild zu springen. Ein Foto, das nie kommt, lässt den Rahmen nach drei Sekunden
+    wieder sandfarben stehen statt für immer leer. Eine angehaltene Seite aus dem bfcache
+    überspringt ihren Übergang. Die Marke der Adresse wird dekodiert. Der e2e-Test zur Tastatur
+    liest die Dauern wie CSS (eine kürzere Liste wiederholt sich). Die Zählung in `PROGRESS.md`
+    zur vierten Runde ist berichtigt (drei neue Tests, sechs geschärft; die Commit-Nachricht von
+    `ab7e9e9` nennt noch die alte Zahl).
+  - **Bewusst nicht geändert** (`docs/TODO.md`): der Wettlauf zwischen erstem Bild und Skript
+    (siehe oben); nach dem Fortsetzen im Hero steht man am Ende der angepinnten Strecke (die
+    Ansicht bleibt, nur die Wirkung gleitet); Rahmen nebeneinander mit verschiedener Höhe öffnen
+    sich nicht immer als eine Folge.

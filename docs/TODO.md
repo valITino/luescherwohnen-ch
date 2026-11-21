@@ -71,8 +71,10 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
       Vorhang und Bild-Enthüllung beim Wischen, Wischen ohne Lenis (Entscheid 39), gelegentliche
       Stockung von 83 ms beim Wischen. In der Cloud-Umgebung ohne Grafikchip lief der Vorhang am
       Desktop mit halber Bildrate; das sagt über echte Geräte wenig aus.
-- [ ] Auf einem iPhone prüfen: Bild-Enthüllung ab einem Viertel bzw. 12 % der Fensterhöhe
-      (Entscheide 40 und 41) fühlt sich beim Lesen ruhig an; das offene Menü sperrt den
+- [ ] Auf einem iPhone prüfen: Bild-Enthüllung ab einem Viertel bzw. 12 % der Fensterhöhe, an der
+      Fensterkante und nach kurzer Ruhe im untersten Streifen (Entscheide 40 bis 42) fühlt sich
+      beim Lesen ruhig an; Seitenwechsel in Safari (ohne Navigation API) lassen die Leiste
+      stehen (Entscheid 42); das offene Menü sperrt den
       Hintergrund (ohne Lenis nur über `overflow: hidden` am `<html>`; iOS vor 16 beachtet das
       beim Wischen nicht, nicht prüfbar).
 - [ ] Kontrast des Knopfs «Beratung anfragen» in der Kapsel von Hand bestätigen: axe kann ihn wegen
@@ -114,6 +116,17 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
 - [ ] Am Desktop liegt die Leiste auf einem halben Pixel (zentriert, 1440 px: links 50,24 px);
       während eines Seitenübergangs wirkt sie darum minimal weich und wird am Ende scharf. Kaum
       sichtbar; bei Bedarf die Breite so runden, dass die Lage ganzzahlig ist.
+- [ ] Seitenwechsel: Läuft das Skript der neuen Seite erst nach ihrem ersten Bild (beim ersten
+      Besuch und auf langsamen Geräten oft), kommt eine Seite mit Marke erst oben an und springt
+      dann, und der Header wechselt mit ihr wie vor Entscheid 41 (Entscheid 42). Möglich: das
+      Modul der Startseite auf den Unterseiten vorladen (`modulepreload`, gemessen: seltener,
+      nicht nie) oder ein kleines klassisches Skript am Ende des `<body>` nur für den Header.
+      Mit `blocking="render"` im Kopf behoben, aber 170 ms später das erste Bild (verworfen).
+- [ ] Setzt man im Hero fort, steht man am Ende der angepinnten Strecke (die Ansicht bleibt, die
+      erste Zeile und das Bild gleiten zu ihrem Endpunkt, Entscheid 42). Oben am Anfang zu bleiben,
+      hiesse den Inhalt um die gescrollte Strecke zu verschieben.
+- [ ] Rahmen nebeneinander mit verschiedener Höhe (Sortiment, Reihen 1 und 3) haben verschiedene
+      Schwellen und öffnen sich mitunter 250 ms nacheinander statt im Abstand `--stagger`.
 - [ ] Eine Taste zum Scrollen während eines Ausgleitens von Lenis kostet einmal 3 bis 12 ms
       (Lenis setzt beim Anhalten kurz `overflow: clip` am `<html>`, mit klassischen Bildlaufleisten
       rechnet der Browser das Layout neu). Nicht sichtbar; bei Bedarf ohne Anhalten zurücksetzen.
