@@ -1,0 +1,18 @@
+/*
+ * Nur ohne JavaScript geladen (Base.astro, <noscript>). Ohne Skript wird die Leiste nie zur
+ * Kapsel: Sie scrollt mit der Seite weg, statt durchsichtig über dem Inhalt zu stehen. Der
+ * Menü-Knopf braucht ein Skript; an seiner Stelle führt ein Link zur Navigation im Seitenende.
+ */
+.site-header {
+  position: absolute !important;
+}
+
+@media (max-width: 63.99rem) {
+  [data-menu-toggle] {
+    display: none !important;
+  }
+
+  .bar-actions .menu-fallback {
+    display: inline-flex !important;
+  }
+}

@@ -69,6 +69,14 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
           <span></span>
         </span>
       </button>
+      {/* Ohne JavaScript statt des Knopfs (noscript.css): zur Navigation im Seitenende. */}
+      <a class="menu-toggle menu-fallback" href="#seitenende">
+        <span class="menu-toggle-label">Menü</span>
+        <span class="menu-bars" aria-hidden="true">
+          <span></span>
+          <span></span>
+        </span>
+      </a>
     </div>
   </div>
 
@@ -156,10 +164,14 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     top: 1.75rem;
   }
 
+  /*
+   * Zentriert über die Ränder, nicht über transform: So liegt die Leiste auf ganzen Pixeln (ein
+   * halber Pixel liesse sie bei einem Seitenwechsel weich wirken).
+   */
   .bar {
     position: absolute;
     top: 1rem;
-    left: 50%;
+    inset-inline: 0;
     z-index: 2;
     display: flex;
     align-items: center;
@@ -167,9 +179,9 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     gap: 1rem;
     width: min(100% - 2 * var(--gutter), var(--container));
     min-height: 3.5rem;
+    margin-inline: auto;
     border: 1px solid transparent;
     border-radius: var(--r-pill);
-    transform: translateX(-50%);
   }
 
   /*
@@ -247,11 +259,6 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     transition-delay: 0s;
   }
 
-  /* Die Navigation ist über transform zentriert: Das Abtauchen kommt dazu. */
-  .site-header:global(.is-morphing) .bar-nav {
-    transform: translateX(-50%) translateY(-0.25rem);
-  }
-
   /*
    * Was den Tastaturfokus trägt, taucht nicht ab: Fokusring und Ziel bleiben während des Abtauchens
    * sichtbar (WCAG 2.4.7), auch ein Link der Navigation. Gibt es das Element in der neuen Form
@@ -265,10 +272,6 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
     transform: none;
     transition-duration: 0s;
     transition-delay: 0s;
-  }
-
-  .site-header:global(.is-morphing) .bar-nav:has(:focus-visible) {
-    transform: translateX(-50%);
   }
 
   /* Nur Deckkraft und Lage stehen sofort; die Farben beim Hover gleiten weiter. */
@@ -290,11 +293,13 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
 
   /* ---------- Navigation (nur Desktop, nur oben) ---------- */
 
+  /* Mitten in der Leiste, ebenfalls über die Ränder zentriert (ganze Pixel). */
   .bar-nav {
     position: absolute;
-    left: 50%;
+    inset-inline: 0;
     display: none;
-    transform: translateX(-50%);
+    width: max-content;
+    margin-inline: auto;
   }
 
   .bar-nav ul {
@@ -535,6 +540,12 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
   .site-header:global(.is-scrolled) .menu-toggle {
     width: 2.75rem;
     padding: 0;
+  }
+
+  /* Nur ohne JavaScript zu sehen (noscript.css). */
+  .bar-actions .menu-fallback {
+    display: none;
+    text-decoration: none;
   }
 
   /* In der Kapsel trägt der runde Knopf nur das Symbol; der Name bleibt für Screenreader. */

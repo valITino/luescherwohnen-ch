@@ -12,7 +12,7 @@ import {
 } from '@luescher/ui/lib/structured-data';
 import Chrome from '../components/Chrome.astro';
 import { clock } from '../lib/opening-hours.ts';
-import { absoluteUrl, basePath, brand, company, hours, meta, sites } from '../config/site.ts';
+import { absoluteUrl, basePath, brand, company, hours, href, meta, sites } from '../config/site.ts';
 
 interface Props {
   title: string;
@@ -123,6 +123,10 @@ const jsonLd = hidden
       verification={sites.verification}
     />
     <slot name="head" />
+    {/* Ohne JavaScript: Header ohne Kapsel und Menü (noscript.css). */}
+    <noscript>
+      <link rel="stylesheet" href={href('/noscript.css')} />
+    </noscript>
   </head>
   <body class={bodyClass}>
     <a class="skip-link" href="#inhalt">

@@ -72,6 +72,10 @@ const REST_MIN_PX = 16;
 /** Der leichte Zoom, aus dem sich ein Bild setzt (components.css, @keyframes unveil). */
 const UNVEIL_ZOOM = 1.1;
 
+/** Sortiert Elemente in der Reihenfolge des Dokuments. */
+const inDocumentOrder = (a: Element, b: Element) =>
+  a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+
 /** Steht genug vom Rahmen im Bild, dass sein Bild sich öffnen darf? Liest nur Gemessenes. */
 const unveilReached = (entry: IntersectionObserverEntry) =>
   entry.intersectionRect.height >=
@@ -332,7 +336,14 @@ function initEntrances(): { resolveAll(): void } {
         }
         enter(element, unveil ? index++ : 0);
       }
-      if (parking.length > 0) park(parking);
+      /*
+       * Öffnet sich in dieser Meldung ein Bild, folgen die Rahmen, die knapp unter ihrer Schwelle
+       * warten, gleich als nächste Plätze derselben Folge: Rahmen nebeneinander mit verschiedener
+       * Höhe erreichen ihre Schwelle nicht zugleich, sollen aber wie eine Reihe aufgehen.
+       */
+      const waiting = [...parked.keys(), ...parking].sort(inDocumentOrder);
+      if (index > 0) for (const element of waiting) enter(element, index++);
+      else if (parking.length > 0) park(parking);
       first = false;
     },
     { rootMargin: '0px 0px -8% 0px', threshold: UNVEIL_STEPS },
@@ -346,7 +357,7 @@ function initEntrances(): { resolveAll(): void } {
    */
   const openResting = () => {
     if (motionPaused() || jumping()) return;
-    const ready = [...resting].filter((element) => {
+    const ready = [...resting].sort(inDocumentOrder).filter((element) => {
       if (element.dataset.enter !== 'wait') {
         release(element);
         return false;

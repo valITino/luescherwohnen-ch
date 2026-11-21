@@ -8,7 +8,8 @@ import { describe, expect, it } from 'vitest';
  * und keine Keyframe-Animation darf Lage, Grösse, Abstände, Schatten, Filter oder die Lage eines
  * Hintergrunds ändern: Das zwänge den Browser in jedem Bild zu neuem Layout oder neuem Zeichnen.
  * Kurven kommen nur aus tokens.css und schwingen nie über (kein Federn, kein Zurückprallen),
- * und keine Keyframe-Animation dreht etwas.
+ * gleichmässig (`linear`) läuft nur, was dafür vorgesehen ist, und keine Keyframe-Animation dreht
+ * etwas. Geprüft wird gegen eine Positivliste: Was nicht ausdrücklich erlaubt ist, fällt auf.
  *
  * Geprüft werden alle Stylesheets und die <style>-Blöcke aller Astro-Komponenten unter apps/ und
  * packages/. Am Ende prüft ein Selbsttest, dass der Wächter Verstösse auch wirklich erkennt.
@@ -17,9 +18,21 @@ import { describe, expect, it } from 'vitest';
 const root = join(import.meta.dirname, '..');
 const TOKENS = 'packages/ui/src/styles/tokens.css';
 
-/** Eigenschaften, die nie animiert werden (Layout, Schatten, Filter, Hintergrundlage) */
-const FORBIDDEN =
-  /^(?:all|inset(?:-[a-z-]+)?|top|right|bottom|left|(?:min-|max-)?(?:width|height|inline-size|block-size)|margin(?:-[a-z-]+)?|padding(?:-[a-z-]+)?|box-shadow|(?:-webkit-)?(?:backdrop-)?filter|background-position(?:-[xy])?|background-size)$/;
+/**
+ * Eigenschaften, die übergehen oder in Keyframes stehen dürfen: Lage über transform, Deckkraft,
+ * Ausschnitt, Farben (Hover und Fokus) und diskrete Schalter, die ein Ein- oder Ausblenden
+ * begleiten. Alles andere (Layout, Schatten, Filter, Hintergrundlage, `all`) fällt auf.
+ */
+const ALLOWED =
+  /^(?:opacity|transform|translate|scale|clip-path|(?:background-|border-|outline-|text-decoration-)?color|fill|stroke|visibility|display|overlay)$/;
+const forbidden = (property: string) => !ALLOWED.test(property);
+
+/** Gleichmässig laufen dürfen nur das Abtauchen im Header und das Band (docs/DESIGN.md). */
+const LINEAR_ALLOWED = [
+  'apps/web/src/components/Header.astro',
+  'apps/web/src/components/sections/Band.astro',
+];
+const usesLinear = (source: string) => /\blinear\b(?![-(])/.test(source);
 
 /** Wörter in einem Übergang, die keine Eigenschaft sind */
 const NOT_A_PROPERTY =
@@ -140,7 +153,7 @@ describe('Bewegung: nur transform, opacity und clip-path', () => {
   it('Übergänge ändern weder Layout noch Schatten, Filter oder Hintergrundlage', () => {
     const found = sources.flatMap(({ file, css: source }) =>
       transitioned(source)
-        .filter((property) => FORBIDDEN.test(property))
+        .filter((property) => forbidden(property))
         .map((property) => `${file}: transition ${property}`),
     );
     expect(found).toEqual([]);
@@ -150,11 +163,18 @@ describe('Bewegung: nur transform, opacity und clip-path', () => {
     const found = sources.flatMap(({ file, css: source }) =>
       keyframes(source).flatMap(({ name, body }) => [
         ...declared(body)
-          .filter((property) => FORBIDDEN.test(property))
+          .filter((property) => forbidden(property))
           .map((property) => `${file}: @keyframes ${name} ${property}`),
         ...(rotates(body) ? [`${file}: @keyframes ${name} rotate`] : []),
       ]),
     );
+    expect(found).toEqual([]);
+  });
+
+  it('Gleichmässig (linear) läuft nur, was dafür vorgesehen ist', () => {
+    const found = sources
+      .filter(({ file, css: source }) => !LINEAR_ALLOWED.includes(file) && usesLinear(source))
+      .map(({ file }) => file);
     expect(found).toEqual([]);
   });
 
@@ -189,7 +209,7 @@ describe('Bewegung: nur transform, opacity und clip-path', () => {
       'display',
       'clip-path',
     ]);
-    expect(transitioned(sample).filter((property) => FORBIDDEN.test(property))).toEqual([
+    expect(transitioned(sample).filter((property) => forbidden(property))).toEqual([
       'left',
       'width',
       'box-shadow',
@@ -198,9 +218,16 @@ describe('Bewegung: nur transform, opacity und clip-path', () => {
     const [spin, fine] = keyframes(sample);
     expect(declared(spin?.body ?? '')).toEqual(['background-position', 'transform']);
     expect(rotates(spin?.body ?? '')).toBe(true);
-    expect(declared(fine?.body ?? '').filter((property) => FORBIDDEN.test(property))).toEqual([]);
+    expect(declared(fine?.body ?? '').filter((property) => forbidden(property))).toEqual([]);
     expect(rotates(fine?.body ?? '')).toBe(false);
     expect(curves(sample).filter(overshoots)).toEqual([[0.2, 1.5, 0.4, 1]]);
+    // Positivliste: Unbekanntes fällt auf, Farben und Schalter nicht.
+    expect(
+      ['all', 'letter-spacing', 'border-radius', 'stroke-dashoffset'].filter(forbidden),
+    ).toEqual(['all', 'letter-spacing', 'border-radius', 'stroke-dashoffset']);
+    expect(['border-color', 'color', 'display', 'translate'].filter(forbidden)).toEqual([]);
+    expect(usesLinear('.x { animation: a 1s linear; }')).toBe(true);
+    expect(usesLinear('.x { background: linear-gradient(red, blue); }')).toBe(false);
     expect(overshoots([0.16, 1, 0.3, 1])).toBe(false);
   });
 });

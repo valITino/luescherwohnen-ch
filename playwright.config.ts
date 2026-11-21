@@ -13,7 +13,8 @@ import { defineConfig, devices } from '@playwright/test';
 const executablePath = process.env.PW_CHROMIUM_PATH || undefined;
 
 const server = (dir: string, port: number, base = '') => ({
-  command: `node scripts/serve.mjs ${dir} --port ${port}${base ? ` --base ${base}` : ''}`,
+  // Mit den Cache-Regeln der Produktion: Bei no-store bricht Chromium Seitenübergänge mitunter ab.
+  command: `node scripts/serve.mjs ${dir} --port ${port}${base ? ` --base ${base}` : ''} --production`,
   url: `http://127.0.0.1:${port}${base}/`,
   reuseExistingServer: !process.env.CI,
   timeout: 30_000,

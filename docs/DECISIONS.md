@@ -326,3 +326,23 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
     (siehe oben); nach dem Fortsetzen im Hero steht man am Ende der angepinnten Strecke (die
     Ansicht bleibt, nur die Wirkung gleitet); Rahmen nebeneinander mit verschiedener Höhe öffnen
     sich nicht immer als eine Folge.
+- **43.** **Restposten aus `docs/TODO.md`** (Auftrag des Repository-Inhabers vom 21.11.2026,
+  ohne weitere Prüfrunde):
+  - **Menüpunkt am Desktop** springt sofort, solange der Vorhang die Seite deckt; vorher glitt
+    Lenis 1,7 s durch die Seite, zum Teil nach dem Vorhang. Gemessen: am Ziel ab dem ersten Bild.
+  - **Leiste auf ganzen Pixeln:** Leiste und Navigation sind über die Ränder zentriert statt über
+    `translateX(-50%)`; beim Seitenwechsel wirkt die Leiste nicht mehr weich.
+  - **Rahmen nebeneinander** mit verschiedener Höhe öffnen sich als eine Folge: Öffnet sich ein
+    Bild, folgen die Rahmen, die knapp unter ihrer Schwelle warten, als nächste Plätze.
+  - **Ohne JavaScript** (`noscript.css`, nur über `<noscript>` geladen): Der Header scrollt mit
+    der Seite weg, statt durchsichtig über dem Inhalt zu stehen, und auf schmalen Bildschirmen
+    führt statt des Menü-Knopfs ein Link zur Navigation im Seitenende.
+  - **Bewegungswächter** prüft gegen eine Positivliste der Eigenschaften und erkennt `linear`
+    ausserhalb von Header und Band.
+  - **Testserver** der e2e-Tests mit den Cache-Regeln der Produktion: Mit `no-store` brach
+    Chromium Seitenübergänge mitunter ab und meldete das als Seitenfehler.
+  - **Bewusst offen** (`docs/TODO.md`): der Wettlauf zwischen erstem Bild und Skript beim
+    Seitenwechsel, die Lage nach dem Fortsetzen im Hero, der minimale Versatz des
+    Bewegungsschalters, der Absturz von Chromium bei `getComputedStyle()` (Fehlerbericht), die
+    Taste während des Ausgleitens; dazu alles, was Angaben des Auftraggebers oder echte Geräte
+    braucht.

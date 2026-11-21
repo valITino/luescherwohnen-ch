@@ -86,19 +86,7 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
 - [ ] Shop (Phase 5, separater Auftrag mit eigenem Threat Model; AGB im Bestand vorhanden).
 - [ ] Hero-Fotos in höherer Auflösung (keine Datei im Bestand ist breiter als 1920 px).
 - [ ] Fotos der Ausstellung an der Weiten Gasse 9 (es gibt nur ein Innenbild).
-- [ ] Ohne JavaScript ist die Leiste beim Scrollen durchsichtig, und der Menü-Knopf auf dem Handy
-      tut nichts (Bestand). Knopf erst mit Skript zeigen oder auf eine Linkliste verweisen.
-- [ ] Bewegungswächter (`scripts/motion-guard.test.ts`) als Positivliste statt Sperrliste.
 - [ ] Der Bewegungsschalter verschiebt sich bei jedem Header-Wechsel minimal (CLS 0,0009, Bestand).
-- [ ] Seitenwechsel melden in Chromium ohne Fenster gelegentlich «Transition was aborted because of
-      invalid state. ViewTransition opt-in disabled» als Seitenfehler (in allen Ständen, auch vor
-      der Bewegungsarbeit). Eingegrenzt: Es tritt nur mit dem Testserver auf, der `no-store`
-      sendet (rund jeder zweite unterbrochene Wechsel); mit den Cache-Regeln der Produktion 0 von
-      rund 450 Wechseln. Die neue Seite verwirft dann den angebotenen Übergang, ein Skript kann
-      den Fehler nicht abfangen. Möglich: den Testserver mit `--production` starten.
-- [ ] Menüpunkt am Desktop: Lenis gleitet 1,7 s durch die ganze Seite, ein Teil davon nach dem
-      Vorhang. Auf dem Handy ist der Sprung sofort am Ziel (Entscheid 39). Prüfen, ob der Sprung
-      am Desktop unter dem Vorhang ebenfalls sofort landen soll.
 - [ ] Mit Tastaturfokus im Header ist der Knopf beim Formwechsel zwei Bilder lang verborgen
       (`is-swapping`, gegen Layoutverschiebung); bewusst so belassen.
 - [ ] Bei reduzierter und angehaltener Bewegung wechselt der Header sofort die Form; das zählt
@@ -113,9 +101,6 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
       `getComputedStyle()` den Stil einer nicht beteiligten Ebene liest, für die eine Regel mit
       `:only-child` gilt (etwa `::view-transition-new(site-bar)`). Die Website liest ihn nie,
       Tests nutzen `getAnimations()`. Kleinstes Beispiel bei Bedarf als Fehlerbericht an Chromium.
-- [ ] Am Desktop liegt die Leiste auf einem halben Pixel (zentriert, 1440 px: links 50,24 px);
-      während eines Seitenübergangs wirkt sie darum minimal weich und wird am Ende scharf. Kaum
-      sichtbar; bei Bedarf die Breite so runden, dass die Lage ganzzahlig ist.
 - [ ] Seitenwechsel: Läuft das Skript der neuen Seite erst nach ihrem ersten Bild (beim ersten
       Besuch und auf langsamen Geräten oft), kommt eine Seite mit Marke erst oben an und springt
       dann, und der Header wechselt mit ihr wie vor Entscheid 41 (Entscheid 42). Möglich: das
@@ -125,8 +110,6 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
 - [ ] Setzt man im Hero fort, steht man am Ende der angepinnten Strecke (die Ansicht bleibt, die
       erste Zeile und das Bild gleiten zu ihrem Endpunkt, Entscheid 42). Oben am Anfang zu bleiben,
       hiesse den Inhalt um die gescrollte Strecke zu verschieben.
-- [ ] Rahmen nebeneinander mit verschiedener Höhe (Sortiment, Reihen 1 und 3) haben verschiedene
-      Schwellen und öffnen sich mitunter 250 ms nacheinander statt im Abstand `--stagger`.
 - [ ] Eine Taste zum Scrollen während eines Ausgleitens von Lenis kostet einmal 3 bis 12 ms
       (Lenis setzt beim Anhalten kurz `overflow: clip` am `<html>`, mit klassischen Bildlaufleisten
       rechnet der Browser das Layout neu). Nicht sichtbar; bei Bedarf ohne Anhalten zurücksetzen.

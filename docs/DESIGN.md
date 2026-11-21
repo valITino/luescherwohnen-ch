@@ -226,7 +226,8 @@ Alles andere ist leise:
    Rahmen bleibt leer, und das Foto blendet ein, sobald es da ist (`--dur-3`, nur Deckkraft).
    Kommt es auch nach drei weiteren Sekunden nicht, zeigt der Rahmen wieder seine Sandfläche.
    Bilder, die zusammen ankommen, folgen einander im Abstand `--stagger` (höchstens drei
-   Versätze), auch wenn sie zusammen knapp unter der Schwelle warten.
+   Versätze), auch wenn sie zusammen knapp unter der Schwelle warten; öffnet sich eines, folgen
+   die knapp darunter wartenden gleich mit (Rahmen nebeneinander mit verschiedener Höhe).
 4. **Über uns**: Der Sucher beginnt mit dem Foto. Die unteren Ecken rücken nach 140 ms weich an
    ihren Platz (`--dur-4`, `--ease-expo`), die oberen erst nach 420 ms, wenn das aufsteigende Foto
    sie erreicht (vorher wären sie hell auf hellem Rahmen); ab 450 ms tastet eine grüne Linie das
@@ -274,7 +275,8 @@ Alles andere ist leise:
   prüft alle Stylesheets und Astro-Komponenten.
 - **Kurven nur aus `tokens.css`**, dazu `linear` für das Abtauchen im Header und das Band;
   keine mit einem y-Wert unter 0 oder über 1; keine Keyframe-Animation dreht etwas. Auch das
-  prüft der Wächter (`linear` erkennt er noch nicht, siehe `docs/TODO.md`).
+  prüft der Wächter, gegen eine Positivliste der Eigenschaften, und `linear` nur dort, wo es
+  vorgesehen ist.
 - **Dauern und Versätze aus den Tokens.** Ein Einzelwert braucht einen Kommentar mit Grund.
 - **Alles endet**: Jeder Auftritt beim Scrollen ist spätestens nach 1410 ms fertig (die Linie im
   Sucher nach 1250 ms, Bilder nach 800 ms plus drei Versätzen), der Hero ruht nach 1,5 s (beides
@@ -311,7 +313,8 @@ Alles andere ist leise:
 - **Keine weitere Bibliothek**: GSAP mit SplitText und Lenis (lerp 0.1) genügen. Lenis läuft nur
   mit Maus oder Trackpad: Auf Geräten, die man nur mit dem Finger bedient, scrollt der Browser
   selbst (Lenis hängte sich sonst mit blockierenden Zuhörern an jede Berührung), Sprünge zu
-  Marken sind dort sofort am Ziel. Eine Taste zum Scrollen hält ein Ausgleiten von Lenis an,
+  Marken sind dort sofort am Ziel. Ein Punkt im Menü springt auch am Desktop sofort, unter dem
+  Vorhang: Hebt er sich, steht das Ziel schon da. Eine Taste zum Scrollen hält ein Ausgleiten von Lenis an,
   die Leertaste auf einem Knopf nicht (sie löst den Knopf aus).
 - **Ältere Browser**: Neuere Schnittstellen nur mit Prüfung (z. B. `checkVisibility()`, fehlt in
   Safari vor 17.4; `requestIdleCallback`).

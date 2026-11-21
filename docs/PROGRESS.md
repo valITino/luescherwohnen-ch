@@ -58,6 +58,10 @@ untersten Streifen, das Porträt am Desktop ohne leeres Band, dazu sieben kleine
 neue e2e-Tests (vier auf Desktop und Handy, zwei nur am Desktop), drei bestehende geschärft;
 der Test zum Seitenwechsel lief danach zwölfmal hintereinander grün.
 
+Restposten (`docs/DECISIONS.md` 43): Menüpunkt am Desktop springt unter dem Vorhang, Leiste auf
+ganzen Pixeln, Rahmen nebeneinander als eine Folge, Header ohne JavaScript, Bewegungswächter als
+Positivliste, Testserver mit Cache-Regeln der Produktion. Ein neuer e2e-Test (ohne JavaScript).
+
 ## 20.11.2026: Demo nach dem PSYber-System
 
 Auftrag des Repository-Inhabers: Stil, Design, Format und Logik von `valITino/PsySec`

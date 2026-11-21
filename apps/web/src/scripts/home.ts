@@ -301,7 +301,12 @@ document.addEventListener(
     layOutNow();
     // Lenis erfährt eine neue Seitenlänge nur verzögert (entprellter ResizeObserver). Wurden
     // Teile gerade erst ausgelegt, endete der Sprung sonst an der alten, zu kurzen Grenze.
-    smooth?.lenis?.resize();
+    const lenis = smooth?.lenis;
+    lenis?.resize();
+    // Aus dem Menü: Der Vorhang deckt die Seite noch. Der Sprung landet sofort darunter, und hebt
+    // sich der Vorhang, steht das Ziel schon da (sonst glitte die Seite danach noch durch).
+    const mark = link.closest('[data-menu-link]') ? markOf(link.hash) : null;
+    if (lenis && mark) lenis.scrollTo(mark, { immediate: true, force: true });
   },
   true,
 );

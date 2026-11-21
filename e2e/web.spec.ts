@@ -1925,6 +1925,27 @@ test.describe('Unterseiten', () => {
     await context.close();
   });
 
+  test('Ohne JavaScript: Link zur Navigation statt Menü-Knopf, der Header scrollt mit', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      javaScriptEnabled: false,
+      viewport: { width: 390, height: 844 },
+    });
+    const page = await context.newPage();
+    await page.goto(`${PROD}/impressum`);
+    await expect(page.locator('[data-menu-toggle]')).toBeHidden();
+    const fallback = page.locator('.menu-fallback');
+    await expect(fallback).toBeVisible();
+    expect(
+      await page.locator('[data-header]').evaluate((header) => getComputedStyle(header).position),
+    ).toBe('absolute');
+    await fallback.click();
+    await expect(page).toHaveURL(/#seitenende$/);
+    await expect(page.locator('#seitenende')).toBeInViewport();
+    await context.close();
+  });
+
   test('unbekannte Adresse: 404 mit Weg zurück', async ({ page }) => {
     const response = await page.goto(`${PROD}/gibt-es-nicht`);
     expect(response?.status()).toBe(404);
