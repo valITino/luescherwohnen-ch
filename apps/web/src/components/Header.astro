@@ -181,10 +181,18 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
    * die Unschärfe seiner Kinder ab: Das Milchglas der Kapsel (::before) bliebe klar.
    * Aus demselben Grund verliert die Leiste den Namen, wenn die neue Seite nicht sicher oben
    * beginnt (Marke oder Verlauf, is-leaving aus header.ts).
+   * Die Kapsel trägt einen eigenen Namen, aber nur während eines Seitenwechsels (is-handing aus
+   * header.ts): Kommen alte und neue Seite als Kapsel, bilden die beiden ein Paar gleicher Grösse
+   * und bleiben stehen, statt mit ihren Seiten aus- und einzublenden. Das Milchglas ist dafür
+   * diese halbe Sekunde lang nur mattes Papier (82 % deckend, kaum zu sehen).
    */
   @media (prefers-reduced-motion: no-preference) {
     .site-header:not(:global(.is-scrolled), :global(.is-leaving)) .bar {
       view-transition-name: site-bar;
+    }
+
+    .site-header:global(.is-scrolled.is-handing) .bar {
+      view-transition-name: site-capsule;
     }
   }
 

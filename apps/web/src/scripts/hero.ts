@@ -7,7 +7,13 @@
  * Bewegung angehalten hat: Dann steht der Hero auch nicht mehr, und die Scrollposition gleicht
  * aus, dass die Seite kürzer wird. Alles hier ist Zugabe: Die Inhalte stehen im Markup.
  */
-import { motionAllowed, motionPaused, onceInView, onMotionPausedChange } from '@luescher/ui/motion';
+import {
+  DUR,
+  motionAllowed,
+  motionPaused,
+  onceInView,
+  onMotionPausedChange,
+} from '@luescher/ui/motion';
 import { hours } from '../config/hours.ts';
 import { statusAt, statusText } from '../lib/opening-hours.ts';
 import { startClock } from './clock.ts';
@@ -114,8 +120,20 @@ export function initHero(root: HTMLElement): void {
     { passive: true },
   );
   window.addEventListener('resize', update, { passive: true });
+  /*
+   * Fortsetzen: Steht man dabei noch im Hero, ist man nach dem Anpinnen am Ende seiner Strecke
+   * (keepView), und die erste Zeile und das Bild stünden in einem Bild an ihrem Endpunkt. So
+   * gleiten sie dorthin (Hero.astro, data-settling). Anhalten bleibt sofort.
+   */
+  let settling = 0;
+  const settle = () => {
+    window.clearTimeout(settling);
+    root.dataset.settling = '';
+    settling = window.setTimeout(() => delete root.dataset.settling, DUR.d3 * 1000 + 50);
+  };
   // Vor smooth.ts angemeldet: Lenis endet erst danach bzw. beginnt erst an der neuen Stelle.
-  onMotionPausedChange(() => {
+  onMotionPausedChange((paused) => {
+    if (!paused) settle();
     applyPin(true);
     update();
   });

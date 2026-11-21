@@ -28,14 +28,32 @@ initHeader(() => smooth);
  * Hält jemand die Bewegung an, während ein Sprung zu einer Marke noch gleitet, kommt er sofort
  * am Ziel an, statt mitten auf der Strecke stehen zu bleiben (die Adresse zeigt die Marke schon).
  * Vor allen anderen angemeldet: vor dem Hero, der danach sein Anpinnen aufgibt, und vor
- * smooth.ts, das Lenis beendet. Ein ausgleitendes Rad hält dagegen an, wo es gerade ist.
+ * smooth.ts, das Lenis beendet. Ein ausgleitendes Rad hält dagegen an, wo es gerade ist, auch
+ * wenn es einen Sprung übernommen hat: Dann gilt, wohin die Person selbst scrollt.
  */
+const jumping = () => 'jump' in document.documentElement.dataset;
+/** Das Element einer Marke (#kontakt) oder null; die Adresse kann Zeichen kodiert enthalten. */
+const markOf = (hash: string) => {
+  try {
+    return document.getElementById(decodeURIComponent(hash.slice(1)));
+  } catch {
+    return null;
+  }
+};
+let jumpTakenOver = false;
+window.addEventListener(
+  'wheel',
+  () => {
+    if (jumping()) jumpTakenOver = true;
+  },
+  { passive: true },
+);
 onMotionPausedChange((paused) => {
   const lenis = smooth?.lenis;
-  if (!paused || !('jump' in document.documentElement.dataset) || !lenis) return;
+  if (!paused || !jumping() || jumpTakenOver || !lenis) return;
   if (lenis.isScrolling !== 'smooth') return;
   // Ziel ist die Marke der Adresse (targetScroll folgt bei Lenis dem Gleiten, nicht dem Ziel).
-  const mark = document.getElementById(window.location.hash.slice(1));
+  const mark = markOf(window.location.hash);
   if (mark) lenis.scrollTo(mark, { immediate: true, force: true });
 });
 
@@ -183,7 +201,6 @@ const JUMP_MAX_MS = 4000;
 let jumpMax = 0;
 let restFrames = 0;
 let watchingRest = false;
-const jumping = () => 'jump' in document.documentElement.dataset;
 const endJump = () => {
   window.clearTimeout(jumpMax);
   window.removeEventListener('scroll', resetRest);
@@ -207,6 +224,7 @@ const watchRest = () => {
 };
 const markJump = () => {
   document.documentElement.dataset.jump = '';
+  jumpTakenOver = false;
   restFrames = 0;
   // Derselbe Zuhörer zählt nur einmal, auch wenn ein Sprung den anderen ablöst.
   window.addEventListener('scroll', resetRest, { passive: true });

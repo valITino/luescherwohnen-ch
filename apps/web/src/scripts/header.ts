@@ -160,6 +160,9 @@ export function initHeader(lock: () => ScrollLock | null): void {
       transition.skipTransition();
       return;
     }
+    // Die Kapsel trägt für den Wechsel einen eigenen Namen (Header.astro): Kommt die neue Seite
+    // ebenfalls als Kapsel, bilden beide ein Paar, und die Kapsel bleibt stehen (global.css).
+    if (scrolled) header.classList.add('is-handing');
     const activation = event.activation;
     // Ohne Navigation API ist das Ziel unbekannt: sicherheitshalber wie bei einer Marke.
     if (
@@ -170,23 +173,54 @@ export function initHeader(lock: () => ScrollLock | null): void {
       header.classList.add('is-leaving');
     }
   });
-  // Aus dem Verlauf zurück (bfcache): wieder wie neu geladen.
-  window.addEventListener('pageshow', () => header.classList.remove('is-leaving'));
+  // Aus dem Verlauf zurück (bfcache): wieder wie neu geladen. Nur dann: Nach dem ersten Laden
+  // kommt pageshow mit dem load-Ereignis, womöglich mitten im Übergang der neuen Seite.
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) header.classList.remove('is-leaving', 'is-handing');
+  });
+
+  /*
+   * Durch den Verlauf zurück oder vor zu einer Seite, die oben beginnt: Die neue Leiste steht
+   * sofort (global.css, Übergangstyp `stand`), die alte geht mit der alten Seite darunter. Ein
+   * Überblenden der beiden liesse den Header kurz grau werden. Ohne Navigation API ist die Art des
+   * Wechsels unbekannt, und die alte Leiste ging sicherheitshalber (pageswap): ebenso. Mit einem
+   * Paar (die alte Leiste blieb) wirkt der Typ nicht, es steht ohnehin.
+   */
+  const standIfTop = (transition: ViewTransition) => {
+    const navigationType = window.navigation?.activation?.navigationType;
+    if ((navigationType === 'traverse' || navigationType === undefined) && !scrolled) {
+      transition.types?.add('stand');
+    }
+  };
 
   /*
    * Erstes Bild der neuen Seite, bevor der Browser sie für den Übergang festhält. Steht sie schon
    * unten (Direktlink zu einer Marke), ist die Kapsel bereits da und kommt mit der Seite, statt
-   * dass oben kurz die Leiste erscheint und dann die Kapsel aufspringt. Durch den Verlauf zurück
-   * oder vor zu einer Seite, die oben beginnt: Die neue Leiste steht sofort (global.css,
-   * Übergangstyp `stand`), die alte geht mit der alten Seite darunter. Ein Überblenden der beiden
-   * liesse den Header kurz grau werden.
+   * dass oben kurz die Leiste erscheint und dann die Kapsel aufspringt; kam auch die alte Seite als
+   * Kapsel, bleibt sie stehen (is-handing). Das gelingt nur, wenn dieses Skript vor dem ersten Bild
+   * läuft. Der Browser wartet darauf nicht immer (gemessen: bei wiederholtem Besuch meist, beim
+   * ersten Besuch und auf langsamen Geräten oft nicht); dann kommt die Seite erst oben an und
+   * springt zur Marke, und der Header wechselt mit ihr, wie ohne diesen Zuhörer.
+   * Bei angehaltener Bewegung (eine Seite aus dem bfcache behält ihren Schalter) kein Übergang.
    */
   window.addEventListener('pagereveal', (event) => {
-    update(false);
     const transition = event.viewTransition;
-    const navigationType = window.navigation?.activation?.navigationType;
-    if (transition && navigationType === 'traverse' && !scrolled) transition.types?.add('stand');
+    if (transition && motionPaused()) {
+      transition.ready.catch(() => undefined);
+      transition.skipTransition();
+    }
+    update(false);
+    if (!transition || motionPaused()) return;
+    standIfTop(transition);
+    if (!scrolled) return;
+    header.classList.add('is-handing');
+    const done = () => header.classList.remove('is-handing');
+    transition.finished.then(done, done);
   });
+  // Lief dieses Skript erst nach dem ersten Bild, gilt der laufende Übergang: Typen wirken auch
+  // nachträglich. Die Form stellte update(false) oben schon ein (die Seite steht da noch oben).
+  const running = document.activeViewTransition;
+  if (running && !motionPaused()) standIfTop(running);
 
   // --- Vollbild-Menü ---
   const toggle = header.querySelector<HTMLButtonElement>('[data-menu-toggle]');

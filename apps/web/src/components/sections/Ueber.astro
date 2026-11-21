@@ -218,6 +218,15 @@ const locations = [
     object-position: 50% 30%;
   }
 
+  /*
+   * Ecken und Linie gehören zum Foto, nicht zum ganzen Rahmen: Sie liegen in dessen Zeile des
+   * Rasters (ein absolut gesetztes Kind nimmt sie als Bezug), über dem Bildtext bleibt nichts.
+   */
+  .portrait-corner,
+  .portrait-frame::after {
+    grid-area: 1 / 1 / 2 / 2;
+  }
+
   .portrait-caption {
     display: grid;
     align-content: start;
@@ -255,7 +264,7 @@ const locations = [
   }
 
   .portrait-corner-bl {
-    bottom: 6.25rem;
+    bottom: 1.25rem;
     left: 1.25rem;
     border-top: 0;
     border-right: 0;
@@ -263,7 +272,7 @@ const locations = [
 
   .portrait-corner-br {
     right: 1.25rem;
-    bottom: 6.25rem;
+    bottom: 1.25rem;
     border-top: 0;
     border-left: 0;
   }
@@ -299,9 +308,10 @@ const locations = [
    * (die Ecken rücken weich bremsend an ihren Platz, ohne Überschwingen), eine feine grüne Linie
    * tastet das Bild einmal ab; die Werte erscheinen im Abstand --stagger nacheinander.
    *
-   * Die Linie ist ein 0.375rem hohes Band am unteren Rand einer Ebene, die so hoch ist wie der
-   * Rahmen. Die Ebene fährt von ganz oben (-100 %, Band knapp über dem Bild) nach unten; bewegt
-   * wird nur transform, der Rahmen schneidet ab, was darüber liegt.
+   * Die Linie ist ein 0.375rem hohes Band am unteren Rand einer Ebene, die so hoch ist wie das
+   * Foto (ohne Bildtext). Die Ebene fährt von ganz oben (-100 %, Band knapp über dem Bild) nach
+   * unten und endet an der Unterkante des Fotos; bewegt wird nur transform, der Rahmen schneidet
+   * ab, was darüber liegt.
    */
   .portrait-frame::after {
     position: absolute;
@@ -547,6 +557,11 @@ const locations = [
     .about {
       grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
       align-items: stretch;
+    }
+
+    /* Der Rahmen ist so hoch wie die Spalte daneben: Das Foto füllt ihn bis zum Bildtext. */
+    .portrait-frame :global(.portrait-photo) {
+      max-height: none;
     }
   }
 

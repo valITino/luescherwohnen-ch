@@ -150,6 +150,31 @@ test.describe('Layout', () => {
     });
   }
 
+  test('Porträt: Das Foto reicht bis zum Bildtext, Ecken und Linie liegen darauf', async ({
+    page,
+  }) => {
+    await page.goto(`${PROD}/`);
+    await layOutAll(page);
+    const box = await page.locator('.portrait-frame').evaluate((frame) => {
+      const rect = (selector: string) => frame.querySelector(selector)!.getBoundingClientRect();
+      const photo = rect('img');
+      return {
+        photo: { top: photo.top, bottom: photo.bottom, height: photo.height },
+        caption: rect('.portrait-caption').top,
+        corners: [rect('.portrait-corner-tl').top, rect('.portrait-corner-br').bottom],
+        scan: parseFloat(getComputedStyle(frame, '::after').height),
+      };
+    });
+    // Kein leeres Band zwischen Foto und Bildtext (am Desktop ist der Rahmen so hoch wie die
+    // Spalte daneben).
+    expect(Math.abs(box.caption - box.photo.bottom)).toBeLessThanOrEqual(1);
+    // Die Ecken des Suchers sitzen innen auf dem Foto, die Linie ist so hoch wie das Foto.
+    expect(box.corners[0]! - box.photo.top).toBeGreaterThan(0);
+    expect(box.photo.bottom - box.corners[1]!).toBeGreaterThan(0);
+    expect(box.photo.bottom - box.corners[1]!).toBeLessThan(40);
+    expect(Math.abs(box.scan - box.photo.height)).toBeLessThanOrEqual(1);
+  });
+
   test('Vorschau-Hinweis passt auf jede Breite', async ({ page }) => {
     await page.goto(`${PREVIEW}/`);
     await page.evaluate(() => document.fonts.ready);
@@ -334,18 +359,36 @@ test.describe('Navigation', () => {
     const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await context.newPage();
-    // Auf jeder neuen Seite festhalten, welche Teile der Übergang für die Leiste hat.
+    // Auf jeder neuen Seite festhalten, welche Teile der Übergang für Leiste und Kapsel hat.
     await page.addInitScript(() => {
+      // Meldet die Seite ihren pagereveal-Zuhörer erst danach an, kam ihr Skript zu spät, um die
+      // Form vor dem ersten Bild einzustellen. Das entscheidet der Browser (header.ts): Ein
+      // solcher Versuch zählt nicht.
+      let revealed = false;
+      window.addEventListener('pagereveal', () => (revealed = true));
+      const add = EventTarget.prototype.addEventListener;
+      EventTarget.prototype.addEventListener = function (
+        this: EventTarget,
+        ...args: Parameters<typeof add>
+      ) {
+        if (this === window && args[0] === 'pagereveal' && revealed) {
+          document.documentElement.dataset.testLate = '';
+        }
+        return add.apply(this, args);
+      };
       window.addEventListener('pagereveal', (event) => {
         const transition = (event as PageRevealEvent).viewTransition;
         if (!transition) return;
         transition.ready.then(
           () => {
-            const parts = document
-              .getAnimations()
-              .map((animation) => (animation.effect as KeyframeEffect | null)?.pseudoElement)
-              .filter((pseudo) => pseudo?.includes('site-bar'));
-            document.documentElement.dataset.testBar = parts.join(' ') || 'none';
+            const parts = (name: string) =>
+              document
+                .getAnimations()
+                .map((animation) => (animation.effect as KeyframeEffect | null)?.pseudoElement)
+                .filter((pseudo) => pseudo?.includes(name))
+                .join(' ') || 'none';
+            document.documentElement.dataset.testBar = parts('site-bar');
+            document.documentElement.dataset.testCapsule = parts('site-capsule');
             document.documentElement.dataset.testTypes = [...transition.types].join(' ');
             document.documentElement.dataset.testNamed = String(
               getComputedStyle(document.querySelector('[data-header] .bar')!).viewTransitionName ===
@@ -357,16 +400,32 @@ test.describe('Navigation', () => {
         );
       });
     });
-    // Ein Wechsel mit Übergang; Chromium lässt ihn gelegentlich aus, dann noch einmal.
-    const change = async (from: string, link: string, url: RegExp) => {
-      for (let attempt = 0; attempt < 5; attempt++) {
+    const html = page.locator('html');
+    /*
+     * Ein Wechsel mit Übergang; Chromium lässt ihn gelegentlich aus, dann noch einmal. `script`:
+     * Das Ergebnis hängt davon ab, dass die neue Seite ihre Form vor dem ersten Bild einstellt.
+     * `scrolled`: Die alte Seite steht weiter unten, ihr Header ist die Kapsel.
+     */
+    const change = async (
+      from: string,
+      link: string,
+      url: RegExp,
+      { script = false, scrolled = false } = {},
+    ) => {
+      for (let attempt = 0; attempt < 6; attempt++) {
         await page.goto(`${origin}${from}`);
         await page.evaluate(() => document.fonts.ready);
+        if (scrolled) {
+          await page.mouse.wheel(0, 600);
+          await expect(page.locator('[data-header]')).toHaveClass(/is-scrolled/);
+          await page.waitForTimeout(700);
+        }
         await page.locator(link).first().click();
         await expect(page).toHaveURL(url);
         await page.waitForLoadState('load');
         await page.waitForTimeout(600);
-        const parts = await page.locator('html').getAttribute('data-test-bar');
+        if (script && (await html.getAttribute('data-test-late')) !== null) continue;
+        const parts = await html.getAttribute('data-test-bar');
         if (parts !== null) return parts;
       }
       return null;
@@ -384,14 +443,31 @@ test.describe('Navigation', () => {
       // alten Seite; nichts zieht die Kapsel auf die Breite der Leiste. Die Kapsel steht schon
       // beim ersten Bild der neuen Seite und kommt mit ihr, statt dass oben kurz die Leiste
       // erscheint.
-      const toMark = await change('/impressum', '.bar-nav a[href="/#kontakt"]', /#kontakt$/);
+      const toMark = await change('/impressum', '.bar-nav a[href="/#kontakt"]', /#kontakt$/, {
+        script: true,
+      });
       expect(toMark, 'Übergang hat stattgefunden').toBe('none');
-      expect(await page.locator('html').getAttribute('data-test-named')).toBe('false');
+      expect(await html.getAttribute('data-test-named')).toBe('false');
+      // Ohne alte Kapsel kommt die neue mit ihrer Seite.
+      expect(await html.getAttribute('data-test-capsule')).toContain(
+        '::view-transition-new(site-capsule)',
+      );
+
+      // Von Kapsel zu Kapsel: Beide bilden ein Paar und stehen, keine blendet aus oder ein.
+      const capsule = await change('/impressum', '.bar-cta', /#kontakt$/, {
+        script: true,
+        scrolled: true,
+      });
+      expect(capsule, 'Übergang hat stattgefunden').toBe('none');
+      const pair = await html.getAttribute('data-test-capsule');
+      expect(pair).toContain('::view-transition-group(site-capsule)');
+      expect(pair).not.toContain('::view-transition-old(site-capsule)');
+      expect(pair).not.toContain('::view-transition-new(site-capsule)');
 
       // Zurück zu einer Seite, die oben beginnt: Ihre Leiste steht sofort (Übergangstyp «stand»),
       // statt über der weichenden alten einzublenden.
       let back: string | null = null;
-      for (let attempt = 0; attempt < 5 && back === null; attempt++) {
+      for (let attempt = 0; attempt < 6 && back === null; attempt++) {
         await page.goto(`${origin}/impressum`);
         await page.evaluate(() => document.fonts.ready);
         await page.locator('[data-header] .bar-logo').first().click();
@@ -401,22 +477,34 @@ test.describe('Navigation', () => {
         await page.evaluate(() => history.back());
         await expect(page).toHaveURL(/\/impressum$/);
         await page.waitForTimeout(600);
-        back = await page.locator('html').getAttribute('data-test-bar');
+        if ((await html.getAttribute('data-test-late')) !== null) continue;
+        back = await html.getAttribute('data-test-bar');
       }
       expect(back, 'Übergang hat stattgefunden').not.toBeNull();
-      expect(await page.locator('html').getAttribute('data-test-types')).toContain('stand');
-      expect(await page.locator('html').getAttribute('data-test-named')).toBe('true');
+      expect(await html.getAttribute('data-test-types')).toContain('stand');
+      expect(await html.getAttribute('data-test-named')).toBe('true');
       expect(back).not.toContain('::view-transition-new(site-bar)');
 
-      // Ohne Navigation API (pageswap ohne activation) gilt die sichere Annahme: Die alte Leiste
-      // geht mit der alten Seite, auch ohne bekanntes Ziel.
+      // Ohne Navigation API (pageswap ohne activation, kein navigation.activation) gilt die
+      // sichere Annahme: Die alte Leiste geht mit der alten Seite, auch ohne bekanntes Ziel.
+      // Beginnt die neue Seite oben, steht ihre Leiste sofort (wie zurück und vor).
       await page.addInitScript(() => {
         Object.defineProperty(PageSwapEvent.prototype, 'activation', { get: () => null });
+        if ('navigation' in window) {
+          Object.defineProperty(Object.getPrototypeOf(window.navigation), 'activation', {
+            get: () => null,
+          });
+        }
       });
       const blind = await change('/impressum', '.bar-nav a[href="/#kontakt"]', /#kontakt$/);
       expect(blind, 'Übergang hat stattgefunden').not.toBeNull();
       expect(blind).not.toContain('::view-transition-old(site-bar)');
       expect(blind).not.toContain('::view-transition-group(site-bar)');
+      const blindTop = await change('/impressum', '[data-header] .bar-logo', /\/$/, {
+        script: true,
+      });
+      expect(blindTop, 'Übergang hat stattgefunden').toBe('none');
+      expect(await html.getAttribute('data-test-types')).toContain('stand');
     } finally {
       await context.close();
       server.close();
@@ -818,7 +906,12 @@ test.describe('Bewegung und Chrome', () => {
     if (!after.swapping) expect(after.opacity).toBeGreaterThan(0.99);
     // Sofort stehen nur Deckkraft und Lage; die Farben beim Hover gleiten weiter.
     const [properties, durations] = after.transition.map((list) => list.split(', '));
-    const duration = (property: string) => parseFloat(durations![properties!.indexOf(property)]!);
+    // Ist die Liste der Dauern kürzer, wiederholt CSS sie (wie hier nachgebildet).
+    const duration = (property: string) => {
+      const index = properties!.indexOf(property);
+      expect(index, `${property} gleitet überhaupt`).toBeGreaterThanOrEqual(0);
+      return parseFloat(durations![index % durations!.length]!);
+    };
     expect(duration('opacity')).toBe(0);
     expect(duration('transform')).toBe(0);
     expect(duration('border-color')).toBeGreaterThan(0);
@@ -1242,7 +1335,183 @@ test.describe('Bewegung und Chrome', () => {
     await expect(page.locator('html')).toHaveAttribute('data-test-late', 'unveil-late');
     await expect.poll(look).toEqual({ background: 'rgba(0, 0, 0, 0)', image: '1', loaded: true });
     await expect(page.locator('html')).not.toHaveAttribute('data-test-rose-empty');
+    // Anhalten und Fortsetzen: Auch das spät eingeblendete Foto blendet nicht nochmals ein.
+    await expect
+      .poll(() =>
+        frame!.evaluate((element) => element.querySelector('img')!.getAnimations().length),
+      )
+      .toBe(0);
+    const toggle = page.locator('[data-motion-toggle]');
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'on');
+    await nextFrames(page);
+    expect(
+      await frame!.evaluate((element) => ({
+        state: (element as HTMLElement).dataset.enter,
+        animations: element.querySelector('img')!.getAnimations().length,
+        image: getComputedStyle(element.querySelector('img')!).opacity,
+      })),
+    ).toEqual({ state: '', animations: 0, image: '1' });
     await page.unrouteAll({ behavior: 'ignoreErrors' });
+  });
+
+  test('Hängt ein Foto, zeigt der Rahmen nach einer Weile wieder seine Fläche', async ({
+    page,
+  }) => {
+    await page.goto(`${PROD}/`);
+    await layOutAll(page);
+    await page.mouse.wheel(0, 200);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    await nextFrames(page);
+    // Ab jetzt kommt kein Bild mehr an (das Netz hängt).
+    await page.route(/\.(avif|webp|jpe?g|png)(\?.*)?$/, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 20_000));
+      await route.continue().catch(() => undefined);
+    });
+    const frame = await page
+      .locator('.story-media.enter-unveil[data-enter="wait"]')
+      .last()
+      .elementHandle();
+    expect(frame).not.toBeNull();
+    expect(await frame!.evaluate((element) => element.querySelector('img')!.complete)).toBe(false);
+    await frame!.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      window.scrollTo({
+        top: window.scrollY + rect.top - window.innerHeight * 0.92 + rect.height * 0.5,
+        behavior: 'instant',
+      });
+    });
+    await page.waitForFunction(
+      (element) => (element as HTMLElement).dataset.enter === 'late',
+      frame!,
+      { timeout: 2_000 },
+    );
+    // Drei Sekunden später steht der Rahmen wie ohne Auftritt da: mit seiner Sandfläche.
+    await page.waitForFunction((element) => (element as HTMLElement).dataset.enter === '', frame!, {
+      timeout: 5_000,
+    });
+    expect(await frame!.evaluate((element) => getComputedStyle(element).backgroundColor)).not.toBe(
+      'rgba(0, 0, 0, 0)',
+    );
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+  });
+
+  test('Bleibt ein Rahmen am unteren Rand stehen, öffnet er sich trotzdem', async ({ page }) => {
+    await page.goto(`${PROD}/`);
+    await layOutAll(page);
+    await page.mouse.wheel(0, 200);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    await nextFrames(page);
+    const frame = await page
+      .locator('.story-media.enter-unveil[data-enter="wait"]')
+      .first()
+      .elementHandle();
+    expect(frame).not.toBeNull();
+    // `seen` Pixel vom Rahmen im Fenster, gemessen am unteren Rand.
+    const show = (seen: number) =>
+      frame!.evaluate((element, pixels) => {
+        const rect = element.getBoundingClientRect();
+        window.scrollTo({
+          top: window.scrollY + rect.top - window.innerHeight + pixels,
+          behavior: 'instant',
+        });
+      }, seen);
+    await show(-400);
+    await page.waitForFunction((element) => element.querySelector('img')!.complete, frame!, {
+      timeout: 5_000,
+    });
+    // 40 px im Bild, also unter der Auslösekante (8 % über dem Rand): Der Rahmen wartet, solange
+    // gescrollt wird, und öffnet sich nach einer kurzen Ruhe.
+    const after = await frame!.evaluate(
+      (element) =>
+        new Promise<number>((resolve) => {
+          const start = performance.now();
+          new MutationObserver(() => {
+            if ((element as HTMLElement).dataset.enter === 'in') resolve(performance.now() - start);
+          }).observe(element, { attributes: true, attributeFilter: ['data-enter'] });
+          const rect = element.getBoundingClientRect();
+          window.scrollTo({
+            top: window.scrollY + rect.top - window.innerHeight + 40,
+            behavior: 'instant',
+          });
+        }),
+    );
+    expect(after).toBeGreaterThan(200);
+    expect(after).toBeLessThan(900);
+  });
+
+  test('Bilder steigen an der Fensterkante auf, nicht darunter', async ({ page }) => {
+    await page.goto(`${PROD}/`);
+    await layOutAll(page);
+    await page.mouse.wheel(0, 200);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    await nextFrames(page);
+    const frame = await page
+      .locator('.story-media.enter-unveil[data-enter="wait"]')
+      .first()
+      .elementHandle();
+    expect(frame).not.toBeNull();
+    const place = (share: number) =>
+      frame!.evaluate((element, wanted) => {
+        const rect = element.getBoundingClientRect();
+        window.scrollTo({
+          top: window.scrollY + rect.top - window.innerHeight * 0.92 + rect.height * wanted,
+          behavior: 'instant',
+        });
+      }, share);
+    await place(-0.5);
+    await page.waitForFunction((element) => element.querySelector('img')!.complete, frame!, {
+      timeout: 5_000,
+    });
+    // Gut ein Drittel im Bild: Der Auftritt beginnt sofort. Im ersten Bild der Enthüllung steht
+    // die sichtbare Kante des Ausschnitts (mit Zoom) am unteren Fensterrand, nicht tiefer.
+    const start = await frame!.evaluate(
+      (element) =>
+        new Promise<{ edge: number; fold: number; bottom: number }>((resolve) => {
+          const image = element.querySelector('img')!;
+          new MutationObserver((_, observer) => {
+            if ((element as HTMLElement).dataset.enter !== 'in') return;
+            observer.disconnect();
+            requestAnimationFrame(() => {
+              const unveil = image
+                .getAnimations()
+                .find((animation) => (animation as CSSAnimation).animationName === 'unveil')!;
+              unveil.pause();
+              unveil.currentTime = 0;
+              const rect = image.getBoundingClientRect();
+              const inset = parseFloat(getComputedStyle(image).clipPath.slice('inset('.length));
+              unveil.play();
+              resolve({
+                edge: rect.top + (inset / 100) * rect.height,
+                fold: window.innerHeight,
+                bottom: rect.bottom,
+              });
+            });
+          }).observe(element, { attributes: true, attributeFilter: ['data-enter'] });
+          const rect = element.getBoundingClientRect();
+          window.scrollTo({
+            top: window.scrollY + rect.top - window.innerHeight * 0.92 + rect.height * 0.35,
+            behavior: 'instant',
+          });
+        }),
+    );
+    expect(start.bottom).toBeGreaterThan(start.fold);
+    expect(Math.abs(start.edge - start.fold)).toBeLessThanOrEqual(2);
+    // Danach ist das Markup wieder wie zuvor.
+    await page.waitForFunction(
+      (element) => element.querySelector('img')!.getAnimations().length === 0,
+      frame!,
+      { timeout: 3_000 },
+    );
+    expect(await frame!.getAttribute('style')).toBeNull();
   });
 
   test('Bewegung pausiert: nichts wartet', async ({ page }) => {
@@ -1447,6 +1716,82 @@ test.describe('Bewegung und Chrome', () => {
     await expect(page.locator('html')).toHaveAttribute('data-motion', 'on');
     await expect(hero).toHaveAttribute('data-pinned', '');
     expect(Math.abs((await top()) - again)).toBeLessThanOrEqual(1);
+  });
+
+  test('Fortsetzen im Hero: Die erste Zeile gleitet an ihren Platz, statt zu springen', async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'Angepinnt wird der Hero nur auf grossen Bildschirmen');
+    await page.goto(`${PROD}/`);
+    await page.evaluate(() => document.fonts.ready);
+    await page.mouse.wheel(0, 10);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    await nextFrames(page);
+    const toggle = page.locator('[data-motion-toggle]');
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
+    // Angehalten ein Stück in den Hero scrollen, dann fortsetzen: Die Ansicht bleibt, man steht
+    // damit am Ende der angepinnten Strecke, wo die erste Zeile halb zurückgetreten ist.
+    await page.evaluate(() => window.scrollTo({ top: 100, behavior: 'instant' }));
+    await nextFrames(page);
+    const samples = await page.evaluate(
+      () =>
+        new Promise<number[]>((resolve) => {
+          const line = document.querySelector('.q1')!;
+          const values: number[] = [];
+          const sample = () => {
+            values.push(Number(getComputedStyle(line).opacity));
+            if (values.length < 40) requestAnimationFrame(sample);
+            else resolve(values);
+          };
+          document.querySelector<HTMLElement>('[data-motion-toggle]')!.click();
+          requestAnimationFrame(sample);
+        }),
+    );
+    // Kein Sprung in einem Bild: Die Deckkraft sinkt über mehrere Bilder und kommt bei der
+    // Hälfte an.
+    expect(samples[0]).toBeGreaterThan(0.85);
+    for (let index = 1; index < samples.length; index++) {
+      expect(samples[index - 1]! - samples[index]!).toBeLessThan(0.2);
+    }
+    expect(samples.at(-1)).toBeCloseTo(0.5, 1);
+  });
+
+  test('Rad übernimmt einen Sprung: Anhalten lässt die Seite, wo sie ist', async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'Die Navigation in der Leiste gibt es nur am Desktop');
+    await page.goto(`${PROD}/`);
+    await page.evaluate(() => document.fonts.ready);
+    await page.mouse.wheel(0, 10);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    await nextFrames(page);
+    await page.locator('.bar-nav a[href="#kontakt"]').click();
+    await page.waitForTimeout(250);
+    // Mitten im Gleiten übernimmt das Rad (nach oben), kurz danach hält jemand die Bewegung an.
+    await page.mouse.move(700, 450);
+    await page.mouse.wheel(0, -400);
+    await page.waitForTimeout(120);
+    const before = await page.evaluate(() => window.scrollY);
+    await page.locator('[data-motion-toggle]').click();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
+    await nextFrames(page);
+    // Die Seite springt nicht gegen das Rad zur Marke. (Der Hero gibt sein Anpinnen auf, die
+    // Ansicht bleibt dabei; gemessen wird darum am Ziel, nicht an der Scrollposition.)
+    const offset = await page.evaluate(() => {
+      const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop);
+      return document.querySelector('#kontakt')!.getBoundingClientRect().top - padding;
+    });
+    expect(before).toBeGreaterThan(0);
+    expect(Math.abs(offset)).toBeGreaterThan(300);
   });
 
   test('Anhalten und Fortsetzen: Der Auftakt spielt nicht weiter', async ({ page }) => {

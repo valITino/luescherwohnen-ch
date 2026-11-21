@@ -507,7 +507,8 @@
    * dann mitten hinein (Entscheid 39). Der Rahmen ist so lange leer statt sandfarben: Das Foto
    * steigt aus dem Papier auf, statt in einen Platzhalter zu fallen. Ist es beim Auftritt noch
    * nicht geladen, wartet reveal.ts kurz darauf; kommt es später (late), blendet es ein, sobald es
-   * da ist (loaded), ohne dass der Rahmen vorher die Farbe wechselt (Entscheide 40 und 41).
+   * da ist (loaded), ohne dass der Rahmen vorher die Farbe wechselt (Entscheide 40 und 41). Kommt
+   * es gar nicht, steht der Rahmen nach drei Sekunden wieder wie ohne Auftritt da (Entscheid 42).
    * Ohne Skript, bei reduzierter Bewegung und ohne Auftritt steht das Bild einfach da; die
    * Sandfläche füllt dann den Rahmen, bis das Bild geladen ist. Der Rahmen des Porträts behält
    * seine eigene Papierfläche (Ueber.astro).
@@ -541,10 +542,13 @@
   /*
    * Mit Ziel: Von einer Form zu «none» springt clip-path, statt zu gleiten. Der Zoom setzt sich zur
    * Mitte hin wie der Hover-Zoom danach, so springt nichts, wenn beides zusammenfällt.
+   * Steht erst der obere Teil des Bildes im Fenster, beginnt der Ausschnitt an der Fensterkante
+   * (--unveil-from, reveal.ts): Das ganze Aufsteigen spielt sich dort ab, wo man hinsieht. Der
+   * Zoom 1.1 steht auch in reveal.ts (UNVEIL_ZOOM).
    */
   @keyframes unveil {
     from {
-      clip-path: inset(100% 0 0 0);
+      clip-path: inset(var(--unveil-from, 100%) 0 0 0);
       transform: scale(1.1);
     }
 

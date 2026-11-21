@@ -58,6 +58,19 @@ const UNVEIL_PARK_MS = 250;
  * (`loaded`), statt dass der Ausschnitt über einen leeren Rahmen steigt und das Foto nachspringt.
  */
 const IMAGE_WAIT_MS = 500;
+/**
+ * Kommt das Foto auch danach nicht (das Netz hängt), zeigt der Rahmen nach dieser Zeit wieder
+ * seine Sandfläche wie ohne Auftritt, statt leer zu bleiben.
+ */
+const IMAGE_GIVE_UP_MS = 3000;
+/**
+ * Hält man an, während etwas Wartendes erst im untersten Streifen steht, beginnt es nach dieser
+ * Ruhe trotzdem, sofern mindestens REST_MIN_PX davon zu sehen sind (openResting).
+ */
+const REST_MS = 300;
+const REST_MIN_PX = 16;
+/** Der leichte Zoom, aus dem sich ein Bild setzt (components.css, @keyframes unveil). */
+const UNVEIL_ZOOM = 1.1;
 
 /** Steht genug vom Rahmen im Bild, dass sein Bild sich öffnen darf? Liest nur Gemessenes. */
 const unveilReached = (entry: IntersectionObserverEntry) =>
@@ -173,16 +186,25 @@ export function initReveals(): void {
  * Kleine Auftritte, die das CSS selbst spielt (Kicker tippt sich ein, Bilder öffnen sich, der
  * Sucher stellt das Porträt scharf): Elemente mit `data-enter` warten ausserhalb des Bildes
  * (`wait`) und bekommen `in`, sobald sie hereinkommen, Bilder erst, wenn genug vom Rahmen zu
- * sehen ist (unveilReached). Was beim Start schon zu sehen ist, bleibt einfach stehen. Ohne dieses Skript (reduzierte Bewegung, kein
- * JavaScript) ist alles von Anfang an sichtbar.
+ * sehen ist (unveilReached). Was beim Start schon zu sehen ist, bleibt einfach stehen. Ohne
+ * dieses Skript (reduzierte Bewegung, kein JavaScript) ist alles von Anfang an sichtbar.
  */
 function initEntrances(): { resolveAll(): void } {
   const elements = document.querySelectorAll<HTMLElement>('main [data-enter]');
   // Rahmen knapp unter der Schwelle und ihr gemeinsamer Zeitgeber (eine Folge je Meldung)
   const parked = new Map<HTMLElement, number>();
+  // Wartende, die schon im Fenster stehen, aber noch im untersten Streifen (openResting)
+  const resting = new Set<HTMLElement>();
+  let rest = 0;
   let first = true;
 
-  const unpark = (element: HTMLElement) => parked.delete(element);
+  /** Nicht mehr auf eine Schwelle, eine Ruhepause oder einen Zeitgeber warten. */
+  const release = (element: HTMLElement) => {
+    parked.delete(element);
+    resting.delete(element);
+    observer.unobserve(element);
+    edge.unobserve(element);
+  };
 
   /*
    * Zustand setzen. Ein Auftritt, der ein Bild umschliesst (der Sucher um das Porträt), folgt
@@ -194,7 +216,7 @@ function initEntrances(): { resolveAll(): void } {
     if (!element.classList.contains('enter-unveil')) return;
     const outer = element.parentElement?.closest<HTMLElement>('main [data-enter="wait"]');
     if (!outer) return;
-    observer.unobserve(outer);
+    release(outer);
     outer.dataset.enter = state === 'in' ? 'in' : '';
   };
 
@@ -208,8 +230,13 @@ function initEntrances(): { resolveAll(): void } {
     const onLoad = () => {
       stop();
       // Inzwischen angehalten (resolveAll): Es steht schon alles.
-      if (element.dataset.enter === 'wait') settle(element, jumping() ? '' : 'in');
-      else if (element.dataset.enter === 'late') element.dataset.enter = 'loaded';
+      if (element.dataset.enter === 'wait') {
+        if (jumping()) return settle(element, '');
+        riseFromFold(element, image);
+        settle(element, 'in');
+      } else if (element.dataset.enter === 'late') {
+        element.dataset.enter = 'loaded';
+      }
     };
     const onError = () => {
       stop();
@@ -218,7 +245,15 @@ function initEntrances(): { resolveAll(): void } {
       }
     };
     timer = window.setTimeout(() => {
-      if (element.dataset.enter === 'wait') settle(element, 'late');
+      if (element.dataset.enter !== 'wait') return;
+      settle(element, 'late');
+      // Kommt es gar nicht (das Netz hängt), zeigt der Rahmen wieder seine Sandfläche. Das Foto
+      // erscheint darauf, sobald es doch noch ankommt, wie ohne Auftritt.
+      timer = window.setTimeout(() => {
+        if (element.dataset.enter !== 'late') return;
+        stop();
+        settle(element, '');
+      }, IMAGE_GIVE_UP_MS);
     }, IMAGE_WAIT_MS);
     image.addEventListener('load', onLoad);
     image.addEventListener('error', onError);
@@ -226,16 +261,21 @@ function initEntrances(): { resolveAll(): void } {
 
   /** Auftritt beginnen; `index`: Platz in einer Folge gemeinsam hereinkommender Bilder */
   const enter = (element: HTMLElement, index: number) => {
-    unpark(element);
-    observer.unobserve(element);
+    release(element);
     // Mitten in einem Sprung: kein Auftritt, das Ziel steht bei der Ankunft fertig da.
     if (jumping()) return settle(element, '');
     if (!element.classList.contains('enter-unveil')) return settle(element, 'in');
     const image = element.querySelector('img');
     if (image && !image.complete) return awaitImage(element, image);
     placeInRow(element, Math.min(index, MAX_INDEX));
+    if (image) riseFromFold(element, image);
     settle(element, 'in');
   };
+
+  /** Umschliesst es ein Bild, das noch wartet? Dann beginnt es mit diesem (settle). */
+  const followsImage = (element: HTMLElement) =>
+    !element.classList.contains('enter-unveil') &&
+    element.querySelector('.enter-unveil[data-enter="wait"]') !== null;
 
   /*
    * Rahmen, die in derselben Meldung knapp unter der Schwelle bleiben, teilen sich einen
@@ -263,17 +303,21 @@ function initEntrances(): { resolveAll(): void } {
         if (first) {
           // Beim ersten Bericht schon zu sehen oder darüber: kein Auftritt, es steht ja schon da.
           // Alles darunter wartet ausserhalb des Bildes auf seinen Auftritt.
-          if (alreadySeen(entry)) observer.unobserve(element);
-          else element.dataset.enter = 'wait';
+          if (alreadySeen(entry)) {
+            observer.unobserve(element);
+          } else {
+            element.dataset.enter = 'wait';
+            edge.observe(element);
+          }
           continue;
         }
         if (!entry.isIntersecting) {
-          unpark(element);
+          parked.delete(element);
           continue;
         }
         // Schon mit seinem Bild erledigt (settle), die Meldung war unterwegs.
         if (element.dataset.enter !== 'wait') {
-          observer.unobserve(element);
+          release(element);
           continue;
         }
         if (jumping()) {
@@ -281,8 +325,7 @@ function initEntrances(): { resolveAll(): void } {
           continue;
         }
         const unveil = element.classList.contains('enter-unveil');
-        // Umschliesst es ein Bild, das noch wartet, beginnt es mit diesem (settle).
-        if (!unveil && element.querySelector('.enter-unveil[data-enter="wait"]')) continue;
+        if (followsImage(element)) continue;
         if (unveil && !unveilReached(entry)) {
           if (!parked.has(element)) parking.push(element);
           continue;
@@ -295,24 +338,81 @@ function initEntrances(): { resolveAll(): void } {
     { rootMargin: '0px 0px -8% 0px', threshold: UNVEIL_STEPS },
   );
 
+  /*
+   * Hält man an, während etwas Wartendes erst im untersten Streifen des Fensters steht (unter der
+   * Schwelle des Observers), beginnt es nach einer kurzen Ruhe trotzdem: Was man beim Anhalten
+   * sieht, bleibt nicht leer. Solange gescrollt wird, entscheidet die Schwelle, dann kommt mehr
+   * vom Rahmen ins Bild, bevor er sich öffnet. Gemessen wird erst in der Ruhe, ein Mal.
+   */
+  const openResting = () => {
+    if (motionPaused() || jumping()) return;
+    const ready = [...resting].filter((element) => {
+      if (element.dataset.enter !== 'wait') {
+        release(element);
+        return false;
+      }
+      if (parked.has(element) || followsImage(element)) return false;
+      const { top, bottom } = element.getBoundingClientRect();
+      return Math.min(bottom, window.innerHeight) - Math.max(top, 0) >= REST_MIN_PX;
+    });
+    let index = 0;
+    for (const element of ready) {
+      enter(element, element.classList.contains('enter-unveil') ? index++ : 0);
+    }
+  };
+  const awaitRest = () => {
+    window.clearTimeout(rest);
+    if (resting.size > 0) rest = window.setTimeout(openResting, REST_MS);
+  };
+  // Am ganzen Fenster gemessen, nicht am verkleinerten Bereich des Observers.
+  const edge = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      const element = entry.target as HTMLElement;
+      if (element.dataset.enter !== 'wait') {
+        release(element);
+      } else if (!entry.isIntersecting) {
+        resting.delete(element);
+      } else if (jumping()) {
+        // Was am Ziel eines Sprungs schon im Bild ist, steht einfach da (wie im Observer oben).
+        enter(element, 0);
+      } else {
+        resting.add(element);
+      }
+    }
+    awaitRest();
+  });
+  window.addEventListener(
+    'scroll',
+    () => {
+      if (resting.size > 0) awaitRest();
+    },
+    { passive: true },
+  );
+
   elements.forEach((element) => observer.observe(element));
 
   return {
     /**
      * Alles, was noch wartet, steht sofort da; beobachtet wird nichts mehr. Auch was schon
-     * aufgetreten ist, verliert seinen Auftritt: Sonst fänden die Regeln in components.css nach
-     * dem Fortsetzen wieder ihr `in` und spielten ihn ein zweites Mal.
+     * aufgetreten ist (auch ein spät geladenes Foto), verliert seinen Auftritt: Sonst fänden die
+     * Regeln in components.css nach dem Fortsetzen wieder ihren Zustand und spielten ihn ein
+     * zweites Mal.
      */
     resolveAll() {
       observer.disconnect();
+      edge.disconnect();
+      window.clearTimeout(rest);
+      resting.clear();
       for (const timer of new Set(parked.values())) window.clearTimeout(timer);
       parked.clear();
       for (const element of document.querySelectorAll<HTMLElement>(
-        'main [data-enter="wait"], main [data-enter="in"], main [data-enter="late"]',
+        'main [data-enter]:not([data-enter=""])',
       )) {
         element.dataset.enter = '';
-        // Ein Platz in einer Folge (placeInRow), dessen Auftritt nie begann, gilt nicht mehr.
+        // Ein Platz in einer Folge (placeInRow) oder ein Beginn an der Fensterkante
+        // (riseFromFold), deren Auftritt nie begann, gelten nicht mehr.
         element.style.removeProperty('--enter-i');
+        element.style.removeProperty('--unveil-from');
         if (element.style.length === 0) element.removeAttribute('style');
       }
     },
@@ -320,21 +420,45 @@ function initEntrances(): { resolveAll(): void } {
 }
 
 /**
- * Platz in einer Folge gemeinsam hereinkommender Bilder: `--enter-i` verzögert den Auftritt um
- * je `--stagger` (components.css). Danach wird der Wert wieder entfernt. Gezählt wird nur das
- * Ende der Enthüllung selbst (am Bild darin), nicht das anderer Auftritte (etwa der Ecken oder
- * der Linie im Sucher).
+ * Setzt einen Wert am Rahmen für die Dauer der Enthüllung; danach ist das Markup wieder wie
+ * zuvor. Gezählt wird nur das Ende der Enthüllung selbst (am Bild darin), nicht das anderer
+ * Auftritte (etwa der Ecken oder der Linie im Sucher).
  */
-function placeInRow(element: HTMLElement, index: number): void {
-  if (index === 0) return;
-  element.style.setProperty('--enter-i', String(index));
+function holdForUnveil(element: HTMLElement, property: string, value: string): void {
+  element.style.setProperty(property, value);
   const clear = (event: AnimationEvent) => {
     if (event.animationName !== 'unveil') return;
-    element.style.removeProperty('--enter-i');
+    element.style.removeProperty(property);
     if (element.style.length === 0) element.removeAttribute('style');
     element.removeEventListener('animationend', clear);
     element.removeEventListener('animationcancel', clear);
   };
   element.addEventListener('animationend', clear);
   element.addEventListener('animationcancel', clear);
+}
+
+/**
+ * Platz in einer Folge gemeinsam hereinkommender Bilder: `--enter-i` verzögert den Auftritt um
+ * je `--stagger` (components.css).
+ */
+function placeInRow(element: HTMLElement, index: number): void {
+  if (index === 0) return;
+  holdForUnveil(element, '--enter-i', String(index));
+}
+
+/**
+ * Steht erst der obere Teil des Bildes im Fenster, beginnt der Ausschnitt an der Fensterkante
+ * statt am unteren Rand des Rahmens (`--unveil-from`, components.css): So spielt sich das ganze
+ * Aufsteigen dort ab, wo man hinsieht, statt zum grössten Teil darunter. Steht das Bild ganz im
+ * Fenster, beginnt es wie immer unten.
+ */
+function riseFromFold(element: HTMLElement, image: HTMLImageElement): void {
+  const { top, height } = image.getBoundingClientRect();
+  if (!(height > 0)) return;
+  const fold = (window.innerHeight - top) / height;
+  if (fold <= 0 || fold >= 1) return;
+  // Das Bild setzt sich aus einem Zoom um seine Mitte: Die sichtbare Kante liegt darum um den
+  // Zoom weiter von der Mitte entfernt als die Kante des Ausschnitts.
+  const from = (fold - 0.5) / UNVEIL_ZOOM + 0.5;
+  holdForUnveil(element, '--unveil-from', `${(from * 100).toFixed(2)}%`);
 }

@@ -326,6 +326,18 @@ const cta = primaryCta(true);
     animation: none;
   }
 
+  /*
+   * Nach dem Fortsetzen (hero.ts, data-settling): Was das Scrollen am Hero verändert, gleitet kurz
+   * an seinen Platz, statt in einem Bild zu springen. Angehalten gelten keine Übergänge (base.css).
+   */
+  .hero[data-settling] .q1 {
+    transition: opacity var(--dur-3) var(--ease-out);
+  }
+
+  .hero[data-settling] .hero-orb {
+    transition: transform var(--dur-3) var(--ease-out);
+  }
+
   /* ---------- Bühne mit den Angaben für den Besuch ---------- */
 
   .hero-demo {
