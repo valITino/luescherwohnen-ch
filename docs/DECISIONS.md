@@ -531,3 +531,52 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
     Seitenwechsel, Formular und seine Regeln, strukturierte Daten und robots.txt, CSP und
     Security-Header, Dockerfile und nginx (das Zugriffslog entspricht der Datenschutzerklärung:
     ohne IP-Adresse und ohne Angaben zum Browser), Workflows.
+- **49.** **Bewegung folgt dem Scrollen** (Auftrag des Repository-Inhabers vom 21.11.2026:
+  Übergänge und Animationen «nochmals stark optimieren», sie sollen zum Scrollen passen und Sinn
+  ergeben). Ersetzt die Auftritte nach Zeit aus den Entscheiden 37 bis 43.
+  - **Befund** (Aufnahmen bei gleichmässigem Scrollen mit 1300 px/s, Handy und Desktop): Am
+    Desktop stand der Hero 675 px lang still, während man scrollte. Kicker, Überschriften und
+    Fotos liefen nach Zeit und standen mitten im Bild noch halb fertig da (die Überschrift
+    fehlte, während der Text darunter schon stand; ein Foto war zur Hälfte aufgestiegen). Das
+    Band lief unabhängig vom Scrollen. Die Abschnitte folgten einander ohne Bezug.
+  - **Grundsatz**: Der Mensch bewegt, die Seite antwortet. Was beim Scrollen geschieht, hängt an
+    der Scrollposition (CSS `animation-timeline: view()`), nie an einem Zeitgeber. Nichts wartet,
+    nichts läuft nach, zurück läuft alles rückwärts, und ein Sprung landet von selbst auf
+    fertigem Inhalt. Jede Bewegung hat einen Grund; oberhalb von 70 % der Fensterhöhe steht alles
+    still. Nach Zeit läuft nur die Antwort auf eine Handlung (Laden, Menü, Header, Seitenwechsel,
+    Wahl).
+  - **Umsetzung**: Bogen über Bogen (der nächste Abschnitt schiebt sich über den vorherigen, der
+    zurückbleibt; der Hero hält nichts mehr an), Auftritt von Blöcken, Überschriften Wort für
+    Wort aus Masken, Fotos aus einem leichten Zoom, das Band zieht mit dem Scrollen (kein Knopf
+    mehr nötig), die Haltung Wort für Wort, im Service wächst eine Linie mit der Spitze auf
+    Lesehöhe, im Porträt stellt der Sucher scharf, im Kontakt öffnet sich die Scheibe, im Footer
+    steigt die Wortmarke am Ende der Seite (`docs/DESIGN.md`, Abschnitt 6).
+  - **Entfallen**: `reveal.ts` (475 Zeilen: Wartezustände, Zeitgeber, zwei Beobachter, Warten auf
+    Bilder), `haltung.ts`, das Anpinnen im Hero, der Knopf am Band, die Abtast-Linie im Porträt,
+    der Atem des Status im Kontakt, und GSAP mit ScrollTrigger und SplitText. JavaScript der
+    Startseite 13,4 KB statt 63,0 KB (gzip).
+  - **Ersetzt frühere Entscheide**: «Parallax» und «gescrubbt» standen unter «Bewusst nicht»
+    (Entscheid 37). Neu gilt: Bewegung am Scrollen ja, aber nur im unteren Teil des Fensters und
+    nie als Bühne, die das Scrollen weiterschaltet (gewechselt wird nur durch eine Wahl,
+    Entscheid 45). «Dauerbewegung ist pausierbar» entfällt als Regel, weil nichts mehr von selbst
+    läuft; der Schalter «Bewegung pausieren» bleibt und stellt ab, was mitzieht.
+  - **Barrierefreiheit**: Überschriften tragen ihren Text als `aria-label`, die Wörter in den
+    Masken sind stumm. Was der nächste Bogen verdeckt, kommt beim Tastaturfokus wieder ins Bild
+    (`cover.ts`, WCAG 2.2, 2.4.11). Ohne Unterstützung (Firefox, Safari vor 26), bei reduzierter
+    Bewegung, im Druck und mit dem Schalter steht alles.
+  - **Zwei Fallen, beide erst beim Nachmessen gefunden**: Der CSS-Minifier legte `animation` und
+    `animation-timeline` zu einer Angabe zusammen, die der Browser verwirft, und machte aus
+    `exit-crossing 100%` ein `exit-crossing 0%` (die Bogen und Fotos bewegten sich nicht).
+    Und Rahmen mit `overflow: hidden` gelten als eigene Scrollbereiche: Die Fotos darin massen
+    sich am Rahmen statt an der Seite und blieben bei 91 % stehen. Behoben (Variable in jeder
+    Kurzschreibweise, `overflow: clip`) und mit einem Wächter und einem e2e-Test am gebauten
+    Stand abgesichert.
+  - **Gemessen** (Chromium ohne Grafikchip, CPU 4-fach gedrosselt, je drei Läufe über 7000 px):
+    langsame Bilder beim Scrollen am Handy 0/4/3 (vorher 0/0/2), am Desktop 2/10/16 (vorher
+    4/11/4), also im Rauschen; Layout-Arbeit 2 bis 8 ms statt 30 bis 39 ms, Stil 470 bis 650 ms
+    statt 390 bis 560 ms. Das sagt über echte Geräte wenig; die Prüfung dort steht in
+    `docs/TODO.md`.
+  - **Tests**: `e2e/scroll.spec.ts` (elf Tests, je auf Desktop und Handy) liest den Zustand an
+    festen Scrollpositionen ab, ohne auf Abläufe zu warten. Elf Tests für Wartezustände und
+    Zeit-Auftritte sind entfallen, weil es diese Zustände nicht mehr gibt; acht weitere sind
+    angepasst.

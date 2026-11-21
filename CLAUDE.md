@@ -54,7 +54,8 @@ Vor jeder Arbeit:
 
 ```text
 apps/web          Astro-Website: One-Pager, /impressum, /datenschutz, /styleguide, 404
-packages/ui       Designsystem: Tokens, Schrift, Logo-Kit, Buttons, Karten, Motion-Helfer
+packages/ui       Designsystem: Tokens, Schrift, Logo-Kit, Buttons, Karten, Bewegung mit dem
+                  Scrollen (scroll.css), Motion-Helfer
 packages/config   ESLint- und TypeScript-Basis, Sites (Basis-Pfad), CSP- und Header-Helfer,
                   Build-Schritt «Skript vor dem ersten Bild» (early-script)
 scripts/          Pages-Build, Server, Budgets, Docker, Header-Check, CI-Dispatcher, Assets
@@ -95,7 +96,14 @@ Nach jeder Änderung an der Website: obige Prüfungen, dann Screenshots in
   Schatten; Buttons als Pille, 52 px hoch; Fokus-Ring 3 px.
 - Bewegung nur über `opacity`, `transform` und `clip-path`, ruhig und ohne
   Effekthascherei; `prefers-reduced-motion` und der Bewegungsschalter gelten
-  überall; Dauerbewegung ist pausierbar; ohne JavaScript ist alles sichtbar.
+  überall; ohne JavaScript ist alles sichtbar.
+- Was beim Scrollen geschieht, hängt an der Scrollposition (CSS
+  `animation-timeline`, nur in den beiden `scroll.css`), nie an einem
+  Zeitgeber: Nichts wartet, nichts läuft von selbst, kein Abschnitt hält das
+  Scrollen an. Oberhalb von 70 % der Fensterhöhe steht alles still. Nach Zeit
+  läuft nur die Antwort auf eine Handlung (Laden, Menü, Header, Seitenwechsel,
+  Wahl). Rahmen um solche Inhalte: `overflow: clip`, nie `hidden`
+  (`docs/DESIGN.md`, Abschnitt 6).
 - Keine Inline-`style`-Attribute und keine Inline-Skripte (CSP mit Hashes).
   Interne Links über `href()` (Basis-Pfad der Pages-Vorschau).
 - Satzzeichen direkt nach einem Link: auf eine Zeile mit `{/* prettier-ignore */}`.

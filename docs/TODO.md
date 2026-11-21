@@ -82,16 +82,21 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
 - [ ] Repository-Einstellungen (nur mit Admin-Recht, von hier nicht prüfbar): Pages-Quelle
       «GitHub Actions»; Environment `github-pages` nur für `main` (`docs/DEPLOY.md`, Abschnitt 1).
 - [ ] Freigabe des Designs durch den Auftraggeber.
-- [ ] Bewegung auf einem echten Mittelklasse-Android messen (Chrome DevTools, Leistung): Menü-
-      Vorhang und Bild-Enthüllung beim Wischen, Wischen ohne Lenis (Entscheid 39), gelegentliche
-      Stockung von 83 ms beim Wischen. In der Cloud-Umgebung ohne Grafikchip lief der Vorhang am
-      Desktop mit halber Bildrate; das sagt über echte Geräte wenig aus.
-- [ ] Auf einem iPhone prüfen: Bild-Enthüllung ab einem Viertel bzw. 12 % der Fensterhöhe, an der
-      Fensterkante und nach kurzer Ruhe im untersten Streifen (Entscheide 40 bis 42) fühlt sich
-      beim Lesen ruhig an; Seitenwechsel in Safari (ohne Navigation API) lassen die Leiste
-      stehen (Entscheid 42); das offene Menü sperrt den
-      Hintergrund (ohne Lenis nur über `overflow: hidden` am `<html>`; iOS vor 16 beachtet das
-      beim Wischen nicht, nicht prüfbar).
+- [ ] Bewegung auf echten Geräten ansehen (Entscheid 49), geprüft ist sie nur in Chromium:
+  - iPhone und iPad mit Safari 26 oder neuer: Die Bewegung hängt am Scrollen (Bogen über Bogen,
+    Überschriften, Fotos, Band, Linie im Service), Fotos sind in ihren runden Rahmen sauber
+    abgeschnitten (`overflow: clip`), und beim Wischen stockt nichts.
+  - Safari vor 26 und Firefox: Dort gibt es die Bewegung beim Scrollen nicht (`@supports`).
+    Alles steht, das Band ist eine umbrechende Liste; Auftakt, Menü und Header bleiben.
+  - Mittelklasse-Android (Chrome DevTools, Leistung): Wischen durch die ganze Seite und der
+    Menü-Vorhang. In der Cloud-Umgebung ohne Grafikchip sagt die Messung über echte Geräte
+    wenig aus.
+  - Seitenwechsel in Safari (ohne Navigation API) lassen die Leiste stehen (Entscheid 42); das
+    offene Menü sperrt den Hintergrund (ohne Lenis nur über `overflow: hidden` am `<html>`; iOS
+    vor 16 beachtet das beim Wischen nicht, nicht prüfbar).
+- [ ] Mit einem Screenreader hören, ob jede Überschrift als ein Name gelesen wird: Ihre Wörter
+      stehen einzeln in Masken und sind stumm, der Text steht als `aria-label` an der
+      Überschrift (Entscheid 49).
 - [ ] Kontrast des Knopfs «Beratung anfragen» in der Kapsel von Hand bestätigen: axe kann ihn wegen
       der Ebene für den Hover-Schein (`::after`) nicht mehr berechnen. Gemessen 7,2:1 (berechnet)
       und 7,3:1 (Pixel), Hover 9,2:1; erfüllt AA. Die Farben sind unverändert.
@@ -111,6 +116,3 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
       `getComputedStyle()` den Stil einer nicht beteiligten Ebene liest, für die eine Regel mit
       `:only-child` gilt (etwa `::view-transition-new(site-bar)`). Die Website liest ihn nie,
       Tests nutzen `getAnimations()`. Kleinstes Beispiel bei Bedarf als Fehlerbericht an Chromium.
-- [ ] Setzt man im Hero fort, steht man am Ende der angepinnten Strecke (die Ansicht bleibt, die
-      erste Zeile und das Bild gleiten zu ihrem Endpunkt, Entscheid 42). Oben am Anfang zu bleiben,
-      hiesse den Inhalt um die gescrollte Strecke zu verschieben.

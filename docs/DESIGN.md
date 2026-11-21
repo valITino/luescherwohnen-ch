@@ -111,8 +111,8 @@ acht Breiten). E-Mail-Adressen dürfen nur am «@» umbrechen (`<wbr>`).
   (Logo, Anrufen, CTA, Menü-Knopf). Der runde Telefon-Knopf ist eine Ergänzung für die Zielgruppe.
   Vollbild-Menü mit nummerierten Punkten, Kontakt und Öffnungszeiten.
 - **Schwebende Bedienelemente** (`Chrome.astro`): Fortschritt (Balken mobil, Schiene ab 1280 px),
-  Cookie-Knopf (erklärt, warum es keinen Banner gibt), «Bewegung pausieren» (nur wo sich etwas
-  dauerhaft bewegt: das Band auf der Startseite).
+  Cookie-Knopf (erklärt, warum es keinen Banner gibt), «Bewegung pausieren» (auf der
+  Startseite: stellt ab, was beim Scrollen mitzieht, und das sanfte Scrollen).
 - **Öffnungsstatus**: «Geöffnet bis 18:30» bzw. «Geschlossen · öffnet morgen 10:00», in der Zeitzone
   von Baden, jede Minute neu. Ohne JavaScript stehen nur die Öffnungszeiten als Liste (im Kontakt).
 - **Fokus-Ring**: 3 px dunkles Grün mit 3 px Abstand, auf der dunklen Bühne Lüscher-Grün.
@@ -131,8 +131,8 @@ acht Breiten). E-Mail-Adressen dürfen nur am «@» umbrechen (`<wbr>`).
   leisen Zeile mit Plus, das zum Minus wird. Der Text steht im HTML (für Suchmaschinen
   gleichwertig) und erscheint beim Öffnen sofort, ohne Einblenden.
 - **Unser Team** (Über uns): runde Fotos mit Name und Aufgabe; wo es noch kein Foto gibt, die
-  Initialen auf Salbei statt eines Platzhalterbildes. Die Fotos öffnen sich beim Hereinscrollen
-  wie die Blende im Hero, nacheinander im Abstand `--stagger`; Namen stehen sofort da.
+  Initialen auf Salbei statt eines Platzhalterbildes. Beim Hereinscrollen rücken die Personen
+  eine nach der anderen nach, die Fotos setzen sich im Kreis aus einem leichten Zoom.
 - **Besuchszeile** (unter dem Hero): Live-Status, Adresse, «Route planen» und der Weg zu
   Öffnungszeiten und Termin in einer Zeile zwischen Haarlinien.
 
@@ -147,50 +147,57 @@ acht Breiten). E-Mail-Adressen dürfen nur am «@» umbrechen (`<wbr>`).
 
 ## 6. Motion
 
-Stand nach der Überarbeitung vom 20.11.2026 und drei Prüfrunden danach (Entscheide 37 bis 40).
+Stand nach dem Umbau vom 21.11.2026 (Entscheid 49): Was beim Scrollen geschieht, hängt an der
+Scrollposition. Davor liefen Auftritte nach Zeit (Entscheide 37 bis 44); beim Scrollen in
+normalem Tempo standen Überschriften und Fotos dann mitten im Bild noch halb fertig da.
 Bewegung soll ruhig und präzise wirken und eine Zielgruppe ab 40 nie beim Lesen aufhalten.
 
 ### Grundsätze
 
-1. **Ankommen statt vorführen.** Alles bremst weich in seine Lage: Auftritte mit Expo- oder
-   Quint-Kurve. Ausgänge sind kurz und antworten schon im ersten Bild: Menü und Seitenwechsel
-   bremsen, der Header blendet beim Abtauchen gleichmässig aus (`linear`) und bremst nur seine
-   kleine Bewegung. Kein Überschwingen, kein Federn, keine Drehung, keine Unschärfe.
-2. **Eine Sprache.** Text steigt aus einer Maske, Bilder öffnen sich durch einen Clip, Flächen
-   falten sich auf. Bewegt werden nur `transform` (auch `translate` und `scale`), `opacity` und
-   `clip-path`. Farbwechsel bis 250 ms bei Hover und Fokus sind erlaubt.
-3. **Lesen geht vor.** Foto und Lead im Hero stehen ab dem ersten Bild, Titelzeilen und Knöpfe
-   sind nach etwa einer halben Sekunde klar, der Rest (bis 1,2 s) ist nur Ausklang. Fliesstext
-   blendet nie ein.
-4. **Zwei Signaturen, sonst Ruhe.** Der Auftakt im Hero und der Menü-Vorhang zeigen sich; alles
-   andere ist Präzision: dieselben Kurven, gestaffelt und jederzeit unterbrechbar.
-5. **Im Zweifel sichtbar.** Ohne JavaScript ist alles sichtbar, verborgen ist nur, was ein Skript
-   selbst gesetzt hat. Bei reduzierter Bewegung bewegt sich nichts und nichts wartet. Mit dem
-   Schalter «Bewegung pausieren» steht alles wie bei reduzierter Bewegung: Dauerbewegung hält
-   an, Auftritte, Übergänge, der Formwechsel des Headers und der Seitenübergang entfallen, der
-   Browser scrollt selbst (kein Ausgleiten), und nichts hängt am Scrollen. Ein Sprung zu einer
-   Marke landet auf fertigem Inhalt, genau unter dem Header.
+1. **Der Mensch bewegt, die Seite antwortet.** Was beim Scrollen ins Bild kommt, hängt an der
+   Scrollposition (CSS `animation-timeline`), nie an einem Zeitgeber. Wer schnell scrollt, sieht
+   die Bewegung schnell, wer anhält, hält sie an, zurück läuft sie rückwärts. Nichts wartet,
+   nichts läuft nach. Der Zustand der Seite ist allein eine Frage der Stelle, an der sie steht:
+   Ein Sprung zu einer Marke landet darum immer auf fertigem Inhalt.
+2. **Jede Bewegung hat einen Grund.** Der nächste Bogen schiebt sich über den vorherigen (so ist
+   die Seite gebaut). Der Weg im Service zeichnet sich, während man ihn liest. Der Sucher stellt
+   auf das Porträt scharf. Die Blende vom Anfang schliesst sich am Ende. Was keinen Grund hat,
+   bewegt sich nicht.
+3. **Lesen geht vor.** Alles kommt von unten und setzt sich im unteren Teil des Fensters.
+   Oberhalb von 70 % der Fensterhöhe (von oben gezählt) steht alles still: die Lesezone. Text
+   blendet nie ein, er rückt nur nach oder steigt aus seiner Maske. Foto und Lead im Hero stehen
+   ab dem ersten Bild.
+4. **Eine Sprache.** Text steigt aus einer Maske, Fotos setzen sich aus einem leichten Zoom,
+   Flächen falten sich auf. Bewegt werden nur `transform` (auch `translate` und `scale`),
+   `opacity` und `clip-path`. Farbwechsel bis 250 ms bei Hover und Fokus sind erlaubt. Kein
+   Überschwingen, kein Federn, keine Drehung, keine Unschärfe.
+5. **Nach Zeit läuft nur, was eine Antwort auf eine Handlung ist:** der Auftakt beim Laden, das
+   Menü, der Formwechsel des Headers, der Seitenwechsel, eine Wahl («Raum für Raum»). Das bremst
+   weich in seine Lage und antwortet im ersten Bild.
+6. **Im Zweifel steht alles.** Der normale Stil ist der Endzustand. Ohne Unterstützung im
+   Browser, bei reduzierter Bewegung, im Druck und mit dem Schalter «Bewegung pausieren» gilt er
+   allein. Ohne JavaScript läuft die Bewegung beim Scrollen trotzdem: Sie ist reines CSS.
 
 ### Tokens
 
 Eine Quelle je Laufzeit: `packages/ui/src/styles/tokens.css` für CSS,
-`packages/ui/src/motion/tokens.ts` (`EASE`, `DUR`, `STAGGER`) für GSAP und Timer.
-`packages/ui/test/motion-tokens.test.ts` hält beide gleich und misst jede GSAP-Kurve an ihrer
-CSS-Kurve (Abweichung höchstens 0,012).
+`packages/ui/src/motion/tokens.ts` (`EASE`, `DUR`, `STAGGER`) für Zeitgeber in Skripten.
+`packages/ui/test/motion-tokens.test.ts` hält beide gleich.
 
-| Token                         | Wert                             | GSAP           | Verwendung                                  |
-| ----------------------------- | -------------------------------- | -------------- | ------------------------------------------- |
-| `--ease-out` (Alias `--ease`) | `cubic-bezier(0.22, 1, 0.36, 1)` | `power4.out`   | Standard: Bedienelemente, Folgeelemente     |
-| `--ease-expo`                 | `cubic-bezier(0.16, 1, 0.3, 1)`  | `expo.out`     | lange Landungen: Zeilen, Bilder, Signaturen |
-| `--ease-in-out`               | `cubic-bezier(0.65, 0, 0.35, 1)` | `power2.inOut` | Flächen, die auf- und wieder zufahren       |
-| `--ease-in`                   | `cubic-bezier(0.32, 0, 0.67, 0)` | `power2.in`    | Reserve; zurzeit nicht verwendet            |
+| Token                         | Wert                             | Verwendung                                        |
+| ----------------------------- | -------------------------------- | ------------------------------------------------- |
+| `--ease-out` (Alias `--ease`) | `cubic-bezier(0.22, 1, 0.36, 1)` | Standard: Bedienelemente, Auftritte beim Scrollen |
+| `--ease-expo`                 | `cubic-bezier(0.16, 1, 0.3, 1)`  | lange Landungen: Zeilen, Bilder, Signaturen       |
+| `--ease-in-out`               | `cubic-bezier(0.65, 0, 0.35, 1)` | Flächen, die auf- und wieder zufahren             |
+| `--ease-in`                   | `cubic-bezier(0.32, 0, 0.67, 0)` | Reserve; zurzeit nicht verwendet                  |
+| `--scrub`                     | `linear`                         | nur für Bewegung, die an der Scrollposition hängt |
 
 | Token             | Wert    | Verwendung                                       |
 | ----------------- | ------- | ------------------------------------------------ |
 | `--dur-1`         | 150 ms  | Mikro: Farbe; Ausgänge (Header, alte Seite)      |
 | `--dur-2`         | 250 ms  | Zustand; Leiste beim Seitenwechsel               |
 | `--dur-3`         | 400 ms  | Flächen: Kapsel, Menü schliessen, Header-Wechsel |
-| `--dur-4`         | 800 ms  | Auftritte: Zeilen, Kicker, Bild-Enthüllung       |
+| `--dur-4`         | 800 ms  | Wechsel einer Bühne: Foto, Jahreszahl            |
 | `--dur-5`         | 1200 ms | Signatur: Hero-Blende                            |
 | `--stagger`       | 70 ms   | Versatz in einer Folge                           |
 | `--stagger-tight` | 45 ms   | dichte Folge, z. B. Menüpunkte                   |
@@ -200,7 +207,50 @@ Begründete Einzelwerte stehen mit Kommentar im Code: Zeilen im Hero 1000 ms
 Menü 560 ms, Glasfläche der Kapsel 360 ms, neue Seite beim Seitenwechsel 480 ms (40 ms später),
 Hover-Zoom der Fotos 700 ms.
 
-### Bewegte Momente
+### Mit dem Scrollen
+
+Die Bausteine stehen in `packages/ui/src/styles/scroll.css`, die Choreografie der Abschnitte in
+`apps/web/src/styles/scroll.css`. Strecken zählen ab der unteren Fensterkante in Anteilen der
+Fensterhöhe, nicht in Anteilen des Elements: So setzt sich jeder Block gleich weit über der
+Kante, wie hoch er auch ist.
+
+1. **Bogen über Bogen**: Sobald der nächste Bogen unten ins Bild kommt, bleibt der aktuelle
+   zurück (er zieht nur noch gut halb so schnell weiter, `translate`), und der nächste schiebt
+   sich mit seinen runden Ecken darüber. Die Strecke ist immer eine Fensterhöhe, wie hoch der
+   Bogen auch ist. Der Hero ist der erste Bogen: Er hält das Scrollen nicht an (früher stand er
+   am Desktop 675 px lang still). Das schmale Band zieht ganz durch, der letzte Bogen (Kontakt)
+   läuft normal in den Footer.
+2. **Auftritt** (`.sc-rise`): Ein Block kommt etwas tiefer ins Bild (32 bis 60 px je nach
+   Bildschirm) und holt auf den ersten 30 % der Fensterhöhe auf. Die Kurve bremst: Der grösste
+   Teil des Wegs liegt gleich an der Kante. Geschwister nebeneinander (Karten, Personen) sind
+   versetzt (`--sc-i`).
+3. **Überschriften** (`Words.astro`, `.sc-w`): Jedes Wort steht in einer eigenen Maske und
+   steigt auf den ersten 24 % der Fensterhöhe heraus. Wörter einer Zeile kommen gemeinsam ins
+   Bild und steigen darum gemeinsam: Zeile für Zeile, ohne dass ein Skript die Zeilen kennen
+   muss. Für Screenreader sind die Wörter stumm, die Überschrift trägt den Text als
+   `aria-label` (ohne weiche Trennstriche).
+4. **Fotos** (`.sc-zoom`): vom ersten Pixel an ganz zu sehen (weder durchsichtig noch
+   beschnitten, darum lädt der Browser sie rechtzeitig vor) und setzen sich über 60 % der
+   Fensterhöhe gleichmässig aus einem Zoom von 1.16. Der Rahmen schneidet ab.
+5. **Hero**: Während er zurückbleibt, rückt das runde Foto näher (`scale` bis 1.1): Es geht in
+   die Räume.
+6. **Band**: Die Wörter aus Sortiment und Service als zwei Reihen grosser Schrift. Sie laufen
+   nicht von selbst: Die obere zieht mit dem Scrollen nach links, die untere nach rechts. Darum
+   braucht das Band keinen Knopf zum Anhalten. Ohne Bewegung ist es eine ruhige, umbrechende
+   Liste.
+7. **Haltung**: Die drei Sätze werden Wort für Wort dunkel (Deckkraft 0,2 bis 1), im Takt des
+   Scrollens; in der Fenstermitte steht der Satz ganz da. Die Wörter stehen als `<span>` im
+   Markup, der Satz bleibt ein Absatz.
+8. **Service**: Die Überschrift bleibt am Desktop stehen. Eine grüne Linie wächst mit dem
+   Scrollen von der Beratung bis «Danach»; ihre Spitze bleibt auf 58 % der Fensterhöhe, wo man
+   liest. Jeder Punkt wird grün, wenn die Spitze ihn erreicht.
+9. **Über uns**: Der Sucher stellt scharf. Die vier Ecken rücken an ihren Platz, während das
+   Porträt sich setzt. Die Personen im Team rücken eine nach der anderen nach.
+10. **Der Kreis schliesst sich**: Kommt der Kontakt ins Bild, öffnet sich oben rechts die grüne
+    Scheibe (ab 64rem), wie die Blende des Fotos ganz oben. Am Ende der Seite steigt die
+    Wortmarke im Footer mit den letzten Schritten aus ihrer Maske.
+
+### Nach Zeit
 
 Die beiden Signaturen:
 
@@ -208,9 +258,8 @@ Die beiden Signaturen:
    Blende (`clip-path` von 30 % auf den vollen Kreis, Zoom von 1.1 auf 1, `--dur-5`,
    `--ease-out`) und ist ab dem ersten Bild sichtbar. Die Zeilen der Headline steigen dicht
    nacheinander aus ihrer Maske. Während sie noch gleiten, setzen sich Lead (ab 200 ms, nur
-   `transform` um 4 px, vom ersten Bild an lesbar), Buttons (260 ms) und Anzeige (320 ms); nach 1,2 s
-   ruht alles. Auf grossen Bildschirmen bleibt der Hero beim Scrollen kurz stehen, die erste
-   Zeile tritt zurück, das Bild rückt etwas näher.
+   `transform` um 4 px, vom ersten Bild an lesbar), Buttons (260 ms) und Anzeige (320 ms); nach
+   1,2 s ruht alles.
 2. **Menü-Vorhang**: Das Menü rollt vom Header nach unten aus (560 ms, `--ease-expo`), die grossen
    Wörter steigen schon ab 70 ms im Abstand `--stagger-tight` aus ihrer Maske, die Pfeile folgen
    je 40 ms später, der Kontaktblock setzt sich ab 200 ms. Beim Schliessen fährt der Vorhang in
@@ -231,46 +280,7 @@ Alles andere ist leise:
    (Direktlink, wiederhergestellte Position) und bei angehaltener Bewegung steht die Form sofort,
    samt Glasfläche. Mit Tastaturfokus stehen nur Deckkraft und Lage sofort; die Farben beim Hover
    gleiten weiter.
-2. **Überschriften**: Der Kicker zeichnet sich ein (`clip-path`, `--dur-4`), 60 ms später steigen
-   die Zeilen aus ihrer Maske (GSAP SplitText, `--dur-4`, `expo.out`, `--stagger`). Die Zeilen
-   sind dabei genau die, die der Browser setzt: Jeder Umbruch wird vorher gemessen und bis zum
-   Ende fest gesetzt (sonst bräche SplitText ausgewogene Überschriften und weiche Trennstriche
-   anders um, und am Ende spränge der Umbruch). Screenreader hören dabei den Namen ohne den
-   sichtbar gesetzten Trennstrich. Danach ist das Markup wieder wie zuvor.
-3. **Bild-Enthüllung** (`.enter-unveil`: Sortiment, Aktuell, Projekte, Porträt): Das Foto steigt
-   vom unteren Rand seines Rahmens auf und setzt sich aus einem leichten Zoom zur Mitte hin
-   (`clip-path` und `scale` am Bild selbst, `--dur-4`, `--ease-expo`). Am Bild statt am Rahmen,
-   weil der Browser dann nur eine Ebene bewegt: Beim Wischen auf dem Handy fielen so gemessen
-   halb so viele Bilder aus. Es beginnt, sobald ein Viertel des Rahmens zu sehen ist, bei hohen
-   Rahmen (höher als gut die halbe Fensterhöhe, etwa das Porträt) schon bei 12 % der
-   Fensterhöhe; bleibt der Rahmen knapp darunter stehen, nach 250 ms. Hält man an, während ein
-   Rahmen erst im untersten Streifen steht (unter der Schwelle, mindestens 16 px im Bild), nach
-   300 ms Ruhe. Steht erst der obere Teil des Bildes im Fenster, beginnt der Ausschnitt an der
-   Fensterkante statt am unteren Rand des Rahmens (`--unveil-from`, mit dem Zoom verrechnet): So
-   spielt sich das ganze Aufsteigen dort ab, wo man hinsieht, und kein Rahmen steht lange leer
-   im Bild. Solange es wartet, ist das Bild nur durchsichtig (nicht beschnitten, sonst lädt der
-   Browser es nicht vor), und der Rahmen ist leer statt sandfarben. Lädt das Foto beim Auftritt
-   noch (langsames Netz), wartet die Enthüllung bis zu 500 ms; danach verzichtet sie darauf, der
-   Rahmen bleibt leer, und das Foto blendet ein, sobald es da ist (`--dur-3`, nur Deckkraft).
-   Kommt es auch nach drei weiteren Sekunden nicht, zeigt der Rahmen wieder seine Sandfläche.
-   Bilder, die zusammen ankommen, folgen einander im Abstand `--stagger` (höchstens drei
-   Versätze), auch wenn sie zusammen knapp unter der Schwelle warten; öffnet sich eines, folgen
-   die knapp darunter wartenden gleich mit (Rahmen nebeneinander mit verschiedener Höhe).
-4. **Über uns**: Der Sucher beginnt mit dem Foto. Die unteren Ecken rücken nach 140 ms weich an
-   ihren Platz (`--dur-4`, `--ease-expo`), die oberen erst nach 420 ms, wenn das aufsteigende Foto
-   sie erreicht (vorher wären sie hell auf hellem Rahmen); ab 450 ms tastet eine grüne Linie das
-   Bild einmal ab (nur `transform`, `--dur-4`), knapp hinter der Oberkante des Fotos. Ecken und
-   Linie liegen auf dem Foto, nicht auf dem ganzen Rahmen: Die Linie endet an der Unterkante des
-   Fotos, statt durch den Bildtext zu laufen. Am Desktop füllt das Foto den Rahmen bis zum
-   Bildtext (der Rahmen ist so hoch wie die Spalte daneben). Die Werte erscheinen im Abstand
-   `--stagger`.
-5. **Haltung**: Die Wörter werden beim Scrollen dunkel, jedes mit weichem Ein- und Auslauf
-   (angehalten: volle Deckkraft).
-6. **Service**: Die Überschrift bleibt am Desktop stehen, die Schritte ziehen vorbei.
-7. **Band**: Die Wörter aus Sortiment und Service als zwei gegenläufige Reihen grosser Schrift,
-   ohne Überschrift und Etiketten, die Enden laufen weich aus (statische Maske). Pausiert bei
-   Hover, Fokus und über den runden Knopf; reduziert steht es still und bricht um.
-8. **Seitenwechsel** (View Transitions zwischen Dokumenten, reines CSS): Der Header steht still,
+2. **Seitenwechsel** (View Transitions zwischen Dokumenten, reines CSS): Der Header steht still,
    weil die Leiste oben als eigene Ebene `site-bar` übergeben wird. Die Kapsel trägt diesen Namen
    nie: Sonst zöge der Browser sie auf die Grösse der Leiste (verzerrt), und ihr Milchglas bliebe
    klar (ein benanntes Element begrenzt die Unschärfe seiner Kinder). Verlässt man die Seite aus
@@ -288,23 +298,20 @@ Alles andere ist leise:
    ersten Bild aus dem Takt geraten, dann wird die Leiste für ein Bild grau). Die alte Seite weicht schnell (`--dur-1`,
    `--ease-out`), die neue setzt sich 40 ms später von leicht unten (480 ms, `--ease-expo`); so
    liegen die beiden kaum übereinander.
-9. **Eins wählen, eins sehen**: Im Sortiment steigt beim Wechsel das neue Foto in der Sprache der
-   Bild-Enthüllung über das alte (`unveil`, `--dur-4`, `--ease-expo`), das alte bleibt stehen,
-   bis es gedeckt ist; der Text ist sofort lesbar und rückt nur 4 px nach (`--dur-3`). Der
-   gewählte Name wird dunkel und rückt 6 px ein. In der Firmengeschichte steigt die grosse
-   Jahreszahl aus ihrer Maske, das Foto öffnet sich, die grüne Linie wächst (`scaleX`, `--dur-4`).
-   Bei reduzierter oder angehaltener Bewegung wechselt alles sofort.
-10. **Der Kreis schliesst sich**: Kommt der Kontakt ins Bild, öffnet sich oben rechts einmal eine
-    grüne Scheibe wie die Blende des Fotos im Hero (`clip-path` und `scale`, `--dur-5`, ab
-    64rem), und der Punkt des Öffnungsstatus atmet wie oben im Hero: Die Seite endet mit dem
-    Signal, mit dem sie beginnt.
-11. **Kleinigkeiten**: Der Bewegungsschalter faltet sich am Desktop beim Scrollen (und auf den
-    Unterseiten) zu seinem runden Ende und mit Zeiger oder Fokus wieder auf, nur über den
-    Ausschnitt (`clip-path`, `--dur-3`, `--ease-expo`): Nichts verschiebt sich, ein Klick trifft
-    nur, was zu sehen ist. Der Hover-Schein der Buttons liegt auf einer eigenen Ebene (`::after`) und
-    blendet nur über; die Lichtkante des sekundären Buttons wächst aus der Mitte (`scaleX`,
-    `--dur-3`). Fotos zoomen bei Hover fein (nur feiner Pointer). Der Cookie-Hinweis wächst aus
-    seinem Knopf ohne Überschwingen, die «404» rückt einmal von leicht unten an ihren Platz.
+3. **Eins wählen, eins sehen**: Im Sortiment steigt beim Wechsel das neue Foto vom unteren Rand
+   seines Rahmens über das alte (`unveil`, `clip-path` und Zoom am Bild, `--dur-4`,
+   `--ease-expo`), das alte bleibt stehen, bis es gedeckt ist; der Text ist sofort lesbar und
+   rückt nur 4 px nach (`--dur-3`). Der gewählte Name wird dunkel und rückt 6 px ein. In der
+   Firmengeschichte steigt die grosse Jahreszahl aus ihrer Maske, das Foto öffnet sich, die grüne
+   Linie wächst (`scaleX`, `--dur-4`). Bei reduzierter oder angehaltener Bewegung wechselt alles
+   sofort.
+4. **Kleinigkeiten**: Der Bewegungsschalter faltet sich am Desktop beim Scrollen (und auf den
+   Unterseiten) zu seinem runden Ende und mit Zeiger oder Fokus wieder auf, nur über den
+   Ausschnitt (`clip-path`, `--dur-3`, `--ease-expo`): Nichts verschiebt sich, ein Klick trifft
+   nur, was zu sehen ist. Der Hover-Schein der Buttons liegt auf einer eigenen Ebene (`::after`) und
+   blendet nur über; die Lichtkante des sekundären Buttons wächst aus der Mitte (`scaleX`,
+   `--dur-3`). Fotos zoomen bei Hover fein (nur feiner Pointer). Der Cookie-Hinweis wächst aus
+   seinem Knopf ohne Überschwingen, die «404» rückt einmal von leicht unten an ihren Platz.
 
 ### Regeln
 
@@ -313,16 +320,30 @@ Alles andere ist leise:
   `background-position`. Ein Schatten, der sich ändern soll, liegt auf einer eigenen Ebene und
   blendet über `opacity`. Der Wächter `scripts/motion-guard.test.ts` (Teil von `pnpm test`)
   prüft alle Stylesheets und Astro-Komponenten.
-- **Kurven nur aus `tokens.css`**, dazu `linear` für das Abtauchen im Header und das Band;
-  keine mit einem y-Wert unter 0 oder über 1; keine Keyframe-Animation dreht etwas. Auch das
-  prüft der Wächter, gegen eine Positivliste der Eigenschaften, und `linear` nur dort, wo es
-  vorgesehen ist.
+- **Kurven nur aus `tokens.css`**; keine mit einem y-Wert unter 0 oder über 1; keine
+  Keyframe-Animation dreht etwas. Das Wort `linear` steht nur beim Abtauchen im Header und im
+  Token `--scrub`. Auch das prüft der Wächter, gegen eine Positivliste der Eigenschaften.
+- **Bewegung an der Scrollposition steht nur in den beiden `scroll.css`**, in einem Block, der
+  Unterstützung (`@supports (animation-timeline: view())`) und gewünschte Bewegung voraussetzt,
+  und jede Regel gilt nicht bei angehaltener Bewegung (`html:not([data-motion='off'])`). Der
+  Wächter prüft das.
+- **Zwei Fallen des Builds**, beide gemessen und mit Tests abgesichert:
+  - Der CSS-Minifier legt `animation` und `animation-timeline` zu einer Angabe zusammen, die
+    kein Browser annimmt, und schreibt `exit-crossing 100%` zu `exit-crossing 0%` um. Darum
+    enthält jede dieser Kurzschreibweisen eine Variable (die Kurve aus den Tokens), und das Ende
+    der Bogen-Strecke steht als `cover var(--sc-end, 100%)`.
+  - Ein Kasten mit `overflow: hidden` ist für den Browser ein eigener Scrollbereich: Was darin
+    an `view()` hängt, misst sich an ihm statt an der Seite und bleibt stehen. Rahmen um solche
+    Inhalte schneiden darum mit `overflow: clip` ab (nur wo es die Bewegung gibt, sonst bleibt
+    `hidden`). `e2e/scroll.spec.ts` prüft am gebauten Stand, dass jede Bewegung einen Namen und
+    eine Zeitleiste hat und sich an der Seite misst.
+- **Als Fenster gilt die Fläche unter dem Header**: Der Browser zieht `scroll-padding-top` von
+  der Zeitleiste ab. Wo auf das ganze Fenster gemessen wird (Hero, Linie im Service), steht der
+  Abzug 0 dabei.
 - **Dauern und Versätze aus den Tokens.** Ein Einzelwert braucht einen Kommentar mit Grund.
-- **Alles endet**: Jeder Auftritt beim Scrollen ist spätestens nach 1410 ms fertig (die Linie im
-  Sucher nach 1250 ms, Bilder nach 800 ms plus drei Versätzen), der Hero ruht nach 1,5 s (beides
-  prüft `e2e/web.spec.ts`). Einzige Ausnahme ist ein Signal, kein Auftritt: Der grüne Punkt des
-  Öffnungsstatus atmet, wenn geöffnet ist, zweimal ruhig aus (2 × 2 s, unter den 5 s von
-  WCAG 2.2.2), im Hero beim Laden, im Kontakt mit dessen Auftritt.
+- **Was nach Zeit läuft, endet**: Der Hero ruht nach 1,5 s (geprüft in `e2e/web.spec.ts`).
+  Einzige Ausnahme ist ein Signal, kein Auftritt: Der grüne Punkt des Öffnungsstatus atmet beim
+  Laden, wenn geöffnet ist, zweimal ruhig aus (2 × 2 s, unter den 5 s von WCAG 2.2.2).
 - **Das grösste Element zuerst**: Foto und Lead im Hero sind ab dem ersten Bild sichtbar (LCP,
   geprüft in `e2e/web.spec.ts`).
 - **Das Skript vor dem ersten Bild**: Das Modul jeder Seite steht im `<head>` und hält das erste
@@ -333,45 +354,50 @@ Alles andere ist leise:
   erste Bild kommt dadurch nicht später, sondern früher (das Modul lädt mit dem Kopf).
 - **Fokus bleibt sichtbar**: Auch im einen Bild, in dem der Header beim Formwechsel verborgen
   ist (`is-swapping`, gegen Layoutverschiebung), bleibt das fokussierte Bedienelement stehen
-  (`visibility`).
+  (`visibility`). Was der nächste Bogen verdeckt, steht geometrisch noch im Fenster; bekommt es
+  den Tastaturfokus, scrollt die Seite so weit zurück, dass sein Bogen wieder frei steht
+  (`cover.ts`, WCAG 2.2, 2.4.11).
 - **Reduzierte Bewegung**: `base.css` schaltet jede Animation ab (`none`, auch eine winzige
-  Dauer zeigte im ersten Bild ihren Anfang) und setzt jeden Übergang auf 0. Kein Lenis, kein
-  Anpinnen, keine Auftritte, kein Seitenübergang, das Band bricht um.
-- **Pause** (`html[data-motion="off"]`): `base.css` hält jede Animation an und setzt jeden
-  Übergang auf 0 (Menü-Vorhang, Hover-Zoom); `header.ts` wechselt die Form ohne Abtauchen und
-  überspringt den Seitenübergang; `smooth.ts` beendet Lenis, der Browser scrollt selbst (ein
-  gleitender Sprung kommt vorher sofort am Ziel an, `home.ts`); `hero.ts` beendet den Auftakt
-  (`data-rested`), nimmt den Scroll-Verlauf weg und gibt das Anpinnen auf, sonst stünde der Hero
-  eine Dreiviertel-Bildschirmhöhe lang still (die Scrollposition gleicht die kürzere Seite aus,
-  was im Bild ist, bleibt); `haltung.ts` zeigt alle Wörter ganz; `reveal.ts` löst alle
-  wartenden und erfolgten Auftritte auf (`data-enter=""`, auch ein spät eingeblendetes Foto);
-  Komponenten setzen ihre laufenden Auftritte ans Ende (Rückfall in CSS). Ein gleitender Sprung
-  kommt nur an, solange niemand mit dem Rad übernommen hat; dann bleibt die Seite, wo sie ist.
-  Beim Fortsetzen laufen Dauerbewegung, Lenis und die Effekte am Scrollen wieder, Auftritte
-  spielen nicht ein zweites Mal (geprüft in `e2e/web.spec.ts`). Steht man dabei im Hero, gleiten
-  erste Zeile und Bild an den Punkt, den das wieder angepinnte Scrollen vorgibt (`--dur-3`,
-  `data-settling`), statt in einem Bild dorthin zu springen. Kommt man aus dem Verlauf auf eine
-  angehaltene Seite zurück (bfcache), überspringt sie den Übergang. Der Schalter gilt nur für die aktuelle Seite: Ohne Web-Speicher kann ihn
-  die nächste Seite nicht kennen.
-- **Ohne JavaScript** gibt es keinen Wartezustand; CSS-Auftritte (Hero, 404) enden sichtbar.
-- **Sprünge** (`data-jump` am `<html>`, `home.ts`): Was unterwegs oder am Ziel ins Bild kommt,
-  steht sofort da. Die Marke fällt erst, wenn Lenis nicht mehr gleitet und zehn Bilder lang kein
-  Scrollen kam (gezählt in Bildern, damit eine stockende Darstellung den Sprung nicht beendet).
-  Vor dem Sprung steht alles, was die Seite oberhalb des Ziels noch verlängern würde (Teile mit
-  `data-lazy`, Öffnungsstatus): Sonst endete das Gleiten zu tief.
+  Dauer zeigte im ersten Bild ihren Anfang) und setzt jeden Übergang auf 0; der Block in
+  `scroll.css` gilt gar nicht. Kein Lenis, kein Seitenübergang, das Band bricht um.
+- **Pause** (`html[data-motion="off"]`): Die Regeln in `scroll.css` gelten nicht, alles steht an
+  seinem Platz im Layout (auch mitten in einem Übergang zwischen zwei Bogen). `base.css` hält
+  jede Animation nach Zeit an und setzt jeden Übergang auf 0 (Menü-Vorhang, Hover-Zoom);
+  `header.ts` wechselt die Form ohne Abtauchen und überspringt den Seitenübergang; `smooth.ts`
+  beendet Lenis, der Browser scrollt selbst (ein gleitender Sprung kommt vorher sofort am Ziel
+  an, `home.ts`); `hero.ts` beendet den Auftakt (`data-rested`). Ein gleitender Sprung kommt nur
+  an, solange niemand mit dem Rad übernommen hat; dann bleibt die Seite, wo sie ist. Beim
+  Fortsetzen hängt die Bewegung wieder am Scrollen, der Auftakt spielt nicht ein zweites Mal
+  (geprüft in `e2e/web.spec.ts`). Kommt man aus dem Verlauf auf eine angehaltene Seite zurück
+  (bfcache), überspringt sie den Übergang. Der Schalter gilt nur für die aktuelle Seite: Ohne
+  Web-Speicher kann ihn die nächste Seite nicht kennen.
+- **Ohne Unterstützung** (Firefox, Safari vor 26): Der Block in `scroll.css` gilt nicht. Alles
+  steht, das Band ist eine umbrechende Liste; Auftakt, Menü, Header und Wahl bleiben.
+- **Ohne JavaScript** läuft die Bewegung beim Scrollen wie mit (reines CSS); CSS-Auftritte nach
+  Zeit (Hero, 404) enden sichtbar. Nur der Schalter fehlt; `prefers-reduced-motion` gilt.
+- **Sprünge** (`data-jump` am `<html>`, `home.ts`): Die Marke zeigt, dass die Seite unterwegs
+  ist (für das Anhalten mitten im Sprung und für die Tests). Sie fällt erst, wenn Lenis nicht
+  mehr gleitet und zehn Bilder lang kein Scrollen kam (gezählt in Bildern, damit eine stockende
+  Darstellung den Sprung nicht beendet). Vor dem Sprung steht alles, was die Seite oberhalb des
+  Ziels noch verlängern würde (Teile mit `data-lazy`, Öffnungsstatus): Sonst endete das Gleiten
+  zu tief. Auf fertigem Inhalt landet er von selbst.
 - **CSP**: keine `style`-Attribute im Markup; Skripte dürfen `element.style` und eigene
-  Custom Properties setzen (z. B. `--enter-i`, `--unveil-from`).
-- **Keine weitere Bibliothek**: GSAP mit SplitText und Lenis (lerp 0.1) genügen. Lenis läuft nur
-  mit Maus oder Trackpad: Auf Geräten, die man nur mit dem Finger bedient, scrollt der Browser
-  selbst (Lenis hängte sich sonst mit blockierenden Zuhörern an jede Berührung), Sprünge zu
-  Marken sind dort sofort am Ziel. Ein Punkt im Menü springt auch am Desktop sofort, unter dem
-  Vorhang: Hebt er sich, steht das Ziel schon da. Eine Taste zum Scrollen hält ein Ausgleiten von Lenis an,
+  Custom Properties setzen (z. B. `--yr-p`). Platz in einer Folge (`--sc-i`, `--w`) kommt aus
+  `:nth-child`-Regeln, nie aus einem `style`-Attribut.
+- **Eine Bibliothek**: Lenis (lerp 0.1) für sanftes Scrollen mit Maus oder Trackpad. GSAP,
+  ScrollTrigger und SplitText sind entfallen (Entscheid 49): JavaScript der Startseite 13,4 KB
+  statt 63,0 KB. Auf Geräten, die man nur mit dem Finger bedient, scrollt der Browser selbst
+  (Lenis hängte sich sonst mit blockierenden Zuhörern an jede Berührung), Sprünge zu Marken sind
+  dort sofort am Ziel. Ein Punkt im Menü springt auch am Desktop sofort, unter dem Vorhang: Hebt
+  er sich, steht das Ziel schon da. Eine Taste zum Scrollen hält ein Ausgleiten von Lenis an,
   die Leertaste auf einem Knopf nicht (sie löst den Knopf aus).
 - **Ältere Browser**: Neuere Schnittstellen nur mit Prüfung (z. B. `checkVisibility()`, fehlt in
-  Safari vor 17.4; `requestIdleCallback`).
+  Safari vor 17.4; `requestIdleCallback`; `animation-timeline` über `@supports`).
 
-Bewusst nicht: Auftritte aus der Unschärfe, Parallax, Fliesstext, der beim Scrollen einblendet,
-gescrubbte Galerien, eigener Mauszeiger, magnetische oder kippende Elemente, Zähler.
+Bewusst nicht: Bewegung, die von selbst läuft, Auftritte nach Zeit beim Scrollen, Auftritte aus
+der Unschärfe, Fliesstext, der beim Scrollen einblendet, Bühnen, die das Scrollen weiterschaltet
+(gewechselt wird nur durch eine Wahl), ein Abschnitt, der das Scrollen anhält, eigener
+Mauszeiger, magnetische oder kippende Elemente, Zähler.
 
 ## 7. Technische Regeln fürs Markup
 

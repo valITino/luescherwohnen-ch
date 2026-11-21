@@ -1,5 +1,19 @@
 # Stand je Phase
 
+## 21.11.2026: Bewegung folgt dem Scrollen
+
+Auftrag des Repository-Inhabers: Übergänge und Animationen sollen zum Scrollen passen und Sinn
+ergeben (`docs/DECISIONS.md` 49, `docs/DESIGN.md` Abschnitt 6). Aufnahmen beim Scrollen zeigten
+drei Stellen, an denen die Bewegung nicht zum Scrollen passte: Der Hero stand am Desktop 675 px
+lang still; Überschriften und Fotos liefen nach Zeit und waren mitten im Bild noch halb fertig;
+das Band lief von selbst. Jetzt hängt alles, was beim Scrollen geschieht, an der Scrollposition
+(reines CSS): Bogen über Bogen, Auftritte, Überschriften, Fotos, Band, Haltung, die Linie im
+Service, der Sucher im Porträt, die Scheibe im Kontakt, die Wortmarke im Footer. `reveal.ts`,
+`haltung.ts` und GSAP sind entfallen: JavaScript 13,4 KB statt 63,0 KB. Neu `e2e/scroll.spec.ts`
+(elf Tests), ein erweiterter Wächter für die Regeln und ein Schutz für den Tastaturfokus unter
+einem Bogen. Beim Nachmessen zwei Fehler des Umbaus gefunden und behoben (CSS-Minifier, Rahmen
+als eigene Scrollbereiche).
+
 ## 20.11.2026: Bewegungssystem
 
 Auftrag des Repository-Inhabers: Bewegung der Demo vereinheitlichen und verfeinern
