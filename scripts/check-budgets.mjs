@@ -11,7 +11,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const KB = 1000;
 
 // `onDemand`: Teile, die erst auf eine Aktion hin laden (Formular in Sicht, Easter Egg).
-// Alles andere, was per import() automatisch nachlädt (z. B. GSAP und Lenis nach dem ersten
+// Alles andere, was per import() automatisch nachlädt (z. B. Lenis nach dem ersten
 // Eindruck), zählt ehrlicherweise zum Budget.
 const SITES = [
   {

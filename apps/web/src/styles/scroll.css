@@ -1,0 +1,189 @@
+/*
+ * Bewegung mit dem Scrollen: die Choreografie der Abschnitte.
+ *
+ * Die Bausteine (Auftritt, Wörter, Foto, Bogen über Bogen) und die Regeln stehen im Designsystem
+ * (packages/ui/src/styles/scroll.css). Hier steht, was nur ein Abschnitt tut, und jede Bewegung
+ * hat ihren Grund:
+ *   Hero       Das runde Foto rückt näher, während der Hero zurückbleibt: Es geht in die Räume.
+ *   Band       Die Wörter ziehen mit dem Scrollen, die Reihen gegenläufig. Nichts läuft von selbst.
+ *   Haltung    Die Sätze werden Wort für Wort dunkel, im Lesetempo des Scrollens.
+ *   Service    Der Weg von der Beratung bis «Danach» zeichnet sich; die Spitze bleibt auf Lesehöhe.
+ *   Über uns   Der Sucher stellt scharf: Die Ecken rücken an, während das Porträt sich setzt.
+ *   Kontakt    Die grüne Scheibe öffnet sich wie die Blende im Hero: Der Kreis schliesst sich.
+ *   Footer     Die Wortmarke steigt mit den letzten Schritten herein und steht am Ende der Seite.
+ *
+ * Alles liegt in einem Block: ohne Unterstützung, bei reduzierter Bewegung, im Druck und mit
+ * angehaltener Bewegung gilt nur der normale Stil der Komponenten (der Endzustand).
+ */
+
+@supports (animation-timeline: view()) {
+  @media screen and (prefers-reduced-motion: no-preference) {
+    /*
+     * Zeitleisten mit Namen: Kinder richten sich nach der Lage dieses Elements im Fenster.
+     * Als Fenster gilt von Haus aus die Fläche unter dem Header (der Browser zieht
+     * `scroll-padding-top` ab). Wo auf das ganze Fenster gemessen wird, steht der Abzug 0 dabei.
+     */
+    .hero {
+      view-timeline: --hero block;
+      view-timeline-inset: 0px;
+    }
+
+    .statement-text {
+      view-timeline: --say block;
+    }
+
+    .portrait-frame {
+      view-timeline: --portrait block;
+    }
+
+    .kontakt-grid {
+      view-timeline: --kontakt block;
+    }
+
+    .footer-word-mask {
+      view-timeline: --word block;
+    }
+
+    /* ---------- Hero ---------- */
+
+    /* Von «Hero oben am Fensterrand» bis «Hero ganz draussen». */
+    html:not([data-motion='off']) .hero-orb {
+      animation: hero-near var(--scrub) both;
+      animation-timeline: --hero;
+      animation-range: exit-crossing 0% exit-crossing 100%;
+    }
+
+    /* ---------- Band ---------- */
+
+    /* Solange das Band im Fenster ist: obere Reihe nach links, untere nach rechts. */
+    html:not([data-motion='off']) .ticker-row {
+      animation: band-left var(--scrub) both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+
+    /* Die untere Reihe liegt nach links versetzt, damit sie nach rechts ziehen kann. */
+    .ticker-row-reverse {
+      translate: -8% 0;
+    }
+
+    html:not([data-motion='off']) .ticker-row-reverse {
+      animation-name: band-right;
+    }
+
+    /* ---------- Haltung ---------- */
+
+    /*
+     * Jedes Wort wird dunkel, wenn der Satz an seiner Stelle der Strecke ankommt (`--w` ist der
+     * Platz des Worts im Satz, Haltung.astro). Steht der Satz in der Fenstermitte, ist er ganz da.
+     */
+    html:not([data-motion='off']) .statement-text .w {
+      animation: say var(--scrub) both;
+      animation-timeline: --say;
+      animation-range: cover calc(12% + var(--w, 0) * 2.5%) cover calc(26% + var(--w, 0) * 2.5%);
+    }
+
+    /* ---------- Service ---------- */
+
+    /*
+     * Die Linie wächst so, dass ihre Spitze auf 58 % der Fensterhöhe bleibt: Sie beginnt, wenn der
+     * Anfang der Schritte dort ankommt, und ist fertig, wenn ihr Ende dort ankommt. Gemessen am
+     * ganzen Fenster (`view(0px)`), sonst läge das Ende um die Höhe des Headers daneben.
+     */
+    html:not([data-motion='off']) .process::after {
+      animation: draw-down var(--scrub) both;
+      animation-timeline: view(0px);
+      animation-range: cover 42svh cover calc(100% - 58svh);
+    }
+
+    /* Jeder Punkt wird grün, wenn die Spitze ihn erreicht. */
+    html:not([data-motion='off']) .process-step::before {
+      animation: dot-on var(--scrub) both;
+      animation-timeline: view(0px);
+      animation-range: cover calc(42svh - 2.5rem) cover 42svh;
+    }
+
+    /* ---------- Über uns ---------- */
+
+    /* Die Ecken des Suchers rücken an, während das Porträt ins Bild kommt. */
+    html:not([data-motion='off']) .portrait-corner {
+      animation: focus-in var(--ease-out) both;
+      animation-timeline: --portrait;
+      animation-range: cover 8svh cover 50svh;
+    }
+
+    /* ---------- Kontakt ---------- */
+
+    html:not([data-motion='off']) .kontakt-disc {
+      animation: disc-open var(--scrub) both;
+      animation-timeline: --kontakt;
+      animation-range: entry 0% cover 55svh;
+    }
+
+    /* ---------- Footer ---------- */
+
+    /* Fertig, wenn die Maske ganz im Fenster steht: kurz vor dem Ende der Seite. */
+    html:not([data-motion='off']) .footer-word-img {
+      animation: word-up var(--ease-out) both;
+      animation-timeline: --word;
+      animation-range: entry 0% entry 100%;
+    }
+  }
+}
+
+@keyframes hero-near {
+  to {
+    scale: 1.1;
+  }
+}
+
+@keyframes band-left {
+  to {
+    translate: -14% 0;
+  }
+}
+
+@keyframes band-right {
+  from {
+    translate: -22% 0;
+  }
+}
+
+@keyframes say {
+  from {
+    opacity: 0.2;
+  }
+}
+
+@keyframes draw-down {
+  from {
+    scale: 1 0;
+  }
+}
+
+@keyframes dot-on {
+  from {
+    scale: 0.45;
+    opacity: 0.4;
+  }
+}
+
+@keyframes focus-in {
+  from {
+    translate: var(--from, 0 0);
+    opacity: 0;
+  }
+}
+
+@keyframes disc-open {
+  from {
+    scale: 0.8;
+    opacity: 0;
+  }
+}
+
+@keyframes word-up {
+  from {
+    translate: 0 100%;
+  }
+}

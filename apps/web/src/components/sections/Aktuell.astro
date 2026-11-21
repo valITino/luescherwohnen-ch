@@ -17,15 +17,15 @@ import SectionHead from '../SectionHead.astro';
     <SectionHead num="03" kicker="Aktuell" title="Neu bei uns." id="aktuell-title" />
 
     <div class="stories">
-      <article class="card story">
-        <div class="story-media enter-unveil" data-enter>
+      <article class="card story sc-rise">
+        <div class="story-media">
           <Picture
             src={druck}
             formats={['avif', 'webp']}
             widths={[360, 600, 1000]}
             sizes="(min-width: 64rem) 43rem, (min-width: 48rem) 45vw, 100vw"
             alt="Ausstellungsecke mit 3D-gedruckten Sesseln, Hocker und Beistelltisch auf orangem Teppich"
-            class="story-photo"
+            class="story-photo sc-zoom"
             loading="lazy"
           />
         </div>
@@ -56,15 +56,15 @@ import SectionHead from '../SectionHead.astro';
         </div>
       </article>
 
-      <article class="card story">
-        <div class="story-media enter-unveil" data-enter>
+      <article class="card story sc-rise">
+        <div class="story-media">
           <Picture
             src={klang}
             formats={['avif', 'webp']}
             widths={[360, 600, 1000]}
             sizes="(min-width: 64rem) 43rem, (min-width: 48rem) 45vw, 100vw"
             alt="Rote Klangbox Senn und Klangbox Huuri aus Holz auf einem Sims mit Herbstlaub"
-            class="story-photo"
+            class="story-photo sc-zoom"
             loading="lazy"
           />
         </div>
@@ -115,7 +115,8 @@ import SectionHead from '../SectionHead.astro';
   .story-media {
     aspect-ratio: 4 / 3;
     overflow: hidden;
-    /* Sandfläche bis zum Bild: .enter-unveil in components.css */
+    /* Sandfläche, bis das Bild geladen ist */
+    background-color: var(--sand);
   }
 
   .story-media :global(.story-photo) {
@@ -141,9 +142,29 @@ import SectionHead from '../SectionHead.astro';
     color: var(--leaf-deep);
   }
 
+  /* Nebeneinander rückt die zweite Geschichte nach der ersten nach (scroll.css, --sc-i). */
   @media (min-width: 48rem) {
     .stories {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .story:nth-child(2) {
+      --sc-i: 1;
+    }
+  }
+
+  /*
+   * Kein eigener Scrollbereich: Ein Kasten mit `overflow: hidden` ist für den Browser einer, und
+   * was darin am Scrollen hängt (scroll.css), mässe sich an ihm statt an der Seite. `clip`
+   * schneidet gleich ab, ohne das. Nur dort, wo es die Bewegung gibt.
+   */
+  @supports (animation-timeline: view()) {
+    .story {
+      overflow: clip;
+    }
+
+    .story-media {
+      overflow: clip;
     }
   }
 </style>

@@ -1,0 +1,28 @@
+---
+/**
+ * Die Wörter einer Überschrift, jedes in seiner Maske: Beim Hereinscrollen steigt so Zeile für
+ * Zeile aus ihrer Maske (scroll.css, `.sc-w`), ohne dass ein Skript die Zeilen kennen muss.
+ *
+ * Für Screenreader sind die einzelnen Wörter stumm (sonst läse mancher sie als einzelne Stücke).
+ * Die Überschrift, die diese Komponente umgibt, trägt den ganzen Text als `aria-label`:
+ *   <h2 aria-label={plainText(title)}><Words text={title} /></h2>
+ */
+interface Props {
+  /** Der Text; weiche Trennstriche (­) bleiben im Wort */
+  text: string;
+}
+
+const { text } = Astro.props;
+const words = text.split(' ').filter(Boolean);
+---
+
+<span class="sc-words" aria-hidden="true">
+  {words.map((word, index) => (
+    <>
+      {index > 0 && ' '}
+      <span class="sc-w">
+        <span class="sc-wi">{word}</span>
+      </span>
+    </>
+  ))}
+</span>

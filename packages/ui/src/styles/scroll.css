@@ -1,0 +1,136 @@
+/*
+ * Bewegung mit dem Scrollen (Bausteine).
+ *
+ * Der Mensch bewegt, die Seite antwortet: Was beim Scrollen ins Bild kommt, hängt an der
+ * Scrollposition (CSS `animation-timeline: view()`), nie an einem Zeitgeber. Darum wartet nichts
+ * und läuft nichts nach. Wer schnell scrollt, sieht die Bewegung schnell, wer anhält, hält sie
+ * an, und zurück läuft sie rückwärts. Der Zustand jedes Elements ist allein eine Frage, wo es im
+ * Fenster steht: Ein Sprung zu einer Marke landet darum immer auf fertigem Inhalt.
+ *
+ * Für den Build: Jede `animation`-Kurzschreibweise hier enthält eine Variable (Kurve aus den
+ * Tokens). Ohne sie legt der CSS-Minifier `animation` und `animation-timeline` zu einer Angabe
+ * zusammen, die kein Browser annimmt. Ein e2e-Test prüft am gebauten Stand, dass jede dieser
+ * Bewegungen wirklich an der Scrollposition hängt.
+ *
+ * Für Rahmen: Ein Kasten mit `overflow: hidden` ist für den Browser ein eigener Scrollbereich.
+ * Was darin an `view()` hängt, mässe sich an ihm statt an der Seite und bliebe stehen (gemessen:
+ * Fortschritt fest bei 91 %). Rahmen um solche Inhalte schneiden darum mit `overflow: clip` ab,
+ * aber nur dort, wo es die Bewegung gibt (`@supports` in der Komponente); sonst bleibt `hidden`.
+ * Ein e2e-Test prüft, dass jede Bewegung sich an der Seite misst.
+ *
+ * Regeln:
+ * - Alles kommt von unten und setzt sich im unteren Teil des Fensters. Was darüber steht, steht
+ *   still und ist ganz lesbar.
+ * - Text blendet nie ein: Er rückt nur nach (`translate`) oder steigt aus seiner Maske.
+ * - Bewegt wird nur `translate`, `scale` und die Deckkraft von Dekoration. Das rechnet der
+ *   Browser neben dem Scrollen, ohne Layout und ohne Skript. Beide Eigenschaften vertragen sich
+ *   mit `transform` (Hover, Lage), das unberührt bleibt.
+ * - Der normale Stil ist der Endzustand. Ohne Unterstützung (`@supports`), bei reduzierter
+ *   Bewegung, im Druck und mit angehaltener Bewegung (`data-motion="off"`) gilt er allein.
+ *
+ * Die Choreografie der einzelnen Abschnitte steht in der App (apps/web/src/styles/scroll.css).
+ */
+
+/* ---------- Wörter einer Überschrift, jedes in seiner Maske (Words.astro) ---------- */
+
+/*
+ * Jedes Wort ist ein eigener Kasten, der abschneidet. Wörter einer Zeile kommen gemeinsam ins
+ * Bild und steigen darum gemeinsam: Zeile für Zeile, ohne dass ein Skript die Zeilen kennen muss.
+ * Der Innenabstand gibt Umlauten, Unterlängen und der engen Laufweite Luft; der gleich grosse
+ * negative Aussenabstand hebt ihn im Satz wieder auf. `overflow: clip` (nicht `hidden`) lässt
+ * die Grundlinie, wo sie ist.
+ */
+.sc-w {
+  display: inline-block;
+  max-width: calc(100% + 0.12em);
+  margin: -0.14em -0.06em;
+  padding: 0.14em 0.06em;
+  overflow: clip;
+}
+
+.sc-wi {
+  display: inline-block;
+}
+
+@supports (animation-timeline: view()) {
+  @media screen and (prefers-reduced-motion: no-preference) {
+    /*
+     * Die Strecken sind feste Anteile der Fensterhöhe ab der unteren Fensterkante, nicht Anteile
+     * des Elements: So setzt sich jeder Block gleich weit über der Kante, wie hoch er auch ist.
+     * Oberhalb von 70 % der Fensterhöhe (von oben gezählt) steht darum alles still: die Lesezone.
+     */
+
+    /*
+     * Auftritt: Ein Block kommt etwas tiefer ins Bild und holt beim Hereinscrollen auf. Die Kurve
+     * bremst: Der grösste Teil des Wegs liegt gleich an der Fensterkante, danach setzt er sich.
+     * `--sc-i` versetzt Geschwister, die nebeneinander stehen (Karten, Personen).
+     */
+    html:not([data-motion='off']) .sc-rise {
+      animation: sc-rise var(--ease-out) both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 30svh;
+    }
+
+    /* Wörter einer Überschrift steigen aus ihrer Maske. */
+    html:not([data-motion='off']) .sc-wi {
+      animation: sc-word var(--ease-out) both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 24svh;
+    }
+
+    /*
+     * Ein Foto setzt sich in seinem Rahmen aus einem leichten Zoom, gleichmässig mit dem Weg und
+     * über eine längere Strecke: Es ist die ganze Zeit ganz zu sehen.
+     */
+    html:not([data-motion='off']) .sc-zoom {
+      animation: sc-zoom var(--scrub) both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 60svh;
+    }
+
+    /*
+     * Bogen über Bogen: Sobald der nächste Bogen unten ins Bild kommt, bleibt dieser zurück (er
+     * zieht nur noch gut halb so schnell weiter), und der nächste schiebt sich darüber. Die
+     * Strecke reicht von «Unterkante am unteren Fensterrand» bis «Unterkante am oberen» (unter dem
+     * Header), also immer eine Fensterhöhe, wie hoch der Bogen auch ist.
+     * Nur `translate`, keine Verkleinerung: Verkleinert zeigte ein farbiger Bogen links und rechts
+     * einen Spalt, und seine Schrift würde weich.
+     * Der letzte Bogen bleibt nicht zurück: Nach ihm kommt kein Bogen mehr, der ihn deckte.
+     * Das Ende steht als `cover 100%` mit Variable: Schriebe man `exit-crossing 100%` aus, machte
+     * der CSS-Minifier daraus `exit-crossing 0%` (gemessen im Build), und der Bogen bliebe stehen.
+     */
+    html:not([data-motion='off']) :is(.sheet, .sc-sheet):not(:last-child) {
+      animation: sc-leave var(--scrub) both;
+      animation-timeline: view();
+      animation-range: entry-crossing 100% cover var(--sc-end, 100%);
+    }
+  }
+}
+
+/* Der Weg wächst mit dem Bildschirm: am Handy rund 32 px, am grossen Bildschirm bis 60 px. */
+@keyframes sc-rise {
+  from {
+    translate: 0
+      calc(
+        var(--sc-y, clamp(2rem, 1.2rem + 2.6vw, 3.75rem)) + var(--sc-i, 0) * var(--sc-step, 1.5rem)
+      );
+  }
+}
+
+@keyframes sc-word {
+  from {
+    translate: 0 118%;
+  }
+}
+
+@keyframes sc-zoom {
+  from {
+    scale: 1.16;
+  }
+}
+
+@keyframes sc-leave {
+  to {
+    translate: 0 calc(var(--sc-leave, 0.38) * 100svh);
+  }
+}

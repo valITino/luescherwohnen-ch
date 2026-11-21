@@ -1,14 +1,5 @@
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 import { motionAllowed, motionPaused, onMotionPausedChange } from './reduced.ts';
-
-gsap.registerPlugin(ScrollTrigger);
-
-export { gsap, ScrollTrigger };
-
-/** Motion-Tokens aus tokens.ts (Sekunden, Kurven als `EASE.*.gsap`), gleich wie tokens.css */
-export { DUR, EASE, STAGGER } from './tokens.ts';
 
 export interface SmoothScroll {
   /**
@@ -41,7 +32,8 @@ const pressed = (event: KeyboardEvent) =>
   event.key === ' ' && event.target instanceof Element && event.target.closest(PRESSABLE) !== null;
 
 /**
- * Lenis-Smooth-Scroll (lerp 0.1), synchron zu ScrollTrigger.
+ * Lenis-Smooth-Scroll (lerp 0.1). Was sich beim Scrollen bewegt, hängt in CSS an der
+ * Scrollposition (scroll.css) und folgt dem sanften Scrollen darum von selbst.
  * Bei `prefers-reduced-motion` wird Lenis gar nicht erst gestartet, ebenso auf Geräten, die man
  * nur mit dem Finger bedient: Dort scrollt Lenis ohnehin nicht selbst (syncTouch aus), hängt sich
  * aber mit blockierenden Zuhörern (passive: false) an jede Berührung. Jedes Wischen müsste dann
@@ -74,13 +66,13 @@ export function initSmoothScroll(): SmoothScroll {
     if (lenis) return;
     lenis = new Lenis({
       lerp: 0.1,
-      autoRaf: false,
+      // Lenis rechnet in jedem Bild selbst weiter und hört damit auf, wenn es beendet wird.
+      autoRaf: true,
       anchors: true,
       stopInertiaOnNavigate: true,
     });
     // Ist schon ein Overlay offen (jemand war schneller als das Nachladen), bleibt die Seite stehen.
     if (root.classList.contains(LOCKED)) lenis.stop();
-    lenis.on('scroll', ScrollTrigger.update);
   };
   // Mitten im Ausgleiten angehalten: Die Seite bleibt, wo sie gerade ist.
   const destroy = () => {
@@ -104,9 +96,6 @@ export function initSmoothScroll(): SmoothScroll {
     if (lenis.isStopped || lenis.isScrolling !== 'smooth') return;
     lenis.scrollTo(lenis.animatedScroll, { immediate: true, force: true });
   });
-
-  gsap.ticker.add((time: number) => lenis?.raf(time * 1000));
-  gsap.ticker.lagSmoothing(0);
 
   if (!motionPaused()) create();
   onMotionPausedChange((paused) => (paused ? destroy() : create()));

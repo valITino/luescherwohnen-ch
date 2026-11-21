@@ -11,6 +11,11 @@ import { describe, expect, it } from 'vitest';
  * gleichmässig (`linear`) läuft nur, was dafür vorgesehen ist, und keine Keyframe-Animation dreht
  * etwas. Geprüft wird gegen eine Positivliste: Was nicht ausdrücklich erlaubt ist, fällt auf.
  *
+ * Was beim Scrollen ins Bild kommt, hängt an der Scrollposition (`animation-timeline`). Solche
+ * Regeln stehen nur in den beiden scroll.css, gelten nicht bei angehaltener Bewegung, und ihre
+ * Kurzschreibweise `animation` enthält immer eine Variable: Ohne sie legt der CSS-Minifier sie
+ * mit `animation-timeline` zu einer Angabe zusammen, die kein Browser annimmt.
+ *
  * Geprüft werden alle Stylesheets und die <style>-Blöcke aller Astro-Komponenten unter apps/ und
  * packages/. Am Ende prüft ein Selbsttest, dass der Wächter Verstösse auch wirklich erkennt.
  */
@@ -27,11 +32,26 @@ const ALLOWED =
   /^(?:opacity|transform|translate|scale|clip-path|(?:background-|border-|outline-|text-decoration-)?color|fill|stroke|visibility|display|overlay)$/;
 const forbidden = (property: string) => !ALLOWED.test(property);
 
-/** Gleichmässig laufen dürfen nur das Abtauchen im Header und das Band (docs/DESIGN.md). */
-const LINEAR_ALLOWED = [
-  'apps/web/src/components/Header.astro',
-  'apps/web/src/components/sections/Band.astro',
-];
+/**
+ * Das Wort `linear` steht nur beim Abtauchen im Header und im Token `--scrub` (docs/DESIGN.md).
+ * Was an der Scrollposition hängt, läuft gleichmässig über dieses Token.
+ */
+const LINEAR_ALLOWED = ['apps/web/src/components/Header.astro', TOKENS];
+
+/** Nur hier darf Bewegung an der Scrollposition hängen. */
+const SCROLL_FILES = ['packages/ui/src/styles/scroll.css', 'apps/web/src/styles/scroll.css'];
+
+/** Jede Regel (Selektor und Inhalt) der innersten Ebene, also ohne umgebende @-Blöcke */
+function rules(source: string): { selector: string; body: string }[] {
+  return [...source.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((match) => ({
+    selector: (match[1] ?? '').trim(),
+    body: match[2] ?? '',
+  }));
+}
+
+/** Regeln, die eine Animation an die Scrollposition hängen */
+const scrollRules = (source: string) =>
+  rules(source).filter(({ body }) => /animation-timeline\s*:/.test(body));
 const usesLinear = (source: string) => /\blinear\b(?![-(])/.test(source);
 /** Kurven als Schlüsselwort (ease, ease-out …) statt aus tokens.css */
 const usesKeywordEase = (source: string) =>
@@ -181,6 +201,40 @@ describe('Bewegung: nur transform, opacity und clip-path', () => {
     expect(found).toEqual([]);
   });
 
+  it('Bewegung an der Scrollposition: nur in scroll.css, abschaltbar und sicher vor dem Minifier', () => {
+    const outside = sources
+      .filter(({ file, css: source }) => !SCROLL_FILES.includes(file) && scrollRules(source).length)
+      .map(({ file }) => file);
+    expect(outside).toEqual([]);
+
+    const found: string[] = [];
+    let count = 0;
+    for (const { file, css: source } of sources.filter(({ file }) => SCROLL_FILES.includes(file))) {
+      // Alles steht in einem Block, der Unterstützung und gewünschte Bewegung voraussetzt.
+      expect(source, file).toMatch(/@supports \(animation-timeline: view\(\)\)/);
+      expect(source, file).toMatch(/@media screen and \(prefers-reduced-motion: no-preference\)/);
+      for (const { selector, body } of scrollRules(source)) {
+        count += 1;
+        // Hält jemand die Bewegung an, gilt die Regel nicht (sonst fröre sie mitten im Weg ein).
+        if (!selector.includes("html:not([data-motion='off'])")) {
+          found.push(`${file}: ${selector} gilt auch bei angehaltener Bewegung`);
+        }
+        // Kurzschreibweise mit Variable, damit der Minifier sie nicht mit der Zeitleiste verschmilzt.
+        const shorthand = /(?:^|[\s;])animation\s*:\s*([^;]+)/.exec(body)?.[1];
+        const name = /(?:^|[\s;])animation-name\s*:/.test(body);
+        if (!name && !(shorthand && shorthand.includes('var(--'))) {
+          found.push(`${file}: ${selector} braucht «animation: name var(--…) both»`);
+        }
+        // Nach der Kurzschreibweise: Sie setzte die Zeitleiste sonst zurück.
+        if (shorthand && body.indexOf('animation-timeline') < body.indexOf('animation:')) {
+          found.push(`${file}: ${selector} setzt animation-timeline vor animation`);
+        }
+      }
+    }
+    expect(found).toEqual([]);
+    expect(count).toBeGreaterThan(8);
+  });
+
   it('Kurven stehen nur in tokens.css und schwingen nie über', () => {
     const elsewhere = sources
       .filter(
@@ -234,6 +288,13 @@ describe('Bewegung: nur transform, opacity und clip-path', () => {
     expect(['border-color', 'color', 'display', 'translate'].filter(forbidden)).toEqual([]);
     expect(usesLinear('.x { animation: a 1s linear; }')).toBe(true);
     expect(usesLinear('.x { background: linear-gradient(red, blue); }')).toBe(false);
+    expect(usesLinear('.x { animation: a var(--scrub) both; }')).toBe(false);
+    // Regeln der innersten Ebene, auch in verschachtelten @-Blöcken.
+    const nested = `@supports (x: y) { @media screen { html:not([data-motion='off']) .a {
+      animation: rise var(--scrub) both; animation-timeline: view(); } .b { color: red; } } }`;
+    expect(scrollRules(nested).map(({ selector }) => selector)).toEqual([
+      "html:not([data-motion='off']) .a",
+    ]);
     expect(usesKeywordEase('.x { transition: opacity 1s ease-out; }')).toBe(true);
     expect(usesKeywordEase('.x { transition: opacity var(--dur-1) var(--ease-out); }')).toBe(false);
     expect(overshoots([0.16, 1, 0.3, 1])).toBe(false);

@@ -52,16 +52,16 @@ const projects = [
 
     <ul class="projects">
       {projects.map((project) => (
-        <li class="project">
+        <li class="project sc-rise">
           <figure>
-            <div class="project-media enter-unveil" data-enter>
+            <div class="project-media">
               <Picture
                 src={project.image}
                 formats={['avif', 'webp']}
                 widths={[360, 600, 900]}
                 sizes="(min-width: 64rem) 22rem, (min-width: 40rem) 45vw, 100vw"
                 alt={project.alt}
-                class="project-photo"
+                class="project-photo sc-zoom"
                 loading="lazy"
               />
             </div>
@@ -93,7 +93,8 @@ const projects = [
     overflow: hidden;
     border: 1px solid var(--border);
     border-radius: var(--r-card);
-    /* Sandfläche bis zum Bild: .enter-unveil in components.css */
+    /* Sandfläche, bis das Bild geladen ist */
+    background-color: var(--sand);
   }
 
   .project-media :global(.project-photo) {
@@ -118,9 +119,14 @@ const projects = [
     gap: 1rem;
   }
 
+  /* Nebeneinander rücken die Projekte eines nach dem anderen nach (scroll.css, --sc-i). */
   @media (min-width: 40rem) {
     .projects {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .project:nth-child(even) {
+      --sc-i: 1;
     }
   }
 
@@ -129,9 +135,28 @@ const projects = [
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
+    .project:nth-child(3) {
+      --sc-i: 2;
+    }
+
+    .project:nth-child(4) {
+      --sc-i: 3;
+    }
+
     /* Leichter Versatz wie eine Bildstrecke an der Wand */
     .project:nth-child(even) {
       margin-top: 3rem;
+    }
+  }
+
+  /*
+   * Kein eigener Scrollbereich: Ein Kasten mit `overflow: hidden` ist für den Browser einer, und
+   * was darin am Scrollen hängt (scroll.css), mässe sich an ihm statt an der Seite. `clip`
+   * schneidet gleich ab, ohne das. Nur dort, wo es die Bewegung gibt.
+   */
+  @supports (animation-timeline: view()) {
+    .project-media {
+      overflow: clip;
     }
   }
 </style>

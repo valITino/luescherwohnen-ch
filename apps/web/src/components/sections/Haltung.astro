@@ -1,7 +1,8 @@
 ---
 /**
- * Haltung (ohne Nummer): drei grosse Aussagen. Beim Scrollen werden die Wörter von 25 % auf 100 %
- * Deckkraft dunkel (SplitText, siehe src/scripts/haltung.ts). Ohne JS stehen sie einfach da.
+ * Haltung (ohne Nummer): drei grosse Aussagen. Beim Scrollen werden die Wörter eines nach dem
+ * anderen von 20 % auf 100 % Deckkraft dunkel, im Takt des Scrollens (scroll.css, reines CSS).
+ * Ohne Unterstützung, ohne Bewegung und im Druck stehen sie einfach da.
  * Zentriert auf Papierweiss mit grünem Schein; die Punkte darunter zählen die Aussagen mit.
  * Nur die drei Sätze, jeder mit seinem eigenen Bildschirm (Entscheid 45: die Erläuterungen
  * darunter wiederholten Hero, Service und Lieferung).
@@ -17,7 +18,7 @@ const statements = [
 ];
 ---
 
-<section data-lazy class="sheet sheet-paper haltung" aria-labelledby="haltung-title" data-haltung>
+<section data-lazy class="sheet sheet-paper haltung" aria-labelledby="haltung-title">
   <div class="wrap">
     <header class="haltung-head">
       {/* Ein Zwischenspiel ohne Nummer: Nummeriert sind nur die Ziele des Menüs (01 bis 05). */}
@@ -29,8 +30,14 @@ const statements = [
     <ol class="statements">
       {statements.map((statement, index) => (
         <li class="statement">
-          <p class="statement-text" data-reveal-words>
-            {statement}
+          {/* Jedes Wort ein <span> im Fluss: Der Satz bleibt für Screenreader ein Satz. */}
+          <p class="statement-text">
+            {statement.split(' ').map((word, at) => (
+              <>
+                {at > 0 && ' '}
+                <span class="w">{word}</span>
+              </>
+            ))}
           </p>
           <span class="statement-dots" aria-hidden="true">
             {statements.map((_, dot) => (
@@ -94,6 +101,43 @@ const statements = [
     letter-spacing: -0.04em;
     line-height: 1.04;
     text-wrap: balance;
+  }
+
+  /* Platz des Worts im Satz: Danach richtet sich, wann es dunkel wird (scroll.css). */
+  .w:nth-of-type(2) {
+    --w: 1;
+  }
+
+  .w:nth-of-type(3) {
+    --w: 2;
+  }
+
+  .w:nth-of-type(4) {
+    --w: 3;
+  }
+
+  .w:nth-of-type(5) {
+    --w: 4;
+  }
+
+  .w:nth-of-type(6) {
+    --w: 5;
+  }
+
+  .w:nth-of-type(7) {
+    --w: 6;
+  }
+
+  .w:nth-of-type(8) {
+    --w: 7;
+  }
+
+  .w:nth-of-type(9) {
+    --w: 8;
+  }
+
+  .w:nth-of-type(10) {
+    --w: 9;
   }
 
   .statement-dots {

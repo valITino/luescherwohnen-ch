@@ -1,8 +1,12 @@
 ---
 /**
  * Kopf einer Sektion: Kicker («01 / …»), riesige H2 in Versalien und optionaler Einleitungstext.
+ * Beim Hereinscrollen steigen die Zeilen der Überschrift aus ihrer Maske, Kicker und Einleitung
+ * rücken nach (scroll.css): alles an der Scrollposition, nichts nach Zeit.
  */
 import Kicker from '@luescher/ui/components/Kicker.astro';
+import Words from '@luescher/ui/components/Words.astro';
+import { plainText } from '@luescher/ui/lib/text';
 
 interface Props {
   /** Abschnittsnummer, z. B. '01'. Ohne Angabe entfällt die Nummer. */
@@ -31,17 +35,23 @@ const {
 } = Astro.props;
 ---
 
-<header
-  class:list={['section-head', { 'section-head-split': layout === 'split' }, className]}
-  data-enter
->
+<header class:list={['section-head', { 'section-head-split': layout === 'split' }, className]}>
   <div class="section-head-main">
-    {kicker && <Kicker num={num}>{kicker}</Kicker>}
-    <h2 id={id} class:list={['display', size === 'xl' ? 'h1' : 'h2', 'section-title']}>
-      {title}
+    {kicker && (
+      <Kicker num={num} class="sc-rise section-kicker">
+        {kicker}
+      </Kicker>
+    )}
+    {/* Die Wörter sind für Screenreader stumm (Words.astro), der Name steht im aria-label. */}
+    <h2
+      id={id}
+      class:list={['display', size === 'xl' ? 'h1' : 'h2', 'section-title']}
+      aria-label={plainText(title)}
+    >
+      <Words text={title} />
     </h2>
   </div>
-  {lead && <p class="lead section-lead">{lead}</p>}
+  {lead && <p class="lead section-lead sc-rise">{lead}</p>}
   <slot />
 </header>
 
@@ -60,43 +70,11 @@ const {
     max-width: 17em;
   }
 
-  /*
-   * Der Kicker gleitet einmal von links herein, sobald die Sektion ins Bild kommt (reveal.ts setzt
-   * data-enter). Er ist so breit wie sein Text, damit die Maske stimmt. Er führt: Die Zeilen der
-   * Überschrift steigen 60 ms später auf (reveal.ts), mit derselben Kurve.
-   */
-  .section-head-main :global(.kicker) {
+  /* Der Kicker ist so breit wie sein Text und rückt nur wenig nach. */
+  .section-head-main :global(.section-kicker) {
+    --sc-y: 1.25rem;
+
     justify-self: start;
-  }
-
-  .section-head[data-enter='wait'] :global(.kicker) {
-    clip-path: inset(0 100% 0 0);
-  }
-
-  .section-head[data-enter='in'] :global(.kicker) {
-    animation: kicker-in var(--dur-4) var(--ease-expo) backwards;
-  }
-
-  @keyframes kicker-in {
-    from {
-      clip-path: inset(0 100% 0 0);
-    }
-
-    to {
-      clip-path: inset(0);
-    }
-  }
-
-  /* Im Druck und bei angehaltener Bewegung wartet nichts auf seinen Auftritt. */
-  @media print {
-    .section-head[data-enter] :global(.kicker) {
-      clip-path: none;
-    }
-  }
-
-  :global(html[data-motion='off']) .section-head[data-enter] :global(.kicker) {
-    clip-path: none;
-    animation: none;
   }
 
   .section-lead {

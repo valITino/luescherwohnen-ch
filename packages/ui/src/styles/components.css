@@ -492,93 +492,25 @@
     }
   }
 
-  /* ---------- Bild-Auftritt ---------- */
+  /* ---------- Bildwechsel ---------- */
 
   /*
-   * Ein Bild steigt beim Hereinscrollen vom unteren Rand seines Rahmens nach oben ins Bild und
-   * setzt sich dabei aus einem leichten Zoom (reveal.ts setzt data-enter, sobald ein Viertel des
-   * Rahmens zu sehen ist, bei hohen Rahmen ein Achtel der Fensterhöhe). Kommen mehrere zusammen ins
-   * Bild, folgen sie einander im Abstand von --stagger: reveal.ts nummeriert sie mit --enter-i.
-   * Clip und Zoom sitzen beide auf dem Bild selbst, nicht auf dem Rahmen: So bewegt der Browser
-   * eine einzige Ebene. Mit dem Clip am Rahmen fielen beim Wischen auf dem Handy gemessen doppelt
-   * so viele Bilder aus (Entscheid 38).
-   * Solange das Bild wartet, ist es nur durchsichtig, nicht weggeschnitten: Ein ganz beschnittenes
-   * Bild lädt der Browser nicht vor (loading="lazy"), es käme sonst erst beim Auftritt und spränge
-   * dann mitten hinein (Entscheid 39). Der Rahmen ist so lange leer statt sandfarben: Das Foto
-   * steigt aus dem Papier auf, statt in einen Platzhalter zu fallen. Ist es beim Auftritt noch
-   * nicht geladen, wartet reveal.ts kurz darauf; kommt es später (late), blendet es ein, sobald es
-   * da ist (loaded), ohne dass der Rahmen vorher die Farbe wechselt (Entscheide 40 und 41). Kommt
-   * es gar nicht, steht der Rahmen nach drei Sekunden wieder wie ohne Auftritt da (Entscheid 42).
-   * Ohne Skript, bei reduzierter Bewegung und ohne Auftritt steht das Bild einfach da; die
-   * Sandfläche füllt dann den Rahmen, bis das Bild geladen ist. Der Rahmen des Porträts behält
-   * seine eigene Papierfläche (Ueber.astro).
-   */
-  .enter-unveil {
-    background-color: var(--sand);
-  }
-
-  .enter-unveil:is(
-    [data-enter='wait'],
-    [data-enter='in'],
-    [data-enter='late'],
-    [data-enter='loaded']
-  ) {
-    background-color: transparent;
-  }
-
-  .enter-unveil:is([data-enter='wait'], [data-enter='late']) img {
-    opacity: 0;
-  }
-
-  .enter-unveil[data-enter='in'] img {
-    animation: unveil var(--dur-4) var(--ease-expo) calc(var(--enter-i, 0) * var(--stagger))
-      backwards;
-  }
-
-  .enter-unveil[data-enter='loaded'] img {
-    animation: unveil-late var(--dur-3) var(--ease-out) backwards;
-  }
-
-  /*
-   * Mit Ziel: Von einer Form zu «none» springt clip-path, statt zu gleiten. Der Zoom setzt sich zur
-   * Mitte hin wie der Hover-Zoom danach, so springt nichts, wenn beides zusammenfällt.
-   * Steht erst der obere Teil des Bildes im Fenster, beginnt der Ausschnitt an der Fensterkante
-   * (--unveil-from, reveal.ts): Das ganze Aufsteigen spielt sich dort ab, wo man hinsieht. Der
-   * Zoom 1.1 steht auch in reveal.ts (UNVEIL_ZOOM).
+   * Wechselt eine Bühne durch eine Wahl ihr Bild (choice.ts: «Raum für Raum», «Jahr für Jahr»),
+   * steigt das neue vom unteren Rand seines Rahmens nach oben über das alte und setzt sich dabei
+   * aus einem leichten Zoom. Clip und Zoom sitzen beide auf dem Bild selbst: So bewegt der Browser
+   * eine einzige Ebene. Mit Ziel: Von einer Form zu «none» springt clip-path, statt zu gleiten.
+   * (Was beim Scrollen ins Bild kommt, bewegt sich nicht nach Zeit, sondern mit dem Scrollen:
+   * scroll.css.)
    */
   @keyframes unveil {
     from {
-      clip-path: inset(var(--unveil-from, 100%) 0 0 0);
+      clip-path: inset(100% 0 0 0);
       transform: scale(1.1);
     }
 
     to {
       clip-path: inset(0);
     }
-  }
-
-  @keyframes unveil-late {
-    from {
-      opacity: 0;
-    }
-  }
-
-  /*
-   * Im Druck und bei angehaltener Bewegung wartet nichts, ein laufender Auftritt steht am Ziel.
-   * (Vor dem Drucken lädt der Browser alle Bilder.)
-   */
-  @media print {
-    .enter-unveil[data-enter] img {
-      opacity: 1;
-      clip-path: none;
-      animation: none;
-    }
-  }
-
-  html[data-motion='off'] .enter-unveil[data-enter] img {
-    opacity: 1;
-    clip-path: none;
-    animation: none;
   }
 
   /* ---------- Mehr lesen (details) ---------- */
@@ -880,8 +812,8 @@
    * Atemzug 2 s, ruhiger als --dur-5; zusammen 4 s, also unter den 5 s, ab denen Bewegung
    * anhaltbar sein muss (WCAG 2.2.2). Ein Signal, kein Auftritt: die einzige Bewegung, die
    * länger als ein Auftritt dauern darf (DESIGN.md). Wo er atmet, sagt `data-breathe` (Hero und
-   * Besuchszeile beim Laden) bzw. der Auftritt des Kontakts. Neu beginnt er nur, wenn aus
-   * «geschlossen» «geöffnet» wird, nicht beim Nachführen jede Minute (die Klasse bleibt stehen).
+   * Besuchszeile beim Laden). Neu beginnt er nur, wenn aus «geschlossen» «geöffnet» wird, nicht
+   * beim Nachführen jede Minute (die Klasse bleibt stehen).
    */
   .dot-ok::after {
     position: absolute;

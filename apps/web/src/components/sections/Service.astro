@@ -2,10 +2,13 @@
 /**
  * 02 Service: vier nummerierte Schritte als riesige Wörter und die Karte «Lieferung nach Ihrem
  * Zeitplan» als eine Aussage. Grünlicher Bogen; die Überschrift bleibt auf Desktop links stehen.
+ * Der Weg von der Beratung bis «Danach» zeichnet sich beim Scrollen: Eine grüne Linie wächst mit,
+ * ihre Spitze bleibt auf Lesehöhe, und jeder Punkt wird grün, wenn sie ihn erreicht (scroll.css).
  * Texte nach «Services – Unsere Kompetenzen» und «Services – Lieferung und Montage» der
  * bisherigen Website (docs/Homepage.docx).
  */
 import Icon from '@luescher/ui/components/Icon.astro';
+import Words from '@luescher/ui/components/Words.astro';
 import SectionHead from '../SectionHead.astro';
 
 const steps = [
@@ -48,10 +51,10 @@ const steps = [
               0{index + 1}
             </span>
             <div class="process-body">
-              <h3 class="display process-title" data-reveal>
-                {step.title}
+              <h3 class="display process-title" aria-label={step.title}>
+                <Words text={step.title} />
               </h3>
-              <p class="process-text">{step.text}</p>
+              <p class="process-text sc-rise">{step.text}</p>
             </div>
           </li>
         ))}
@@ -59,10 +62,12 @@ const steps = [
     </div>
 
     {/* Lieferung als eine Aussage (Entscheid 45): Überschrift und ein Satz. */}
-    <div class="delivery card">
+    <div class="delivery card sc-rise">
       <div class="delivery-intro">
         <p class="kicker">Lieferung und Montage</p>
-        <h3 class="display h2 delivery-title">Nach Ihrem Zeitplan.</h3>
+        <h3 class="display h2 delivery-title" aria-label="Nach Ihrem Zeitplan.">
+          <Words text="Nach Ihrem Zeitplan." />
+        </h3>
       </div>
       <p class="delivery-text">
         <Icon name="truck" size={24} />
@@ -98,11 +103,29 @@ const steps = [
     gap: 0.25rem;
   }
 
-  /* Punkt auf der Linie */
+  /*
+   * Die grüne Linie über der grauen: Ohne Bewegung steht sie ganz da. Mit dem Scrollen wächst sie
+   * von oben (scroll.css), nur über `scale`, darum der Ursprung oben.
+   */
+  .process::after {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -1.5px;
+    width: 2px;
+    border-radius: 1px;
+    background-color: var(--leaf-edge);
+    content: '';
+    pointer-events: none;
+    transform-origin: 50% 0;
+  }
+
+  /* Punkt auf der Linie (liegt über ihr) */
   .process-step::before {
     position: absolute;
     top: clamp(0.75rem, 2.2vw, 2rem);
     left: calc(-1.75rem - 6px);
+    z-index: 1;
     width: 11px;
     height: 11px;
     border: 2px solid var(--leaf-edge);

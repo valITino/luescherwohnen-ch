@@ -120,14 +120,14 @@
   --glow-leaf-hi: 0 0.75rem 2rem rgb(var(--leaf-rgb) / 0.45);
 
   /*
-   * Motion: einzige Quelle für CSS. packages/ui/src/motion/tokens.ts spiegelt die Werte für GSAP
-   * und Timer, packages/ui/test/motion-tokens.test.ts hält beide gleich. Jede Kurve bremst ohne
-   * Überschwingen ab und hat eine benannte GSAP-Kurve, die höchstens 0,012 davon abweicht.
+   * Motion: einzige Quelle für CSS. packages/ui/src/motion/tokens.ts spiegelt die Werte für
+   * Skripte (Zeitgeber), packages/ui/test/motion-tokens.test.ts hält beide gleich. Jede Kurve
+   * bremst ohne Überschwingen ab.
    */
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1); /* GSAP power4.out */
-  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1); /* GSAP expo.out */
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1); /* GSAP power2.inOut */
-  --ease-in: cubic-bezier(0.32, 0, 0.67, 0); /* GSAP power2.in, Reserve (derzeit ungenutzt) */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-in: cubic-bezier(0.32, 0, 0.67, 0); /* Reserve (derzeit ungenutzt) */
   --ease: var(--ease-out); /* Alias: alle bestehenden Übergänge bleiben so verdrahtet */
   --dur-1: 150ms; /* Mikro und Ausgänge: Farbe, Abtauchen im Header, alte Seite */
   --dur-2: 250ms; /* UI-Zustand: Hover, Leiste beim Seitenwechsel */
@@ -136,6 +136,14 @@
   --dur-5: 1200ms; /* Signatur: nur die Blende im Hero (lesbar nach etwa 300 ms) */
   --stagger: 70ms; /* Versatz in einer Folge */
   --stagger-tight: 45ms; /* dichte Folge, z. B. Menüpunkte */
+
+  /*
+   * Gleichmässig: nur für Bewegung, die an der Scrollposition hängt (scroll.css). Dort ist der
+   * Mensch die Kurve; eine eigene Kurve liesse die Bewegung dem Finger voraus- oder nachlaufen.
+   * Als Token, damit der CSS-Minifier die Kurzschreibweise `animation` nicht mit
+   * `animation-timeline` zusammenlegt: Das Ergebnis verwirft der Browser (gemessen im Build).
+   */
+  --scrub: linear;
 
   color-scheme: light;
 }

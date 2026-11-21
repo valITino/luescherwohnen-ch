@@ -2,11 +2,14 @@
 /**
  * Band: zwei gegenläufige Reihen grosser Wörter quer über die Seite, eine ruhige Textur zwischen
  * Sortiment und Haltung (Entscheid 45: ohne eigene Überschrift und ohne Etiketten, die Wörter
- * genügen). CSS-Animation über transform; die Kopie für den Loop ist aria-hidden.
- * Pausiert bei Hover und über den runden Knopf. Reduced motion: statisch, umbrechend.
+ * genügen). Die Reihen laufen nicht von selbst: Sie ziehen mit dem Scrollen, die obere nach
+ * links, die untere nach rechts (scroll.css). Wer nicht scrollt, sieht nichts sich bewegen;
+ * darum braucht das Band keinen Knopf zum Anhalten. Die zweite Fassung jeder Reihe füllt nur
+ * die Breite und ist aria-hidden.
+ * Ohne Unterstützung für scrollgekoppelte Animationen und bei reduzierter Bewegung: statisch,
+ * umbrechend, alle Wörter sichtbar.
  * Begriffe aus der Angebotsliste der bisherigen Website (docs/Homepage.docx).
  */
-import Icon from '@luescher/ui/components/Icon.astro';
 
 const rows = [
   [
@@ -47,105 +50,52 @@ const rows = [
       </div>
     ))}
   </div>
-  <div class="wrap ticker-foot">
-    {/* Der Name sagt, was der Button tut; er wechselt mit dem Zustand (darum kein aria-pressed). */}
-    <button type="button" class="ticker-toggle" data-ticker-toggle>
-      <span class="ticker-icon ticker-icon-pause">
-        <Icon name="pause" size={16} />
-      </span>
-      <span class="ticker-icon ticker-icon-play">
-        <Icon name="play" size={16} />
-      </span>
-      <span class="sr-only" data-ticker-label>
-        Band anhalten
-      </span>
-    </button>
-  </div>
 </section>
 
 <style>
+  /*
+   * Grundform ohne Bewegung: eine ruhige, umbrechende Liste, alle Wörter sichtbar. So steht das
+   * Band ohne Unterstützung für scrollgekoppelte Animationen, bei reduzierter Bewegung und im
+   * Druck.
+   */
+  /*
+   * Das Band ist ein schmaler Streifen: Es zieht ganz durch und bleibt nicht unter dem nächsten
+   * Bogen zurück (scroll.css, --sc-leave). Sonst wäre es am Handy schon halb verdeckt, während
+   * es noch mitten im Bild steht.
+   */
   .ticker {
+    --sc-leave: 0;
+
     overflow: clip;
   }
 
-  .ticker-foot {
-    display: flex;
-    justify-content: end;
-    margin-top: clamp(1.25rem, 3vw, 2rem);
-  }
-
-  /* Rund, nur das Symbol: Der Name (Band anhalten, Band fortsetzen) bleibt für Screenreader. */
-  .ticker-toggle {
-    display: grid;
-    place-items: center;
-    width: 2.75rem;
-    height: 2.75rem;
-    border: 1px solid var(--border-strong);
-    border-radius: 50%;
-    color: var(--fg-strong);
-    transition: border-color var(--dur-2) var(--ease);
-  }
-
-  .ticker-toggle:hover {
-    border-color: var(--leaf-deep);
-  }
-
-  .ticker-icon {
-    display: grid;
-  }
-
-  .ticker-icon-play,
-  .ticker:global(.is-paused) .ticker-icon-pause {
-    display: none;
-  }
-
-  .ticker:global(.is-paused) .ticker-icon-play {
-    display: grid;
-  }
-
-  /* Die Enden laufen weich aus (statisch, nur eine Maske). */
   .ticker-rows {
     display: grid;
     gap: clamp(0.5rem, 1.5vw, 1rem);
-    -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
-    mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
-  }
-
-  .ticker-row {
-    display: flex;
-    width: max-content;
-    animation: ticker 60s linear infinite;
-  }
-
-  .ticker-row-reverse {
-    animation-direction: reverse;
-    animation-duration: 68s;
+    width: min(100% - 2 * var(--gutter), var(--container));
+    margin-inline: auto;
   }
 
   .ticker-list {
     display: flex;
-    flex: none;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem 1.5rem;
   }
 
-  /* Ein Wort, davor ein kleiner grüner Punkt als Trenner (auch über die Naht des Loops). */
+  .ticker-copy {
+    display: none;
+  }
+
   .pill {
     display: inline-flex;
     align-items: center;
     color: var(--charcoal);
-    font-size: clamp(1.75rem, 1rem + 3.2vw, 4rem);
+    font-size: var(--fs-h3);
     font-weight: 600;
     letter-spacing: -0.04em;
     line-height: 1.15;
-    white-space: nowrap;
-  }
-
-  .pill::before {
-    width: 0.5rem;
-    height: 0.5rem;
-    margin-inline: clamp(1.25rem, 2.5vw, 2.5rem);
-    border-radius: 50%;
-    background-color: var(--leaf);
-    content: '';
+    text-wrap: balance;
   }
 
   .ticker-row-reverse .pill {
@@ -153,64 +103,50 @@ const rows = [
   }
 
   /*
-   * Pausiert bei Hover und wenn der Button es anhält. Im Band selbst gibt es nichts zu fokussieren
-   * (nur Wörter); der Fokus auf dem Button hält es nicht an: Sonst stünde das Band nach «Band
-   * fortsetzen» weiter still.
+   * Mit scrollgekoppelter Bewegung: zwei lange Reihen quer über die Seite, die Enden laufen weich
+   * aus (statische Maske). Die Bewegung selbst steht in scroll.css. Hält jemand die Bewegung an
+   * (Schalter), bleiben die Reihen stehen, wie sie ohne Bewegung liegen: Die Seite wird dabei
+   * nicht länger oder kürzer.
    */
-  .ticker:global(.is-paused) .ticker-row {
-    animation-play-state: paused;
-  }
+  @supports (animation-timeline: view()) {
+    @media screen and (prefers-reduced-motion: no-preference) {
+      .ticker-rows {
+        width: auto;
+        margin-inline: 0;
+        -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+        mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+      }
 
-  @media (hover: hover) {
-    .ticker-rows:hover .ticker-row {
-      animation-play-state: paused;
-    }
-  }
+      .ticker-row {
+        display: flex;
+        width: max-content;
+      }
 
-  @keyframes ticker {
-    to {
-      transform: translateX(-50%);
-    }
-  }
+      .ticker-list {
+        flex: none;
+        flex-wrap: nowrap;
+        justify-content: start;
+        gap: 0;
+      }
 
-  /*
-   * Reduzierte Bewegung oder kein Skript (dann gäbe es keinen Knopf zum Anhalten, WCAG 2.2.2):
-   * statisch, umbrechend, mittig, etwas kleiner.
-   */
-  @media (prefers-reduced-motion: reduce), (scripting: none) {
-    /* Block statt Flex: Sonst behält die Liste ihre volle Breite und bricht nicht um. */
-    .ticker-row {
-      display: block;
-      width: auto;
-      animation: none;
-    }
+      .ticker-copy {
+        display: flex;
+      }
 
-    .ticker-rows {
-      width: min(100% - 2 * var(--gutter), var(--container));
-      margin-inline: auto;
-      -webkit-mask-image: none;
-      mask-image: none;
-    }
+      /* Ein Wort, davor ein kleiner grüner Punkt als Trenner (auch über die Naht der Reihe). */
+      .pill {
+        font-size: clamp(1.75rem, 1rem + 3.2vw, 4rem);
+        white-space: nowrap;
+      }
 
-    .ticker-list {
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.25rem 1.5rem;
-    }
-
-    .pill {
-      font-size: var(--fs-h3);
-      white-space: normal;
-      text-wrap: balance;
-    }
-
-    .pill::before {
-      display: none;
-    }
-
-    .ticker-copy,
-    .ticker-foot {
-      display: none;
+      .pill::before {
+        width: 0.5rem;
+        height: 0.5rem;
+        margin-inline: clamp(1.25rem, 2.5vw, 2.5rem);
+        border-radius: 50%;
+        background-color: var(--leaf);
+        content: '';
+      }
     }
   }
 </style>

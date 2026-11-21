@@ -1,13 +1,14 @@
 /**
  * Einstieg der Startseite.
  * Zuerst das Nötige für den ersten Eindruck (Header, Hero mit Uhrzeit und Öffnungsstatus),
- * danach in Ruhe das Beiwerk. Smooth Scroll und die Scroll-Animationen (GSAP, Lenis) laden
- * erst, wenn jemand die Seite benutzt.
+ * danach in Ruhe das Beiwerk. Das sanfte Scrollen (Lenis) lädt erst, wenn jemand die Seite
+ * benutzt. Die Bewegung beim Scrollen braucht kein Skript (scroll.css).
  * Das Kontaktformular lädt erst, wenn es in Sicht kommt.
  */
 import { motionAllowed, onceInView, onMotionPausedChange } from '@luescher/ui/motion';
 import type { SmoothScroll } from '@luescher/ui/motion/smooth';
 import { initMotionToggle, initProgress } from './chrome.ts';
+import { initCoverFocus } from './cover.ts';
 import { initHeader } from './header.ts';
 import { initChoice } from './choice.ts';
 import { initHero, initOpenStatus } from './hero.ts';
@@ -24,13 +25,15 @@ const idle = (callback: () => void) => {
 // ---------------------------------------------------------------- Sofort: der erste Eindruck
 
 initHeader(() => smooth);
+// Was der nächste Bogen verdeckt, bleibt mit der Tastatur erreichbar und sichtbar.
+initCoverFocus(() => smooth);
 
 /*
  * Hält jemand die Bewegung an, während ein Sprung zu einer Marke noch gleitet, kommt er sofort
  * am Ziel an, statt mitten auf der Strecke stehen zu bleiben (die Adresse zeigt die Marke schon).
- * Vor allen anderen angemeldet: vor dem Hero, der danach sein Anpinnen aufgibt, und vor
- * smooth.ts, das Lenis beendet. Ein ausgleitendes Rad hält dagegen an, wo es gerade ist, auch
- * wenn es einen Sprung übernommen hat: Dann gilt, wohin die Person selbst scrollt.
+ * Vor smooth.ts angemeldet, das Lenis danach beendet. Ein ausgleitendes Rad hält dagegen an, wo
+ * es gerade ist, auch wenn es einen Sprung übernommen hat: Dann gilt, wohin die Person selbst
+ * scrollt.
  */
 const jumping = () => 'jump' in document.documentElement.dataset;
 /** Das Element einer Marke (#kontakt) oder null; die Adresse kann Zeichen kodiert enthalten. */
@@ -139,21 +142,8 @@ if (contact) {
 
 // Jedes Stück in einem eigenen ruhigen Moment, damit keines den Browser lange aufhält.
 idle(() => {
-  // Dauerbewegung gibt es nur im Band; der Schalter erscheint nur, wenn es auf der Seite ist.
-  initMotionToggle(document.querySelector('[data-ticker]') !== null);
-});
-
-// --- Band: Pause-Button ---
-idle(() => {
-  const ticker = document.querySelector<HTMLElement>('[data-ticker]');
-  const tickerToggle = ticker?.querySelector<HTMLButtonElement>('[data-ticker-toggle]');
-  const tickerLabel = ticker?.querySelector<HTMLElement>('[data-ticker-label]');
-  if (ticker && tickerToggle && tickerLabel) {
-    tickerToggle.addEventListener('click', () => {
-      const paused = ticker.classList.toggle('is-paused');
-      tickerLabel.textContent = paused ? 'Band fortsetzen' : 'Band anhalten';
-    });
-  }
+  // Auf der Startseite bewegt sich beim Scrollen vieles mit: Der Schalter stellt es ab.
+  initMotionToggle(true);
 });
 
 // --- Fortschritt am Rand ---
@@ -219,11 +209,13 @@ const layOutSoon = () => {
 
 /*
  * Sprung zu einer Marke (Link, Adresse mit #, wiederhergestellte Position): Solange die Seite
- * dorthin unterwegs ist, trägt <html> `data-jump`. reveal.ts spielt dann keine Auftritte und
- * teilt keine Überschriften, so landet der Sprung auf fertigem Inhalt. Die Marke fällt, sobald
- * Lenis nicht mehr gleitet und zehn Bilder lang kein Scrollen kam, spätestens nach vier Sekunden.
- * Gezählt wird in Bildern, nicht in Millisekunden: Stockt die Darstellung kurz (schwaches Gerät,
- * Speicherbereinigung), lief ein Zeitgeber mitten im Sprung ab, und das Ziel trat doch noch auf.
+ * dorthin unterwegs ist, trägt <html> `data-jump`. Daran erkennt die Seite, ob jemand die
+ * Bewegung mitten in einem Sprung anhält (dann kommt er sofort an, siehe oben), und die Tests,
+ * wann ein Sprung zu Ende ist. Auf fertigem Inhalt landet er von selbst: Was im Bild steht,
+ * hängt allein an der Scrollposition (scroll.css). Die Marke fällt, sobald Lenis nicht mehr
+ * gleitet und zehn Bilder lang kein Scrollen kam, spätestens nach vier Sekunden. Gezählt wird in
+ * Bildern, nicht in Millisekunden: Stockt die Darstellung kurz (schwaches Gerät,
+ * Speicherbereinigung), liefe ein Zeitgeber mitten im Sprung ab.
  */
 const JUMP_REST_FRAMES = 10;
 const JUMP_MAX_MS = 4000;
@@ -267,8 +259,8 @@ const markJump = () => {
 /*
  * Neu geladen oder über den Verlauf geöffnet: die gemerkte Ansicht wiederherstellen (position.ts).
  * Angesteuert wird sie mehrmals, denn dazwischen kann der Browser seine eigene, ungenaue
- * Wiederherstellung einschieben, und die Seite wächst noch (Anpinnen im Hero). Sobald jemand
- * selbst scrollt, ist Schluss.
+ * Wiederherstellung einschieben, und die Seite wächst noch (Schrift, spät ausgelegte Teile).
+ * Sobald jemand selbst scrollt, ist Schluss.
  */
 const view = storedView();
 let restoring = view !== null;
@@ -344,13 +336,13 @@ window.addEventListener('hashchange', () => {
   layOutNow();
 });
 
-// ---------------------------------------------------------------- Zuletzt: Smooth Scroll und Scroll-Animationen
+// ---------------------------------------------------------------- Zuletzt: sanftes Scrollen
 
 /*
- * Lenis und GSAP braucht es erst, wenn jemand die Seite benutzt. Sie laden beim ersten
- * Lebenszeichen (Zeiger, Berührung, Taste, Scrollen), spätestens nach zwölf Sekunden. So bleibt
- * der Browser direkt nach dem Laden frei. Bei reduzierter Bewegung braucht es sie gar nicht:
- * Dann scrollt der Browser selbst, und nichts wird animiert.
+ * Lenis braucht es erst, wenn jemand die Seite benutzt. Es lädt beim ersten Lebenszeichen
+ * (Zeiger, Berührung, Taste, Scrollen), spätestens nach zwölf Sekunden. So bleibt der Browser
+ * direkt nach dem Laden frei. Bei reduzierter Bewegung braucht es Lenis gar nicht: Dann scrollt
+ * der Browser selbst.
  */
 let scrollRequested = false;
 const loadScroll = () => {

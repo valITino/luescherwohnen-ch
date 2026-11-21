@@ -119,7 +119,7 @@ const total = pad(areas.length - 1);
               data-choice-item
               data-choice-name={area.title}
             >
-              <h3 class="room-head" data-choice-head data-choice-button="room-btn">
+              <h3 class="room-head sc-rise" data-choice-head data-choice-button="room-btn">
                 <span class="secnum room-num" aria-hidden="true">
                   {pad(index)}
                 </span>
@@ -129,19 +129,16 @@ const total = pad(areas.length - 1);
                 </span>
               </h3>
               <figure class="room-panel" id={`raum-${area.slug}-tafel`} data-choice-panel>
-                {/* Nur das erste Foto tritt beim Hereinscrollen auf (reveal.ts), die anderen
-                    erst, wenn man sie wählt. */}
-                <div
-                  class:list={['room-media', { 'enter-unveil': index === 0 }]}
-                  data-enter={index === 0 ? '' : undefined}
-                >
+                {/* Beim Hereinscrollen rückt die Bühne nach, und das Foto setzt sich aus einem
+                    leichten Zoom (scroll.css). Gewechselt wird nur durch eine Wahl (choice.ts). */}
+                <div class="room-media sc-rise">
                   <Picture
                     src={area.image}
                     formats={['avif', 'webp']}
                     widths={[480, 800, 1000]}
                     sizes="(min-width: 80rem) 46rem, (min-width: 54rem) 55vw, 92vw"
                     alt={area.alt}
-                    class="room-photo"
+                    class="room-photo sc-zoom"
                     loading="lazy"
                   />
                 </div>
@@ -181,6 +178,8 @@ const total = pad(areas.length - 1);
   }
 
   .room-head {
+    --sc-y: 1.5rem;
+
     display: flex;
     align-items: baseline;
     gap: 0.875rem;
@@ -554,6 +553,17 @@ const total = pad(areas.length - 1);
 
     .rooms[data-ready] .room-next:not([hidden]) {
       display: none;
+    }
+  }
+
+  /*
+   * Kein eigener Scrollbereich: Ein Kasten mit `overflow: hidden` ist für den Browser einer, und
+   * was darin am Scrollen hängt (scroll.css), mässe sich an ihm statt an der Seite. `clip`
+   * schneidet gleich ab, ohne das. Nur dort, wo es die Bewegung gibt.
+   */
+  @supports (animation-timeline: view()) {
+    .room-media {
+      overflow: clip;
     }
   }
 </style>

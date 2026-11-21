@@ -2,6 +2,7 @@ import type { AddressInfo } from 'node:net';
 import { expect, test, type Page } from '@playwright/test';
 import { serve } from '../scripts/serve.mjs';
 import {
+  AT_REST,
   PAGES,
   PREVIEW,
   PROD,
@@ -12,6 +13,8 @@ import {
   horizontalOverflow,
   imageCollisions,
   layOutAll,
+  nextFrames,
+  placeAt,
 } from './helpers.ts';
 
 /** Startseite, alle Teile sofort ausgelegt (für Prüfungen der ganzen Seite) */
@@ -40,48 +43,53 @@ async function clickMotionToggle(page: Page) {
   await toggle.click({ position: { x: box!.width - box!.height / 2, y: box!.height / 2 } });
 }
 
-/** Zwei Bilder abwarten: Bis dahin hat jeder IntersectionObserver gemeldet, was er sieht. */
-async function nextFrames(page: Page) {
-  await page.evaluate(
-    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-  );
-}
-
 /**
- * Nach einem Sprung zu einer Marke: Das Ziel steht fertig da. Nichts ist in Zeilen geteilt, der
- * Kicker ist offen, kein Auftritt läuft noch an, und nichts im Bild wartet auf seinen Auftritt.
- * (Was im Ziel weiter unten ausserhalb des Bildes liegt, darf seinen Auftritt noch haben.)
+ * Nach einem Sprung zu einer Marke: Das Ziel steht fertig da. Was im Bild steht, hängt allein an
+ * der Scrollposition (scroll.css): In der Lesezone des Ziels (oberhalb von 70 % der Fensterhöhe)
+ * steht darum jeder Block an seinem Platz, und nichts läuft nach Zeit nach.
  */
 async function expectLanded(page: Page, target: string) {
-  // Smooth Scroll und Auftritte sind eingerichtet, der Sprung ist zu Ende.
+  // Das sanfte Scrollen ist eingerichtet, der Sprung ist zu Ende.
   await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', { timeout: 15_000 });
   await page.waitForSelector('html:not([data-jump])', { state: 'attached', timeout: 5_000 });
   await nextFrames(page);
-  const state = await page.locator(target).evaluate((section) => {
-    const inView = (element: Element) => {
-      const rect = element.getBoundingClientRect();
-      return rect.bottom > 0 && rect.top < window.innerHeight;
+  const state = await page.locator(target).evaluate((section, rest) => {
+    const atRest = new RegExp(rest);
+    const zone = window.innerHeight * 0.7;
+    const layoutTop = (element: HTMLElement) => {
+      let top = -window.scrollY;
+      for (
+        let node: HTMLElement | null = element;
+        node;
+        node = node.offsetParent as HTMLElement | null
+      ) {
+        top += node.offsetTop;
+      }
+      return top;
     };
     return {
-      masks: section.querySelectorAll('.ln-mask').length,
-      waiting: [...section.querySelectorAll('[data-enter="wait"]')]
-        .filter(inView)
+      // Auftritte, die in der Lesezone noch nicht an ihrem Platz stehen
+      moving: [...section.querySelectorAll<HTMLElement>('.sc-rise, .sc-wi')]
+        .filter((element) => {
+          const top = layoutTop(element);
+          return top > 0 && top < zone && !atRest.test(getComputedStyle(element).translate);
+        })
         .map((element) => element.className),
-      kicker: getComputedStyle(section.querySelector('.section-head .kicker')!).clipPath,
-      // Nur Auftritte (CSS-Animationen): Ein Hover-Übergang unter dem ruhenden Zeiger zählt nicht,
-      // ebenso wenig der Atem des Öffnungsstatus (ein Signal, kein Auftritt, components.css).
-      running: section
+      // Animationen nach Zeit: Ein Hover-Übergang unter dem ruhenden Zeiger zählt nicht, ebenso
+      // wenig der Atem des Öffnungsstatus (ein Signal, kein Auftritt, components.css).
+      timed: section
         .getAnimations({ subtree: true })
         .filter(
           (animation) =>
             animation instanceof CSSAnimation &&
+            animation.timeline instanceof DocumentTimeline &&
             animation.playState === 'running' &&
             animation.animationName !== 'dot-breath',
         )
         .map((animation) => (animation as CSSAnimation).animationName),
     };
-  });
-  expect(state).toEqual({ masks: 0, waiting: [], kicker: 'none', running: [] });
+  }, AT_REST.source);
+  expect(state).toEqual({ moving: [], timed: [] });
 }
 
 test.describe('Startseite', () => {
@@ -343,9 +351,7 @@ test.describe('Raum für Raum, Jahr für Jahr, Mehr lesen', () => {
     await expect(more.locator('summary')).toContainText('Weniger');
   });
 
-  test('Unser Team: vier Menschen, Fotos öffnen sich, Initialen statt Platzhalterbildern', async ({
-    page,
-  }) => {
+  test('Unser Team: vier Menschen, Initialen statt Platzhalterbildern', async ({ page }) => {
     await openHome(page);
     const team = page.locator('.team');
     await expect(team.locator('.member')).toHaveCount(4);
@@ -360,30 +366,21 @@ test.describe('Raum für Raum, Jahr für Jahr, Mehr lesen', () => {
     await expect(team.locator('img').first()).toHaveAttribute('alt', 'Porträt von Michael Längle');
     await expect(team.locator('.member-initials')).toHaveText(['CS', 'VM']);
     await expect(team.locator('.member-initials').first()).toHaveAttribute('aria-hidden', 'true');
-    // Die Fotos öffnen sich beim Hereinscrollen und stehen danach.
-    await page.mouse.wheel(0, 200);
-    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
-      timeout: 15_000,
-    });
-    await team.evaluate((element) =>
-      window.scrollTo({ top: element.getBoundingClientRect().top + window.scrollY - 200 }),
-    );
-    await expect(team.locator('.team-list')).toHaveAttribute('data-enter', 'in');
-    await expect
-      .poll(() =>
-        team.evaluate(
-          (element) =>
-            element.getAnimations({ subtree: true }).filter((a) => a.playState === 'running')
-              .length,
-        ),
-      )
-      .toBe(0);
-    expect(
-      await team
-        .locator('img')
-        .first()
-        .evaluate((img) => getComputedStyle(img).opacity),
-    ).toBe('1');
+    // Im Bild stehen die Fotos in Ruhe im Kreis (der Kreis schneidet den Zoom beim Hereinkommen).
+    const viewport = await page.evaluate(() => window.innerHeight);
+    await placeAt(page, '.team-list', viewport * 0.2);
+    const photo = await team
+      .locator('.member-photo')
+      .first()
+      .evaluate((frame) => ({
+        overflow: getComputedStyle(frame).overflow,
+        scale: getComputedStyle(frame.querySelector('img')!).scale,
+        opacity: getComputedStyle(frame.querySelector('img')!).opacity,
+      }));
+    // «clip», nicht «hidden»: Der Kreis ist kein eigener Scrollbereich (sonst hinge das Foto an ihm).
+    expect(photo.overflow).toBe('clip');
+    expect(photo.scale === 'none' || Number.parseFloat(photo.scale) === 1).toBe(true);
+    expect(photo.opacity).toBe('1');
   });
 
   test('Nummern der Abschnitte wie im Menü (01 bis 05)', async ({ page }) => {
@@ -398,32 +395,33 @@ test.describe('Raum für Raum, Jahr für Jahr, Mehr lesen', () => {
     expect(menu).toEqual(kickers);
   });
 
-  test('Kontakt: Der Kreis schliesst sich, der Status atmet, wenn man ihn sieht', async ({
+  test('Kontakt: Der Kreis schliesst sich, die Scheibe öffnet sich mit dem Scrollen', async ({
     page,
     isMobile,
   }) => {
     await openHome(page);
-    await page.mouse.wheel(0, 200);
-    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
-      timeout: 15_000,
-    });
-    const stage = page.locator('#kontakt .kontakt-grid');
-    await expect(stage).toHaveAttribute('data-enter', 'wait');
-    await stage.evaluate((element) =>
-      window.scrollTo({ top: element.getBoundingClientRect().top + window.scrollY - 200 }),
-    );
-    await expect(stage).toHaveAttribute('data-enter', 'in');
-    const names = await stage.evaluate((element) =>
-      element
-        .getAnimations({ subtree: true })
-        .map((animation) => (animation as CSSAnimation).animationName),
-    );
-    // Die Scheibe nur ab 64rem; der Atem nur, wenn geöffnet ist.
-    if (!isMobile) expect(names).toContain('kontakt-aperture');
-    const open = await page
-      .locator('#kontakt .hours-status .dot')
-      .evaluate((dot) => dot.matches('.dot-ok'));
-    if (open) expect(names).toContain('dot-breath');
+    const disc = page.locator('#kontakt .kontakt-disc');
+    // Die Scheibe gibt es erst ab 64rem: Auf schmalen Bildschirmen läge sie an der Überschrift.
+    if (isMobile) {
+      await expect(disc).toBeHidden();
+      return;
+    }
+    const viewport = await page.evaluate(() => window.innerHeight);
+    const state = () =>
+      disc.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return { opacity: Number(style.opacity), scale: style.scale };
+      });
+    // Kommt die Bühne unten ins Bild, ist die Scheibe noch klein und blass …
+    await placeAt(page, '#kontakt .kontakt-grid', viewport - 60);
+    const entering = await state();
+    expect(entering.opacity).toBeLessThan(0.3);
+    expect(Number.parseFloat(entering.scale)).toBeLessThan(0.9);
+    // … steht die Bühne im Bild, ist sie offen: wie die Blende des Fotos ganz oben.
+    await placeAt(page, '#kontakt .kontakt-grid', viewport * 0.3);
+    const open = await state();
+    expect(open.opacity).toBe(1);
+    expect(open.scale === 'none' || Number.parseFloat(open.scale) === 1).toBe(true);
   });
 });
 
@@ -467,11 +465,15 @@ test.describe('Layout', () => {
     await context.close();
   });
 
-  test('Porträt: Das Foto reicht bis zum Bildtext, Ecken und Linie liegen darauf', async ({
+  test('Porträt: Das Foto reicht bis zum Bildtext, die Ecken des Suchers liegen darauf', async ({
     page,
   }) => {
     await page.goto(`${PROD}/`);
     await layOutAll(page);
+    // Gemessen wird im Bild, wo Foto und Ecken an ihrem Platz stehen (beim Hereinkommen setzt
+    // sich das Foto aus einem Zoom, und die Ecken rücken an: scroll.css).
+    const viewport = await page.evaluate(() => window.innerHeight);
+    await placeAt(page, '.portrait-frame', viewport * 0.1);
     const box = await page.locator('.portrait-frame').evaluate((frame) => {
       const rect = (selector: string) => frame.querySelector(selector)!.getBoundingClientRect();
       const photo = rect('img');
@@ -479,17 +481,17 @@ test.describe('Layout', () => {
         photo: { top: photo.top, bottom: photo.bottom, height: photo.height },
         caption: rect('.portrait-caption').top,
         corners: [rect('.portrait-corner-tl').top, rect('.portrait-corner-br').bottom],
-        scan: parseFloat(getComputedStyle(frame, '::after').height),
+        cornerOpacity: getComputedStyle(frame.querySelector('.portrait-corner')!).opacity,
       };
     });
     // Kein leeres Band zwischen Foto und Bildtext (am Desktop ist der Rahmen so hoch wie die
     // Spalte daneben).
     expect(Math.abs(box.caption - box.photo.bottom)).toBeLessThanOrEqual(1);
-    // Die Ecken des Suchers sitzen innen auf dem Foto, die Linie ist so hoch wie das Foto.
+    // Die Ecken des Suchers sitzen innen auf dem Foto und sind da.
     expect(box.corners[0]! - box.photo.top).toBeGreaterThan(0);
     expect(box.photo.bottom - box.corners[1]!).toBeGreaterThan(0);
     expect(box.photo.bottom - box.corners[1]!).toBeLessThan(40);
-    expect(Math.abs(box.scan - box.photo.height)).toBeLessThanOrEqual(1);
+    expect(box.cornerOpacity).toBe('1');
   });
 
   test('Öffnungszeiten im Kontakt: passen in ihr Feld, Tag und Zeit je auf einer Zeile', async ({
@@ -637,36 +639,13 @@ test.describe('Navigation', () => {
     await page.goto(`${PROD}/`);
     await page.mouse.wheel(0, 600);
     await page.locator('[data-menu-toggle]').click();
-    // Festhalten, ob unterwegs eine Überschrift geteilt wird oder ein Auftritt beginnt: Beides
-    // soll ein Sprung überspringen (auch an Stellen, deren Auftritt bei der Ankunft schon vorbei
-    // wäre).
-    await page.locator('main').evaluate((main) => {
-      new MutationObserver((records) => {
-        for (const record of records) {
-          const target = record.target as HTMLElement;
-          if (record.type === 'attributes' && target.dataset.enter === 'in') {
-            document.documentElement.dataset.testEntered = target.className;
-          }
-          for (const node of record.addedNodes) {
-            if (node instanceof Element && node.matches('.ln-mask')) {
-              document.documentElement.dataset.testEntered = 'ln-mask';
-            }
-          }
-        }
-      }).observe(main, {
-        subtree: true,
-        childList: true,
-        attributes: true,
-        attributeFilter: ['data-enter'],
-      });
-    });
     await page.locator('.menu-links a[href="#kontakt"]').click();
     await expect(page.locator('#mobile-menu')).toBeHidden();
     await expect(page).toHaveURL(/#kontakt$/);
     // Sanftes Scrollen über die ganze Seite: unter Last (parallele Browser) braucht das länger.
     await expect(page.locator('#kontakt-title')).toBeInViewport({ timeout: 15_000 });
+    // Am Ziel steht alles fertig da: Was im Bild steht, hängt nur an der Scrollposition.
     await expectLanded(page, '#kontakt');
-    await expect(page.locator('html')).not.toHaveAttribute('data-test-entered');
   });
 
   test('Direktlink auf eine Marke landet auf dem Ziel', async ({ page }) => {
@@ -1027,26 +1006,7 @@ test.describe('Kontakt', () => {
 });
 
 test.describe('Bewegung und Chrome', () => {
-  test('Band: «Band anhalten» hält an, «Band fortsetzen» läuft weiter', async ({ page }) => {
-    await openHome(page);
-    const ticker = page.locator('[data-ticker]');
-    const toggle = ticker.locator('[data-ticker-toggle]');
-    await toggle.scrollIntoViewIfNeeded();
-    await toggle.click();
-    await expect(ticker).toHaveClass(/is-paused/);
-    await expect(toggle).toHaveText(/Band fortsetzen/);
-    await toggle.click();
-    await expect(ticker).not.toHaveClass(/is-paused/);
-    await page.mouse.move(0, 0);
-    await page.locator('.kicker').first().focus();
-    const state = await ticker
-      .locator('.ticker-row')
-      .first()
-      .evaluate((row) => getComputedStyle(row).animationPlayState);
-    expect(state).toBe('running');
-  });
-
-  test('Reduzierte Bewegung: nichts wartet, kein sanftes Scrollen, Band steht', async ({
+  test('Reduzierte Bewegung: nichts zieht mit, kein sanftes Scrollen, das Band bricht um', async ({
     browser,
   }) => {
     const context = await browser.newContext({ reducedMotion: 'reduce' });
@@ -1067,13 +1027,34 @@ test.describe('Bewegung und Chrome', () => {
     await layOutAll(page);
     await page.mouse.wheel(0, 3000);
     await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready');
-    expect(await page.locator('[data-enter="wait"]').count()).toBe(0);
     expect(await page.locator('html.lenis').count()).toBe(0);
-    const animation = await page
-      .locator('.ticker-row')
-      .first()
-      .evaluate((row) => getComputedStyle(row).animationName);
-    expect(animation).toBe('none');
+    // Nichts hängt an der Scrollposition: Mitten im Übergang zum Sortiment steht der Hero an
+    // seinem Platz, ein Block an der Fensterkante ebenso, und die Haltung ist ganz da.
+    const viewport = await page.evaluate(() => window.innerHeight);
+    await placeAt(page, '#sortiment', viewport * 0.5);
+    const translate = (selector: string) =>
+      page
+        .locator(selector)
+        .first()
+        .evaluate((element) => getComputedStyle(element).translate);
+    expect(await translate('.hero')).toMatch(AT_REST);
+    await placeAt(page, '#sortiment .section-lead', viewport - 30);
+    expect(await translate('#sortiment .section-lead')).toMatch(AT_REST);
+    expect(await translate('#sortiment-title .sc-wi')).toMatch(AT_REST);
+    await placeAt(page, '.statement-text', viewport * 0.85);
+    expect(
+      await page
+        .locator('.statement-text .w')
+        .last()
+        .evaluate((word) => getComputedStyle(word).opacity),
+    ).toBe('1');
+    // Das Band: eine ruhige, umbrechende Liste ohne die zweite Fassung der Reihen.
+    const band = await page.locator('[data-ticker]').evaluate((element) => ({
+      animation: getComputedStyle(element.querySelector('.ticker-row')!).animationName,
+      wrap: getComputedStyle(element.querySelector('.ticker-list')!).flexWrap,
+      copy: getComputedStyle(element.querySelector('.ticker-copy')!).display,
+    }));
+    expect(band).toEqual({ animation: 'none', wrap: 'wrap', copy: 'none' });
     await context.close();
   });
 
@@ -1108,12 +1089,16 @@ test.describe('Bewegung und Chrome', () => {
   test('Hero: nach 1,5 s ruht alles', async ({ page }) => {
     await page.goto(`${PROD}/`);
     const hero = page.locator('[data-hero]');
-    // Jeder Auftritt im Hero ist endlich und endet spätestens 1,5 s nach seinem Start.
+    // Jeder Auftritt im Hero ist endlich und endet spätestens 1,5 s nach seinem Start. Gemeint
+    // sind die Animationen nach Zeit (der Auftakt); was am Scrollen hängt, hat keine Dauer.
     const timings = await hero.evaluate((root) =>
-      root.getAnimations({ subtree: true }).map((animation) => ({
-        name: (animation as CSSAnimation).animationName,
-        end: Number(animation.effect?.getComputedTiming().endTime),
-      })),
+      root
+        .getAnimations({ subtree: true })
+        .filter((animation) => animation.timeline instanceof DocumentTimeline)
+        .map((animation) => ({
+          name: (animation as CSSAnimation).animationName,
+          end: Number(animation.effect?.getComputedTiming().endTime),
+        })),
     );
     expect(timings.length).toBeGreaterThan(0);
     // Der Atem des Öffnungsstatus ist ein Signal, kein Auftakt: zwei Atemzüge, 4 s, dann Ruhe
@@ -1124,7 +1109,9 @@ test.describe('Bewegung und Chrome', () => {
     // Gemessen ab dem Start des Auftakts auf der Zeitachse des Dokuments, nicht ab dem Laden:
     // So prüft der Test die Choreografie und hängt nicht davon ab, wie schnell die Seite lädt.
     const start = await hero.evaluate(async (root) => {
-      const animations = root.getAnimations({ subtree: true });
+      const animations = root
+        .getAnimations({ subtree: true })
+        .filter((animation) => animation.timeline instanceof DocumentTimeline);
       await Promise.all(animations.map((animation) => animation.ready));
       return Math.min(...animations.map((animation) => Number(animation.startTime)));
     });
@@ -1132,7 +1119,10 @@ test.describe('Bewegung und Chrome', () => {
     const running = await hero.evaluate((root) =>
       root
         .getAnimations({ subtree: true })
-        .filter((animation) => animation.playState === 'running')
+        .filter(
+          (animation) =>
+            animation.timeline instanceof DocumentTimeline && animation.playState === 'running',
+        )
         .map((animation) => (animation as CSSAnimation).animationName),
     );
     // Nur der Atem des Öffnungsstatus darf noch laufen (ein Signal, endet nach 4 s, siehe oben).
@@ -1384,12 +1374,17 @@ test.describe('Bewegung und Chrome', () => {
       await page.mouse.wheel(0, 1500);
       await page.waitForTimeout(120);
     }
-    // Den Knopf des Bands fokussieren, ohne dorthin zu scrollen, und mit der Leertaste auslösen.
+    // «Nächster Raum» fokussieren, ohne dorthin zu scrollen, und mit der Leertaste auslösen.
     await page.evaluate(() =>
-      document.querySelector<HTMLElement>('[data-ticker-toggle]')!.focus({ preventScroll: true }),
+      document
+        .querySelector<HTMLElement>('[data-rooms] [data-choice-next]')!
+        .focus({ preventScroll: true }),
     );
     await page.keyboard.press('Space');
-    await expect(page.locator('[data-ticker-toggle]')).toHaveText(/Band fortsetzen/);
+    await expect(page.locator('#raum-polstermoebel .room-btn')).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
     if (isMobile) {
       await page.waitForTimeout(400);
       expect(await page.evaluate(() => window.scrollY)).toBe(start);
@@ -1432,583 +1427,51 @@ test.describe('Bewegung und Chrome', () => {
     expect(await page.evaluate(() => document.documentElement.className)).not.toMatch(/stopped/);
   });
 
-  test('Auftritte beim Hereinscrollen: am Ende wartet nichts mehr', async ({ page }) => {
+  test('Bewegung pausiert: alles steht an seinem Platz, auch mitten im Übergang', async ({
+    page,
+  }) => {
     await page.goto(`${PROD}/`);
     await layOutAll(page);
-    await page.mouse.wheel(0, 200);
-    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
-      timeout: 15_000,
-    });
-    const main = page.locator('main');
-    // Endliche Animationen in main: Name und Ende samt Verzögerung (ms ab ihrem Start)
-    const finite = () =>
-      main.evaluate((root) =>
-        root
-          .getAnimations({ subtree: true })
-          .map((animation) => ({
-            name: (animation as CSSAnimation).animationName,
-            end: Number(animation.effect?.getComputedTiming().endTime),
-          }))
-          .filter(({ end }) => Number.isFinite(end)),
-      );
-    const seen: { name: string; end: number }[] = [];
+    const viewport = await page.evaluate(() => window.innerHeight);
+    const translate = (selector: string) =>
+      page
+        .locator(selector)
+        .first()
+        .evaluate((element) => getComputedStyle(element).translate);
+    // Mitten im Übergang: Das Sortiment liegt halb über dem Hero, der zurückbleibt.
+    await placeAt(page, '#sortiment', viewport * 0.5);
+    expect(await translate('.hero')).not.toMatch(AT_REST);
+
+    await toggleMotion(page, 'off');
+    // Sofort: Der Hero steht an seinem Platz im Layout, kein Bogen bleibt mehr zurück.
+    expect(await translate('.hero')).toMatch(AT_REST);
     const height = await page.evaluate(() => document.documentElement.scrollHeight);
-    for (let y = 0; y < height; y += 500) {
-      await page.evaluate((top) => window.scrollTo(0, top), y);
-      await page.waitForTimeout(60);
-      seen.push(...(await finite()));
-    }
-    // Gewartet wird auf den echten Zustand: Kein endlicher Auftritt läuft mehr (nur das Band
-    // läuft endlos weiter), und keine Überschrift ist mehr in Zeilen geteilt.
-    await page.waitForFunction(
-      () =>
-        document.querySelectorAll('main .ln-mask').length === 0 &&
-        document
-          .querySelector('main')!
-          .getAnimations({ subtree: true })
-          .every(
-            (animation) =>
-              animation.playState !== 'running' ||
-              !Number.isFinite(Number(animation.effect?.getComputedTiming().endTime)),
-          ),
-      null,
-      { timeout: 5_000 },
-    );
-    expect(await page.locator('[data-enter="wait"]').count()).toBe(0);
-    // Auftritte gab es wirklich (auch die Bilder), und jeder endet spätestens nach 1410 ms: Die
-    // Linie im Sucher endet nach 1250 ms, Bilder nach 800 ms plus höchstens drei Versätze von 70 ms.
-    expect(seen.map(({ name }) => name)).toContain('unveil');
-    // Ausnahme: der Atem des Öffnungsstatus im Kontakt (ein Signal, 0,6 s nach dem Auftritt
-    // zwei Atemzüge von 2 s, unter den 5 s von WCAG 2.2.2).
-    for (const { name, end } of seen) {
-      expect(end, name).toBeLessThanOrEqual(name === 'dot-breath' ? 4600 : 1200 + 3 * 70);
-    }
-  });
-
-  test('Überschriften: Beim Auftritt dieselben Zeilen wie danach', async ({ page }) => {
-    await page.goto(`${PROD}/`);
-    await page.evaluate(() => document.fonts.ready);
-    await layOutAll(page);
-    await page.mouse.wheel(0, 10);
-    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
-      timeout: 15_000,
-    });
-    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-    await nextFrames(page);
-    const ids = await page.evaluate(() =>
-      [...document.querySelectorAll<HTMLElement>('main h2.display[id]')]
-        .filter((title) => title.getBoundingClientRect().top > window.innerHeight)
-        .map((title) => title.id),
-    );
-    expect(ids).toContain('ueber-title');
-    for (const id of ids) {
-      // Zeilen, wie der Browser die Überschrift ohne Teilung setzt (Zeichen nach Unterkante).
-      const natural = await page.evaluate((key) => {
-        const title = document.getElementById(key)!;
-        const range = document.createRange();
-        const lines: string[] = [];
-        let last = Number.NEGATIVE_INFINITY;
-        const walker = document.createTreeWalker(title, NodeFilter.SHOW_TEXT);
-        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-          const text = node as Text;
-          for (let at = 0; at < text.data.length; at++) {
-            const char = text.data[at]!;
-            if (/\s|\u00AD/.test(char)) {
-              if (lines.length) lines[lines.length - 1] += char === '\u00AD' ? '' : ' ';
-              continue;
-            }
-            range.setStart(text, at);
-            range.setEnd(text, at + 1);
-            const bottom = range.getBoundingClientRect().bottom;
-            if (bottom > last + 1) lines.push('');
-            last = Math.max(last, bottom);
-            lines[lines.length - 1] += char;
-          }
-        }
-        return lines.map((line) => line.replace(/\s+/g, ' ').trim());
-      }, id);
-      const title = page.locator(`#${id}`);
-      const name = await title.evaluate((element) =>
-        (element.textContent ?? '')
-          .replace(/\u00AD/g, '')
-          .replace(/\s+/g, ' ')
-          .trim(),
-      );
-      await title.evaluate((element) =>
-        window.scrollTo({
-          top: element.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.6,
-          behavior: 'instant',
-        }),
-      );
-      await expect(title.locator('.ln').first()).toBeAttached({ timeout: 2_000 });
-      const split = await title.evaluate((element) =>
-        [...element.querySelectorAll('.ln')].map((line) =>
-          (line.textContent ?? '')
-            .replace(/\u00AD/g, '')
-            .replace(/-$/, '')
-            .replace(/\s+/g, ' ')
-            .trim(),
-        ),
-      );
-      expect(split, id).toEqual(natural.map((line) => line.replace(/-$/, '')));
-      // Screenreader hören den Namen ohne den sichtbar gesetzten Trennstrich.
-      expect(await title.getAttribute('aria-label'), id).toBe(name);
-      // Danach ist das Markup wieder wie vorher: kein Umbruch und kein Strich bleibt zurück.
-      await expect(title.locator('.ln')).toHaveCount(0, { timeout: 3_000 });
-      expect(await title.locator('br').count(), id).toBe(0);
-    }
-    expect(await page.locator('#ueber-title').textContent()).toContain('Familien\u00ADunternehmen');
-  });
-
-  test('Bilder laden vor ihrem Auftritt (loading="lazy")', async ({ page }) => {
-    await page.goto(`${PROD}/`);
-    await layOutAll(page);
-    await page.mouse.wheel(0, 200);
-    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
-      timeout: 15_000,
-    });
-    await nextFrames(page);
-    // Ein Bild weit unten (Aktuell), das auf seinen Auftritt wartet. Allmählich hinscrollen wie
-    // beim Lesen, bis es gut 600 px unter dem unteren Rand steht: Dort lädt der Browser Bilder mit
-    // loading="lazy" schon vor. Ein ganz beschnittenes Bild lüde er erst im Bild (ein Sprung
-    // dagegen lädt es auch so).
-    const media = await page
-      .locator('.story-media.enter-unveil[data-enter="wait"]')
-      .first()
-      .elementHandle();
-    expect(media).not.toBeNull();
-    const below = () =>
-      media!.evaluate((element) => element.getBoundingClientRect().top - window.innerHeight);
-    for (let step = 0; step < 300; step++) {
-      const distance = await below();
-      if (distance < 640) break;
-      await page.mouse.wheel(0, Math.min(150, Math.max(20, (distance - 600) / 2)));
-      await page.waitForTimeout(30);
-    }
-    await page.waitForFunction(
-      (element) => {
-        const image = element.querySelector('img')!;
-        return image.complete && image.naturalWidth > 0;
-      },
-      media!,
-      { timeout: 5_000 },
-    );
-    expect(await below()).toBeGreaterThan(0);
-    expect(await media!.evaluate((element) => (element as HTMLElement).dataset.enter)).toBe('wait');
-  });
-
-  test('Bilder öffnen sich ab einem Viertel, am Rand nach kurzer Zeit', async ({ page }) => {
-    await page.goto(`${PROD}/`);
-    await layOutAll(page);
-    await page.mouse.wheel(0, 200);
-    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
-      timeout: 15_000,
-    });
-    await nextFrames(page);
-    const frame = await page
-      .locator('.story-media.enter-unveil[data-enter="wait"]')
-      .first()
-      .elementHandle();
-    expect(frame).not.toBeNull();
-    // Rahmen so stellen, dass ein Anteil davon über der Auslösekante steht (8 % über dem Rand).
-    const showShare = (share: number) =>
-      frame!.evaluate((element, wanted) => {
-        const rect = element.getBoundingClientRect();
-        const edge = window.innerHeight * 0.92;
-        window.scrollTo({
-          top: window.scrollY + rect.top - edge + rect.height * wanted,
-          behavior: 'instant',
-        });
-      }, share);
-    // Erst knapp darunter vorladen lassen, damit es um den Auslöser geht, nicht ums Laden.
-    await showShare(-0.5);
-    await page.waitForFunction((element) => element.querySelector('img')!.complete, frame!, {
-      timeout: 5_000,
-    });
-    // Festhalten, wie lange nach dem Hinstellen das Bild sich öffnet (im Browser gemessen).
-    await frame!.evaluate((element) => {
-      new MutationObserver(() => {
-        const frame = element as HTMLElement;
-        if (frame.dataset.enter !== 'in' || frame.dataset.testAfter) return;
-        frame.dataset.testAfter = String(
-          performance.now() - Number(document.documentElement.dataset.testShown),
-        );
-      }).observe(element, { attributes: true, attributeFilter: ['data-enter'] });
-    });
-    // Ein Zehntel im Bild: Das Bild wartet noch.
-    await page.evaluate(() => {
-      document.documentElement.dataset.testShown = String(performance.now());
-    });
-    await showShare(0.1);
-    await nextFrames(page);
-    expect(await frame!.evaluate((element) => (element as HTMLElement).dataset.enter)).toBe('wait');
-    // Bleibt der Rahmen dort stehen, öffnet sich das Bild nach kurzer Zeit trotzdem: nach einer
-    // Viertelsekunde, nicht später (länger stünde der Rahmen nur leer da).
-    await page.waitForFunction(
-      (element) => (element as HTMLElement).dataset.enter === 'in',
-      frame!,
-      { timeout: 3_000 },
-    );
-    expect(Number(await frame!.getAttribute('data-test-after'))).toBeLessThan(600);
-    // Ein zweites Bild weiter unten: Ab gut einem Viertel öffnet es sich sofort.
-    const next = await page.evaluateHandle(
-      () =>
-        [...document.querySelectorAll<HTMLElement>('.enter-unveil[data-enter="wait"]')].find(
-          (element) => element.getBoundingClientRect().top > window.innerHeight + 100,
-        ) ?? null,
-    );
-    const second = next.asElement();
-    expect(second).not.toBeNull();
-    const place = (share: number) =>
-      second!.evaluate((element, wanted) => {
-        const rect = element.getBoundingClientRect();
-        window.scrollTo({
-          top: window.scrollY + rect.top - window.innerHeight * 0.92 + rect.height * wanted,
-          behavior: 'instant',
-        });
-      }, share);
-    await place(-0.5);
-    await page.waitForFunction((element) => element.querySelector('img')!.complete, second!, {
-      timeout: 5_000,
-    });
-    await place(0.5);
-    await page.waitForFunction(
-      (element) => (element as HTMLElement).dataset.enter === 'in',
-      second!,
-      { timeout: 500 },
-    );
-  });
-
-  test('Hohe Rahmen: Das Porträt öffnet sich, bevor ein Viertel davon im Bild ist', async ({
-    page,
-  }) => {
-    await page.goto(`${PROD}/`);
-    await layOutAll(page);
-    await page.mouse.wheel(0, 200);
-    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
-      timeout: 15_000,
-    });
-    await nextFrames(page);
-    const frame = page.locator('.portrait-frame.enter-unveil');
-    await expect(frame).toHaveAttribute('data-enter', 'wait');
-    // So stellen, dass `seen` Pixel über der Auslösekante stehen (8 % über dem Rand).
-    const show = (seen: number) =>
-      frame.evaluate((element, pixels) => {
-        const rect = element.getBoundingClientRect();
-        window.scrollTo({
-          top: window.scrollY + rect.top - window.innerHeight * 0.92 + pixels,
-          behavior: 'instant',
-        });
-      }, seen);
-    await show(-400);
-    await page.waitForFunction(
-      () => document.querySelector<HTMLImageElement>('.portrait-frame img')!.complete,
-      null,
-      { timeout: 5_000 },
-    );
-    // Gut ein Achtel der Fensterhöhe im Bild, weniger als ein Viertel des Rahmens: Das Bild öffnet
-    // sich sofort, ohne die Wartezeit am Rand (eine Viertelsekunde).
-    const share = await frame.evaluate((element) => {
-      const seen = window.innerHeight * 0.14;
-      return { seen, quarter: element.getBoundingClientRect().height / 4 };
-    });
-    expect(share.seen).toBeLessThan(share.quarter);
-    const after = await frame.evaluate(
-      (element, seen) =>
-        new Promise<number>((resolve) => {
-          const start = performance.now();
-          new MutationObserver(() => {
-            if ((element as HTMLElement).dataset.enter === 'in') resolve(performance.now() - start);
-          }).observe(element, { attributes: true, attributeFilter: ['data-enter'] });
-          const rect = element.getBoundingClientRect();
-          window.scrollTo({
-            top: window.scrollY + rect.top - window.innerHeight * 0.92 + seen,
-            behavior: 'instant',
-          });
-        }),
-      share.seen,
-    );
-    expect(after).toBeLessThan(200);
-  });
-
-  test('Langsames Netz: Ein Bild, das noch lädt, steigt nicht über einen leeren Rahmen', async ({
-    page,
-  }) => {
-    await page.goto(`${PROD}/`);
-    await layOutAll(page);
-    await page.mouse.wheel(0, 200);
-    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
-      timeout: 15_000,
-    });
-    await nextFrames(page);
-    // Ab jetzt kommen Bilder erst nach 2,5 s an.
-    await page.route(/\.(avif|webp|jpe?g|png)(\?.*)?$/, async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 2500));
-      await route.continue().catch(() => undefined);
-    });
-    const frame = await page
-      .locator(
-        '.project-media.enter-unveil[data-enter="wait"], .story-media.enter-unveil[data-enter="wait"]',
-      )
-      .last()
-      .elementHandle();
-    expect(frame).not.toBeNull();
-    expect(await frame!.evaluate((element) => element.querySelector('img')!.complete)).toBe(false);
-    // Festhalten, ob der Rahmen je «in» bekommt, solange das Bild fehlt, und wie das Bild
-    // erscheint, wenn es spät kommt.
-    await frame!.evaluate((element) => {
-      new MutationObserver(() => {
-        const image = element.querySelector('img')!;
-        const state = (element as HTMLElement).dataset.enter;
-        if (state === 'in' && !image.complete) {
-          document.documentElement.dataset.testRoseEmpty = '';
-        }
-        if (state === 'loaded') {
-          document.documentElement.dataset.testLate = image
-            .getAnimations()
-            .map((animation) => (animation as CSSAnimation).animationName)
-            .join(' ');
-        }
-      }).observe(element, { attributes: true, attributeFilter: ['data-enter'] });
-    });
-    // Sprunghaft halb ins Bild (wie schnelles Wischen).
-    await frame!.evaluate((element) => {
-      const rect = element.getBoundingClientRect();
-      window.scrollTo({
-        top: window.scrollY + rect.top - window.innerHeight * 0.92 + rect.height * 0.5,
-        behavior: 'instant',
-      });
-    });
-    // Nach kurzem Warten verzichtet das Bild auf seinen Auftritt («late»). Der Rahmen bleibt
-    // leer, statt bis zum Bild die Farbe zu wechseln.
-    await page.waitForFunction(
-      (element) => (element as HTMLElement).dataset.enter === 'late',
-      frame!,
-      { timeout: 2_000 },
-    );
-    const look = () =>
-      frame!.evaluate((element) => ({
-        background: getComputedStyle(element).backgroundColor,
-        image: getComputedStyle(element.querySelector('img')!).opacity,
-        loaded: element.querySelector('img')!.complete,
-      }));
-    expect(await look()).toEqual({ background: 'rgba(0, 0, 0, 0)', image: '0', loaded: false });
-    // Ist es da, blendet es ein (nur die Deckkraft) und steht dann ganz.
-    await page.waitForFunction(
-      (element) => (element as HTMLElement).dataset.enter === 'loaded',
-      frame!,
-      { timeout: 6_000 },
-    );
-    await expect(page.locator('html')).toHaveAttribute('data-test-late', 'unveil-late');
-    await expect.poll(look).toEqual({ background: 'rgba(0, 0, 0, 0)', image: '1', loaded: true });
-    await expect(page.locator('html')).not.toHaveAttribute('data-test-rose-empty');
-    // Anhalten und Fortsetzen: Auch das spät eingeblendete Foto blendet nicht nochmals ein.
-    await expect
-      .poll(() =>
-        frame!.evaluate((element) => element.querySelector('img')!.getAnimations().length),
-      )
-      .toBe(0);
-    await clickMotionToggle(page);
-    await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
-    await clickMotionToggle(page);
-    await expect(page.locator('html')).toHaveAttribute('data-motion', 'on');
-    await nextFrames(page);
-    expect(
-      await frame!.evaluate((element) => ({
-        state: (element as HTMLElement).dataset.enter,
-        animations: element.querySelector('img')!.getAnimations().length,
-        image: getComputedStyle(element.querySelector('img')!).opacity,
-      })),
-    ).toEqual({ state: '', animations: 0, image: '1' });
-    await page.unrouteAll({ behavior: 'ignoreErrors' });
-  });
-
-  test('Hängt ein Foto, zeigt der Rahmen nach einer Weile wieder seine Fläche', async ({
-    page,
-  }) => {
-    await page.goto(`${PROD}/`);
-    await layOutAll(page);
-    await page.mouse.wheel(0, 200);
-    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
-      timeout: 15_000,
-    });
-    await nextFrames(page);
-    // Ab jetzt kommt kein Bild mehr an (das Netz hängt).
-    await page.route(/\.(avif|webp|jpe?g|png)(\?.*)?$/, async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 20_000));
-      await route.continue().catch(() => undefined);
-    });
-    const frame = await page
-      .locator('.story-media.enter-unveil[data-enter="wait"]')
-      .last()
-      .elementHandle();
-    expect(frame).not.toBeNull();
-    expect(await frame!.evaluate((element) => element.querySelector('img')!.complete)).toBe(false);
-    await frame!.evaluate((element) => {
-      const rect = element.getBoundingClientRect();
-      window.scrollTo({
-        top: window.scrollY + rect.top - window.innerHeight * 0.92 + rect.height * 0.5,
-        behavior: 'instant',
-      });
-    });
-    await page.waitForFunction(
-      (element) => (element as HTMLElement).dataset.enter === 'late',
-      frame!,
-      { timeout: 2_000 },
-    );
-    // Drei Sekunden später steht der Rahmen wie ohne Auftritt da: mit seiner Sandfläche.
-    await page.waitForFunction((element) => (element as HTMLElement).dataset.enter === '', frame!, {
-      timeout: 5_000,
-    });
-    expect(await frame!.evaluate((element) => getComputedStyle(element).backgroundColor)).not.toBe(
-      'rgba(0, 0, 0, 0)',
-    );
-    await page.unrouteAll({ behavior: 'ignoreErrors' });
-  });
-
-  test('Bleibt ein Rahmen am unteren Rand stehen, öffnet er sich trotzdem', async ({ page }) => {
-    await page.goto(`${PROD}/`);
-    await layOutAll(page);
-    await page.mouse.wheel(0, 200);
-    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
-      timeout: 15_000,
-    });
-    await nextFrames(page);
-    const frame = await page
-      .locator('.story-media.enter-unveil[data-enter="wait"]')
-      .first()
-      .elementHandle();
-    expect(frame).not.toBeNull();
-    // `seen` Pixel vom Rahmen im Fenster, gemessen am unteren Rand.
-    const show = (seen: number) =>
-      frame!.evaluate((element, pixels) => {
-        const rect = element.getBoundingClientRect();
-        window.scrollTo({
-          top: window.scrollY + rect.top - window.innerHeight + pixels,
-          behavior: 'instant',
-        });
-      }, seen);
-    await show(-400);
-    await page.waitForFunction((element) => element.querySelector('img')!.complete, frame!, {
-      timeout: 5_000,
-    });
-    // 40 px im Bild, also unter der Auslösekante (8 % über dem Rand): Der Rahmen wartet, solange
-    // gescrollt wird, und öffnet sich nach einer kurzen Ruhe.
-    const after = await frame!.evaluate(
-      (element) =>
-        new Promise<number>((resolve) => {
-          const start = performance.now();
-          new MutationObserver(() => {
-            if ((element as HTMLElement).dataset.enter === 'in') resolve(performance.now() - start);
-          }).observe(element, { attributes: true, attributeFilter: ['data-enter'] });
-          const rect = element.getBoundingClientRect();
-          window.scrollTo({
-            top: window.scrollY + rect.top - window.innerHeight + 40,
-            behavior: 'instant',
-          });
-        }),
-    );
-    expect(after).toBeGreaterThan(200);
-    expect(after).toBeLessThan(900);
-  });
-
-  test('Bilder steigen an der Fensterkante auf, nicht darunter', async ({ page }) => {
-    await page.goto(`${PROD}/`);
-    await layOutAll(page);
-    await page.mouse.wheel(0, 200);
-    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
-      timeout: 15_000,
-    });
-    await nextFrames(page);
-    const frame = await page
-      .locator('.story-media.enter-unveil[data-enter="wait"]')
-      .first()
-      .elementHandle();
-    expect(frame).not.toBeNull();
-    const place = (share: number) =>
-      frame!.evaluate((element, wanted) => {
-        const rect = element.getBoundingClientRect();
-        window.scrollTo({
-          top: window.scrollY + rect.top - window.innerHeight * 0.92 + rect.height * wanted,
-          behavior: 'instant',
-        });
-      }, share);
-    await place(-0.5);
-    await page.waitForFunction((element) => element.querySelector('img')!.complete, frame!, {
-      timeout: 5_000,
-    });
-    // Gut ein Drittel im Bild: Der Auftritt beginnt sofort. Im ersten Bild der Enthüllung steht
-    // die sichtbare Kante des Ausschnitts (mit Zoom) am unteren Fensterrand, nicht tiefer.
-    const start = await frame!.evaluate(
-      (element) =>
-        new Promise<{ edge: number; fold: number; bottom: number }>((resolve) => {
-          const image = element.querySelector('img')!;
-          new MutationObserver((_, observer) => {
-            if ((element as HTMLElement).dataset.enter !== 'in') return;
-            observer.disconnect();
-            requestAnimationFrame(() => {
-              const unveil = image
-                .getAnimations()
-                .find((animation) => (animation as CSSAnimation).animationName === 'unveil')!;
-              unveil.pause();
-              unveil.currentTime = 0;
-              const rect = image.getBoundingClientRect();
-              const inset = parseFloat(getComputedStyle(image).clipPath.slice('inset('.length));
-              unveil.play();
-              resolve({
-                edge: rect.top + (inset / 100) * rect.height,
-                fold: window.innerHeight,
-                bottom: rect.bottom,
-              });
-            });
-          }).observe(element, { attributes: true, attributeFilter: ['data-enter'] });
-          const rect = element.getBoundingClientRect();
-          window.scrollTo({
-            top: window.scrollY + rect.top - window.innerHeight * 0.92 + rect.height * 0.35,
-            behavior: 'instant',
-          });
-        }),
-    );
-    expect(start.bottom).toBeGreaterThan(start.fold);
-    expect(Math.abs(start.edge - start.fold)).toBeLessThanOrEqual(2);
-    // Danach ist das Markup wieder wie zuvor.
-    await page.waitForFunction(
-      (element) => element.querySelector('img')!.getAnimations().length === 0,
-      frame!,
-      { timeout: 3_000 },
-    );
-    expect(await frame!.getAttribute('style')).toBeNull();
-  });
-
-  test('Bewegung pausiert: nichts wartet', async ({ page }) => {
-    await page.goto(`${PROD}/`);
-    await layOutAll(page);
-    // Erst die Auftritte scharf machen: Smooth Scroll und Scroll-Animationen sind geladen, und
-    // was unter dem Bild liegt, wartet auf seinen Auftritt.
-    await page.mouse.wheel(0, 200);
-    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
-      timeout: 15_000,
-    });
-    await nextFrames(page);
-    expect(await page.locator('[data-enter="wait"]').count()).toBeGreaterThan(0);
-
-    const toggle = page.locator('[data-motion-toggle]');
-    await expect(toggle).toBeVisible();
-    await clickMotionToggle(page);
-    await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
-    // Sofort: Nichts wartet mehr, keine Überschrift ist geteilt.
-    expect(await page.locator('[data-enter="wait"]').count()).toBe(0);
-    expect(await page.locator('.ln-mask').count()).toBe(0);
-
-    const height = await page.evaluate(() => document.documentElement.scrollHeight);
-    for (let y = 0; y < height; y += 500) {
-      await page.evaluate((top) => window.scrollTo(0, top), y);
+    for (let y = 0; y < height; y += 600) {
+      await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), y);
       await nextFrames(page);
-      expect(await page.locator('[data-enter="wait"]').count(), `bei ${y} px`).toBe(0);
-      expect(await page.locator('.ln-mask').count(), `bei ${y} px`).toBe(0);
+      // Nichts ist verschoben, vergrössert oder blass, an keiner Stelle der Seite. (Die untere
+      // Reihe des Bands liegt versetzt, das ist ihre Lage, keine Bewegung.)
+      const moving = await page.evaluate((rest) => {
+        const atRest = new RegExp(rest);
+        return [
+          ...document.querySelectorAll<HTMLElement>(
+            'main > *, .sc-rise, .sc-wi, .sc-zoom, .ticker-row:not(.ticker-row-reverse), .hero-orb, .portrait-corner, .statement-text .w',
+          ),
+        ]
+          .filter((element) => {
+            const style = getComputedStyle(element);
+            const scaled = style.scale !== 'none' && Number.parseFloat(style.scale) !== 1;
+            return !atRest.test(style.translate) || scaled || Number(style.opacity) < 1;
+          })
+          .map((element) => element.className);
+      }, AT_REST.source);
+      expect(moving, `bei ${y} px`).toEqual([]);
     }
+    // Fortsetzen: Die Bewegung hängt wieder am Scrollen.
+    await toggleMotion(page, 'on');
+    await placeAt(page, '#sortiment', viewport * 0.5);
+    expect(await translate('.hero')).not.toMatch(AT_REST);
   });
-
   test('Bewegung pausiert: Header und Menü wechseln ohne Übergang', async ({ page }) => {
     await page.goto(`${PROD}/`);
     const toggle = page.locator('[data-motion-toggle]');
@@ -2071,38 +1534,33 @@ test.describe('Bewegung und Chrome', () => {
     expect(await page.evaluate(() => window.scrollY)).toBe(landed);
     expect(landed).toBeGreaterThan(300);
 
-    // Der Hero hängt nicht am Scrollen.
+    // Das runde Foto im Hero hängt nicht am Scrollen.
     await page.evaluate(() => window.scrollTo({ top: 300, behavior: 'instant' }));
     await nextFrames(page);
-    const hero = page.locator('[data-hero]');
-    expect(await hero.evaluate((root) => root.style.getPropertyValue('--hero-p'))).toBe('');
+    expect(
+      await page.locator('.hero-orb').evaluate((orb) => getComputedStyle(orb).animationName),
+    ).toBe('none');
 
     // Die Haltung steht in voller Deckkraft, auch mitten auf ihrer Strecke.
-    const statement = page.locator('[data-reveal-words]').first();
-    const midway = () =>
-      statement.evaluate((element) =>
-        window.scrollTo({
-          top: element.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.75,
-          behavior: 'instant',
-        }),
-      );
+    const viewport = await page.evaluate(() => window.innerHeight);
+    const statement = page.locator('.statement-text').first();
     const dimmed = () =>
       statement.evaluate(
         (element) =>
-          [...element.querySelectorAll<HTMLElement>('.word')].filter(
+          [...element.querySelectorAll<HTMLElement>('.w')].filter(
             (word) => Number(getComputedStyle(word).opacity) < 1,
           ).length,
       );
-    await midway();
-    await nextFrames(page);
-    expect(await statement.locator('.word').count()).toBeGreaterThan(3);
+    await placeAt(page, '.statement-text', viewport * 0.82);
+    expect(await statement.locator('.w').count()).toBeGreaterThan(3);
     expect(await dimmed()).toBe(0);
 
-    // Fortsetzen: Am Desktop gleitet es wieder, und die Wörter der Haltung werden wieder hell.
+    // Fortsetzen: Am Desktop gleitet es wieder, und die Wörter der Haltung hängen wieder am
+    // Scrollen (an dieser Stelle sind die hinteren noch blass).
     await clickMotionToggle(page);
     await expect(page.locator('html')).toHaveAttribute('data-motion', 'on');
     expect(await page.locator('html.lenis').count()).toBe(isMobile ? 0 : 1);
-    await midway();
+    await placeAt(page, '.statement-text', viewport * 0.82);
     await expect.poll(dimmed).toBeGreaterThan(0);
   });
 
@@ -2139,104 +1597,6 @@ test.describe('Bewegung und Chrome', () => {
     expect(Math.abs(offset)).toBeLessThanOrEqual(2);
   });
 
-  test('Bewegung pausiert: Der Hero hält nicht mehr an, die Ansicht bleibt', async ({
-    page,
-    isMobile,
-  }) => {
-    await page.goto(`${PROD}/`);
-    await layOutAll(page);
-    await page.mouse.wheel(0, 200);
-    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
-      timeout: 15_000,
-    });
-    const hero = page.locator('[data-hero]');
-    // Angepinnt wird der Hero nur auf grossen Bildschirmen; auf dem Handy nie.
-    const pinned = async () => {
-      if (isMobile) await expect(hero).not.toHaveAttribute('data-pinned');
-      else await expect(hero).toHaveAttribute('data-pinned', '');
-    };
-    await pinned();
-    const anchor = page.locator('#sortiment');
-    const top = () => anchor.evaluate((element) => element.getBoundingClientRect().top);
-    const bringUp = async () => {
-      await anchor.evaluate((element) =>
-        window.scrollTo({
-          top: element.getBoundingClientRect().top + window.scrollY - 200,
-          behavior: 'instant',
-        }),
-      );
-      await nextFrames(page);
-      return top();
-    };
-    // Anhalten mitten auf der Seite: Der Hero gibt sein Anpinnen auf, was im Bild ist, bleibt.
-    const before = await bringUp();
-    await toggleMotion(page, 'off');
-    await expect(hero).not.toHaveAttribute('data-pinned');
-    expect(Math.abs((await top()) - before)).toBeLessThanOrEqual(1);
-    // Ganz oben bewegt schon das erste Scrollen den Inhalt (keine stille Strecke).
-    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-    await nextFrames(page);
-    const title = page.locator('#hero-title');
-    const start = await title.evaluate((element) => element.getBoundingClientRect().top);
-    await page.evaluate(() => window.scrollTo({ top: 100, behavior: 'instant' }));
-    await nextFrames(page);
-    const moved = start - (await title.evaluate((element) => element.getBoundingClientRect().top));
-    expect(Math.abs(moved - 100)).toBeLessThanOrEqual(1);
-    // Fortsetzen: wieder angepinnt, und wieder bleibt die Ansicht, wo sie ist.
-    const again = await bringUp();
-    await toggleMotion(page, 'on');
-    await pinned();
-    expect(Math.abs((await top()) - again)).toBeLessThanOrEqual(1);
-  });
-
-  test('Fortsetzen im Hero: Die erste Zeile gleitet an ihren Platz, statt zu springen', async ({
-    page,
-    isMobile,
-  }) => {
-    await page.goto(`${PROD}/`);
-    await page.evaluate(() => document.fonts.ready);
-    await page.mouse.wheel(0, 10);
-    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
-      timeout: 15_000,
-    });
-    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-    await nextFrames(page);
-    await toggleMotion(page, 'off');
-    /*
-     * Angehalten ein Stück in den Hero scrollen, dann fortsetzen. Am Desktop bleibt die Ansicht,
-     * man steht damit am Ende der angepinnten Strecke, wo die erste Zeile halb zurückgetreten ist.
-     * Auf dem Handy (nie angepinnt) so weit, dass der Verlauf am Ende ist: Angehalten steht die
-     * Zeile ganz da, fortgesetzt tritt sie halb zurück.
-     */
-    await page.evaluate((mobile) => {
-      const track = document.querySelector<HTMLElement>('[data-hero-track]')!;
-      window.scrollTo({ top: mobile ? track.offsetHeight * 0.6 + 10 : 100, behavior: 'instant' });
-    }, isMobile);
-    await nextFrames(page);
-    expect(await page.locator('.q1').evaluate((line) => getComputedStyle(line).opacity)).toBe('1');
-    const samples = await page.evaluate(
-      () =>
-        new Promise<number[]>((resolve) => {
-          const line = document.querySelector('.q1')!;
-          const values: number[] = [];
-          const sample = () => {
-            values.push(Number(getComputedStyle(line).opacity));
-            if (values.length < 40) requestAnimationFrame(sample);
-            else resolve(values);
-          };
-          document.querySelector<HTMLElement>('[data-motion-toggle]')!.click();
-          requestAnimationFrame(sample);
-        }),
-    );
-    // Kein Sprung in einem Bild: Die Deckkraft sinkt über mehrere Bilder und kommt bei der
-    // Hälfte an.
-    expect(samples[0]).toBeGreaterThan(0.85);
-    for (let index = 1; index < samples.length; index++) {
-      expect(samples[index - 1]! - samples[index]!).toBeLessThan(0.2);
-    }
-    expect(samples.at(-1)).toBeCloseTo(0.5, 1);
-  });
-
   test('Selbst gescrollt nach einem Sprung: Anhalten lässt die Seite, wo sie ist', async ({
     page,
     isMobile,
@@ -2266,8 +1626,7 @@ test.describe('Bewegung und Chrome', () => {
     const before = await page.evaluate(() => window.scrollY);
     await toggleMotion(page, 'off');
     await nextFrames(page);
-    // Die Seite springt nicht gegen das eigene Scrollen zur Marke. (Der Hero gibt sein Anpinnen
-    // auf, die Ansicht bleibt dabei; gemessen wird darum am Ziel, nicht an der Scrollposition.)
+    // Die Seite springt nicht gegen das eigene Scrollen zur Marke.
     const offset = await page.evaluate(() => {
       const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop);
       return document.querySelector('#kontakt')!.getBoundingClientRect().top - padding;
@@ -2283,11 +1642,15 @@ test.describe('Bewegung und Chrome', () => {
     await cdp.send('Animation.enable');
     await cdp.send('Animation.setPlaybackRate', { playbackRate: 0.1 });
     const hero = page.locator('[data-hero]');
+    // Der Auftakt läuft nach Zeit; was am Scrollen hängt, zählt hier nicht.
     const running = () =>
       hero.evaluate((root) =>
         root
           .getAnimations({ subtree: true })
-          .filter((animation) => animation.playState === 'running')
+          .filter(
+            (animation) =>
+              animation.timeline instanceof DocumentTimeline && animation.playState === 'running',
+          )
           .map((animation) => (animation as CSSAnimation).animationName),
       );
     const toggle = page.locator('[data-motion-toggle]');
@@ -2311,43 +1674,6 @@ test.describe('Bewegung und Chrome', () => {
     expect(state.photo).toBe('none');
     for (const transform of state.lines) expect(transform).toBe('none');
     expect(state.actions).toBe('1');
-  });
-
-  test('Anhalten und Fortsetzen: Fertige Bilder öffnen sich nicht nochmals', async ({ page }) => {
-    await page.goto(`${PROD}/`);
-    await layOutAll(page);
-    await page.mouse.wheel(0, 200);
-    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
-      timeout: 15_000,
-    });
-    await nextFrames(page);
-    // Ein Bild, das noch wartet, ins Bild holen und seinen Auftritt ganz abwarten.
-    const media = await page.locator('.enter-unveil[data-enter="wait"]').first().elementHandle();
-    expect(media).not.toBeNull();
-    await media!.evaluate((element) =>
-      window.scrollTo(0, element.getBoundingClientRect().top + window.scrollY - 200),
-    );
-    await page.waitForFunction(
-      (element) =>
-        (element as HTMLElement).dataset.enter === 'in' &&
-        element.getAnimations({ subtree: true }).every((a) => a.playState !== 'running'),
-      media!,
-      { timeout: 5_000 },
-    );
-
-    await clickMotionToggle(page);
-    await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
-    await clickMotionToggle(page);
-    await expect(page.locator('html')).toHaveAttribute('data-motion', 'on');
-    await nextFrames(page);
-    const after = await media!.evaluate((element) => ({
-      running: element
-        .getAnimations({ subtree: true })
-        .filter((animation) => animation.playState === 'running').length,
-      clip: getComputedStyle(element.querySelector('img')!).clipPath,
-    }));
-    expect(after.running).toBe(0);
-    expect(after.clip).toBe('none');
   });
 
   test('Bewegungsschalter: faltet sich zusammen, ohne dass sich etwas verschiebt', async ({

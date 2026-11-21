@@ -6,7 +6,9 @@
  * Auftakt (reines CSS, spielt also auch ohne Skript): Das Foto öffnet sich wie eine Blende, der
  * Ring folgt, die Zeilen der Headline steigen dicht gestaffelt aus ihrer Maske, Lead, Buttons und
  * Statuszeilen setzen sich, während die Zeilen noch gleiten. Nach 1,2 s ruht alles.
- * Verhalten (Uhrzeit, Öffnungsstatus, Scroll-Verlauf): src/scripts/hero.ts
+ * Beim Scrollen hält der Hero nichts an: Die Seite folgt sofort. Sobald der nächste Bogen ins Bild
+ * kommt, bleibt der Hero zurück, und das runde Foto rückt dabei näher (scroll.css).
+ * Verhalten (Uhrzeit, Öffnungsstatus): src/scripts/hero.ts
  *
  * Text: Slogans der bisherigen Website («Wohnen heisst leben», «Wohnen heisst sich wohl fühlen»,
  * docs/Homepage.docx); zu einer Headline verbunden (Entwurf, docs/DECISIONS.md).
@@ -21,8 +23,9 @@ import Visit from './Visit.astro';
 const cta = primaryCta(true);
 ---
 
-<section class="hero" aria-labelledby="hero-title" data-hero>
-  <div class="hero-track" data-hero-track>
+{/* sc-sheet: Der Hero ist der erste Bogen, der nächste schiebt sich über ihn (scroll.css). */}
+<section class="hero sc-sheet" aria-labelledby="hero-title" data-hero>
+  <div class="hero-track">
     <div class="hero-pin">
       <div class="hero-sky" aria-hidden="true"></div>
 
@@ -103,7 +106,6 @@ const cta = primaryCta(true);
 
 <style>
   .hero {
-    --hero-p: 0;
     position: relative;
     padding-bottom: calc(var(--section-y) * 0.5 + var(--r-sheet));
     background-color: var(--linen);
@@ -118,17 +120,6 @@ const cta = primaryCta(true);
     display: grid;
     min-height: 100svh;
     overflow: clip;
-  }
-
-  /* Angepinnt (hero.ts): Der Hero bleibt eine Dreiviertel-Bildschirmhöhe lang stehen. */
-  .hero[data-pinned] .hero-track {
-    height: 175svh;
-  }
-
-  .hero[data-pinned] .hero-pin {
-    position: sticky;
-    top: 0;
-    height: 100svh;
   }
 
   /* ---------- Hintergrund: warmes Licht von rechts ---------- */
@@ -156,7 +147,6 @@ const cta = primaryCta(true);
     aspect-ratio: 1;
     margin: 0 calc(var(--gutter) * -0.25) 0 0;
     border-radius: 50%;
-    transform: scale(calc(1 + var(--hero-p) * 0.07));
   }
 
   /*
@@ -247,11 +237,6 @@ const cta = primaryCta(true);
     display: block;
   }
 
-  /* Die erste Zeile tritt mit dem Scrollen zurück (bleibt aber über 3:1 lesbar). */
-  .q1 {
-    opacity: calc(1 - var(--hero-p) * 0.5);
-  }
-
   /* Maske: Zeile steigt von unten herein; Luft für Umlaute */
   .mask {
     display: block;
@@ -340,18 +325,6 @@ const cta = primaryCta(true);
     animation: none;
   }
 
-  /*
-   * Nach dem Fortsetzen (hero.ts, data-settling): Was das Scrollen am Hero verändert, gleitet kurz
-   * an seinen Platz, statt in einem Bild zu springen. Angehalten gelten keine Übergänge (base.css).
-   */
-  .hero[data-settling] .q1 {
-    transition: opacity var(--dur-3) var(--ease-out);
-  }
-
-  .hero[data-settling] .hero-orb {
-    transition: transform var(--dur-3) var(--ease-out);
-  }
-
   /* ---------- Bühne mit den Angaben für den Besuch ---------- */
 
   .hero-demo {
@@ -367,7 +340,7 @@ const cta = primaryCta(true);
       right: 0;
       width: min(33vw, 60svh, 36rem);
       margin: 0;
-      transform: translateY(-50%) scale(calc(1 + var(--hero-p) * 0.07));
+      transform: translateY(-50%);
     }
 
     .hero-inner {

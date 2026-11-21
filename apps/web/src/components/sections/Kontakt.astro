@@ -27,10 +27,10 @@ const fields = {
 
 <section data-lazy class="sheet kontakt" id="kontakt" aria-labelledby="kontakt-title">
   <div class="wrap">
-    <div class="stage kontakt-grid" data-enter>
+    <div class="stage kontakt-grid sc-rise">
       {/*
-        Der Kreis schliesst sich: Wenn der Kontakt ins Bild kommt, öffnet sich oben rechts einmal
-        eine grüne Scheibe wie die Blende des Fotos im Hero (reveal.ts setzt data-enter).
+        Der Kreis schliesst sich: Wenn der Kontakt ins Bild kommt, öffnet sich oben rechts eine
+        grüne Scheibe wie die Blende des Fotos im Hero, im Takt des Scrollens (scroll.css).
       */}
       <span class="kontakt-aura" aria-hidden="true">
         <span class="kontakt-disc"></span>
@@ -395,36 +395,6 @@ const fields = {
       pointer-events: none;
       transform: translate(38%, -38%);
     }
-
-    .kontakt-grid[data-enter='wait'] .kontakt-disc {
-      opacity: 0;
-    }
-
-    .kontakt-grid[data-enter='in'] .kontakt-disc {
-      animation: kontakt-aperture var(--dur-5) var(--ease-out) 80ms backwards;
-    }
-  }
-
-  /*
-   * Mit dem Auftritt des Kontakts atmet auch der Punkt des Öffnungsstatus (wie oben im Hero,
-   * components.css), wenn man ihn sieht, nicht schon eine Bildschirmhöhe vorher.
-   */
-  .kontakt-grid[data-enter='in'] .hours-status :global(.dot-ok)::after {
-    animation: dot-breath 2s var(--ease-out) 600ms 2;
-  }
-
-  /* Wie die Blende im Hero: aus der Mitte auf, dabei aus der Nähe zurück (Hero.astro). */
-  @keyframes kontakt-aperture {
-    from {
-      clip-path: circle(30% at 50% 50%);
-      opacity: 0;
-      transform: translate(38%, -38%) scale(1.1);
-    }
-  }
-
-  :global(html[data-motion='off']) .kontakt-disc {
-    opacity: 1;
-    animation: none;
   }
 
   .kontakt-info {

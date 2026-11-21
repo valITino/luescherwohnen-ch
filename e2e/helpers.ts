@@ -279,6 +279,49 @@ export async function layOutAll(page: Page): Promise<void> {
   });
 }
 
+/** Zwei Bilder abwarten: Bis dahin hat der Browser gezeichnet, was die Scrollposition verlangt. */
+export async function nextFrames(page: Page): Promise<void> {
+  await page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+  );
+}
+
+/** Ohne Gleiten an eine Stelle scrollen und warten, bis sie gezeichnet ist. */
+export async function scrollToY(page: Page, top: number): Promise<void> {
+  await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' }), top);
+  await nextFrames(page);
+}
+
+/**
+ * So scrollen, dass die Oberkante des Elements `fromTop` Pixel unter dem oberen Fensterrand
+ * steht. Gerechnet wird mit der Lage im Layout, nicht mit der gerade gezeichneten: Was beim
+ * Scrollen mitzieht (scroll.css), verschiebt sein Ziel sonst selbst. Gibt die Scrollposition zurück.
+ */
+export async function placeAt(page: Page, selector: string, fromTop: number): Promise<number> {
+  const top = await page.evaluate(
+    ([target, offset]) => {
+      let y = 0;
+      for (
+        let node = document.querySelector<HTMLElement>(target as string);
+        node;
+        node = node.offsetParent as HTMLElement | null
+      ) {
+        y += node.offsetTop;
+      }
+      return Math.max(0, Math.round(y - (offset as number)));
+    },
+    [selector, fromTop] as const,
+  );
+  await scrollToY(page, top);
+  return top;
+}
+
+/**
+ * Wie weit ein Element gerade von seinem Platz verschoben ist (CSS `translate`), als Text:
+ * «none» oder «0px» heisst, es steht an seinem Platz.
+ */
+export const AT_REST = /^(none|0(px|%)?( 0(px|%)?)*)$/;
+
 /** Adressen der beiden gebauten Varianten (siehe playwright.config.ts) */
 export const PROD = 'http://127.0.0.1:4321';
 export const PREVIEW = 'http://127.0.0.1:4322/luescherwohnen-ch';

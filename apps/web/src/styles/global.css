@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import '@luescher/ui/styles.css';
 @import 'lenis/dist/lenis.css';
+@import './scroll.css';
 
 @source '../../../../packages/ui/src';
 
@@ -24,15 +25,6 @@ picture {
    (leere Zeile über dem Porträt). Für die Auswahl der Quelle spielt `display` keine Rolle. */
 picture > source {
   display: none;
-}
-
-/*
- * Zeilenmaske der Überschriften (reveal.ts): Die Maske darf etwas über die Zeile hinausreichen,
- * damit Umlaute und Unterlängen nicht abgeschnitten werden. Bewusst ohne padding oder margin:
- * Die Höhe der Überschrift bleibt so vor, während und nach der Animation gleich.
- */
-.ln-mask {
-  overflow-clip-margin: 0.2em;
 }
 
 /*

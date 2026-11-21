@@ -83,21 +83,6 @@ export function initChoice(root: HTMLElement, options: ChoiceOptions): ChoiceIte
     root.append(status);
   }
 
-  /*
-   * Die erste Tafel tritt beim Hereinscrollen auf wie jedes Bild (reveal.ts, data-enter). Mit
-   * dem ersten Wechsel gibt sie diesen Auftritt ab: Sonst fände die Regel für den Auftritt beim
-   * erneuten Wählen noch ihren Zustand, und die Enthüllung des Wechsels spielte nicht.
-   */
-  const releaseEntrance = () => {
-    for (const element of root.querySelectorAll<HTMLElement>('[data-enter]')) {
-      delete element.dataset.enter;
-      element.classList.remove('enter-unveil');
-      element.style.removeProperty('--enter-i');
-      element.style.removeProperty('--unveil-from');
-      if (element.style.length === 0) element.removeAttribute('style');
-    }
-  };
-
   /**
    * Was beim Wechsel noch die alte Tafel zeigt, ist erledigt, sobald die neue steht. Der Stapel
    * beginnt dann wieder unten: Nur die offene Tafel behält eine Ebene.
@@ -121,7 +106,6 @@ export function initChoice(root: HTMLElement, options: ChoiceOptions): ChoiceIte
     const previous = current;
     current = item;
     if (previous) {
-      releaseEntrance();
       previous.button.setAttribute('aria-expanded', 'false');
       delete previous.element.dataset.on;
       delete previous.element.dataset.anim;

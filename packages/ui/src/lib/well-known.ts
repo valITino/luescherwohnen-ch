@@ -84,7 +84,7 @@ export function humansTxt(site: string): string {
     '/* SITE */',
     `Site: ${stripTrailingSlashes(site)}/`,
     'Sprache: Deutsch (Schweiz)',
-    'Technik: Astro, Tailwind CSS, GSAP, Lenis',
+    'Technik: Astro, Tailwind CSS, Lenis',
     'Schriften: Manrope und Geist Mono (SIL Open Font License)',
     'Icons: Lucide (ISC License)',
     'Cookies: 0. Tracking: 0.',
