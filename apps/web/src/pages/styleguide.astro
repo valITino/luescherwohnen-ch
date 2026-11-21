@@ -120,6 +120,36 @@ const colors = [
       </div>
     </section>
 
+    <section class="guide-block" aria-labelledby="sg-more">
+      <h2 id="sg-more" class="display h3">
+        Mehr lesen und Status
+      </h2>
+      <details class="more">
+        <summary>
+          <span class="more-icon" aria-hidden="true"></span>
+          <span class="more-closed">Mehr lesen</span>
+          <span class="more-opened">Weniger</span>
+          <span class="sr-only">: Baustein</span>
+        </summary>
+        <div class="more-body">
+          <p class="meta">
+            Natives details-Element: ohne Skript bedienbar, der Text steht im HTML und erscheint
+            beim Öffnen sofort.
+          </p>
+        </div>
+      </details>
+      <ul class="guide-row guide-status">
+        <li>
+          <i class="dot dot-ok" aria-hidden="true"></i>
+          <span>Geöffnet bis 18:30</span>
+        </li>
+        <li>
+          <i class="dot dot-off" aria-hidden="true"></i>
+          <span>Geschlossen · öffnet morgen 10:00</span>
+        </li>
+      </ul>
+    </section>
+
     <section class="guide-block" aria-labelledby="sg-karten">
       <h2 id="sg-karten" class="display h3">
         Karten und Flächen
@@ -295,6 +325,18 @@ const colors = [
   .guide-sage {
     border-radius: var(--r-panel);
     background-color: var(--sage);
+  }
+
+  /* Status: Punkt und Text gehören zusammen (Farbe allein sagt nichts). */
+  .guide-status {
+    gap: 0.75rem 2rem;
+  }
+
+  .guide-status li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-weight: 600;
   }
 
   .guide-form {

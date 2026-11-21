@@ -1,5 +1,5 @@
 /**
- * 02 Haltung: Wörter werden beim Scrollen von 25 % auf 100 % Deckkraft hell.
+ * Haltung (ohne Nummer): Wörter werden beim Scrollen von 25 % auf 100 % Deckkraft dunkel.
  *
  * Gedimmt sind die Wörter nur, solange der Satz durch den Bildschirm läuft. Davor und danach
  * (und ohne dieses Skript) steht der Text in voller Deckkraft: lesbar für alle, die per

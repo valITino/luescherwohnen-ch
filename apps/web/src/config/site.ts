@@ -82,8 +82,10 @@ export { hours } from './hours.ts';
 // ---------------------------------------------------------------- Meta
 
 export const meta = {
-  /** Titel der Startseite: zuerst, worum es geht, am Schluss die Marke */
-  /** Passt ganz in den Treffer (rund 600 px): Angebot und Ort vorn, die Marke am Ende. */
+  /**
+   * Titel der Startseite: zuerst, worum es geht (Angebot und Ort), am Schluss die Marke. Passt
+   * ganz in den Treffer (rund 600 px).
+   */
   homeTitle: 'Möbel, Betten und Innenarchitektur in Baden – Lüscher Wohnen',
   /** Das Wichtigste zuerst: Suchmaschinen kürzen nach rund 155 Zeichen. */
   defaultDescription:

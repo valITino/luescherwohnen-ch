@@ -6,4 +6,3 @@
 export * from './tokens.ts';
 export * from './reduced.ts';
 export * from './in-view.ts';
-export * from './count-up.ts';

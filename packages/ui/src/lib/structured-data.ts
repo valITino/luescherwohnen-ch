@@ -5,7 +5,6 @@
  * - Nur Angaben, die stimmen und zur sichtbaren Seite passen. Was noch offen ist (Adresse,
  *   Telefon, Name der Person), fehlt, bis es eingetragen ist: lieber weniger als erfunden.
  * - Organisation und Website stehen einmal, auf der Startseite. Unterseiten verweisen darauf.
- * - Kein FAQ-Markup: Google zeigt dazu seit Mai 2026 keine Rich Results mehr.
  */
 
 export type JsonLdNode = Record<string, unknown>;

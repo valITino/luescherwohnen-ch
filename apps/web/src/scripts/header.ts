@@ -197,10 +197,11 @@ export function initHeader(lock: () => ScrollLock | null): void {
    * Erstes Bild der neuen Seite, bevor der Browser sie für den Übergang festhält. Steht sie schon
    * unten (Direktlink zu einer Marke), ist die Kapsel bereits da und kommt mit der Seite, statt
    * dass oben kurz die Leiste erscheint und dann die Kapsel aufspringt; kam auch die alte Seite als
-   * Kapsel, bleibt sie stehen (is-handing). Das gelingt nur, wenn dieses Skript vor dem ersten Bild
-   * läuft. Der Browser wartet darauf nicht immer (gemessen: bei wiederholtem Besuch meist, beim
-   * ersten Besuch und auf langsamen Geräten oft nicht); dann kommt die Seite erst oben an und
-   * springt zur Marke, und der Header wechselt mit ihr, wie ohne diesen Zuhörer.
+   * Kapsel, bleibt sie stehen (is-handing). Das gelingt, weil dieses Skript vor dem ersten Bild
+   * läuft: Der Build setzt das Modul in den Kopf und hält das erste Bild dafür an (early-script.mjs,
+   * Entscheid 44). Browser ohne `blocking="render"` führen es wie ein gewöhnliches Modul aus; kommt
+   * es dort zu spät, erscheint die Seite erst oben und springt zur Marke, und der Header wechselt
+   * mit ihr, wie ohne diesen Zuhörer (siehe auch den Rückfall weiter unten).
    * Bei angehaltener Bewegung (eine Seite aus dem bfcache behält ihren Schalter) kein Übergang.
    */
   window.addEventListener('pagereveal', (event) => {

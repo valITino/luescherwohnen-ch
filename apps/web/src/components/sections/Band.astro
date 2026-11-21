@@ -3,7 +3,7 @@
  * Band: zwei gegenläufige Reihen grosser Wörter quer über die Seite, eine ruhige Textur zwischen
  * Sortiment und Haltung (Entscheid 45: ohne eigene Überschrift und ohne Etiketten, die Wörter
  * genügen). CSS-Animation über transform; die Kopie für den Loop ist aria-hidden.
- * Pausiert bei Hover, bei Fokus und über den runden Knopf. Reduced motion: statisch, umbrechend.
+ * Pausiert bei Hover und über den runden Knopf. Reduced motion: statisch, umbrechend.
  * Begriffe aus der Angebotsliste der bisherigen Website (docs/Homepage.docx).
  */
 import Icon from '@luescher/ui/components/Icon.astro';
@@ -153,11 +153,11 @@ const rows = [
   }
 
   /*
-   * Pausiert bei Hover, bei Fokus im Band und wenn der Button es anhält. Der Fokus auf dem Button
-   * selbst zählt nicht: Sonst stünde das Band nach «Band fortsetzen» weiter still.
+   * Pausiert bei Hover und wenn der Button es anhält. Im Band selbst gibt es nichts zu fokussieren
+   * (nur Wörter); der Fokus auf dem Button hält es nicht an: Sonst stünde das Band nach «Band
+   * fortsetzen» weiter still.
    */
-  .ticker:global(.is-paused) .ticker-row,
-  .ticker-rows:focus-within .ticker-row {
+  .ticker:global(.is-paused) .ticker-row {
     animation-play-state: paused;
   }
 
