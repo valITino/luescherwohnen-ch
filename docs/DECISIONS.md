@@ -346,3 +346,32 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
     Bewegungsschalters, der Absturz von Chromium bei `getComputedStyle()` (Fehlerbericht), die
     Taste während des Ausgleitens; dazu alles, was Angaben des Auftraggebers oder echte Geräte
     braucht.
+- **44.** **Alles läuft, nichts wird übersprungen** (Auftrag des Repository-Inhabers vom
+  21.11.2026: kein übersprungener Test, alles richtig umgesetzt):
+  - **Jeder e2e-Test läuft auf Desktop und Handy** und prüft dort, was das Gerät tut: Sprünge
+    und Seitenwechsel auf dem Handy über das Menü (statt der Navigation in der Leiste), das Logo
+    statt eines Navigationslinks als Fokus, der nicht angepinnte Hero, die Leertaste ohne Lenis,
+    eigenes Scrollen nach einem Sprung. Die Prüfungen am rohen HTML laufen einmal im eigenen
+    Projekt `html` (vorher auf dem Handy übersprungen), neu mit der Prüfung, dass Zoomen erlaubt
+    bleibt (WCAG 1.4.4).
+  - **Skript vor dem ersten Bild** (`early-script.mjs`, Build): Das Modul jeder Seite steht im
+    `<head>` mit `blocking="render"`, was es einbindet mit `modulepreload`. Gemessen (Chromium,
+    Seitenwechsel zu `/#kontakt`, ohne Cache): vorher in 10 von 25 Wechseln Seite erst oben,
+    dann Sprung; jetzt 0 von 25, zurück zu einer Seite oben 0 von 10 ohne `stand`. Erstes Bild
+    ohne Cache auf einem gedrosselten Handy (150 ms Latenz, 1,6 Mbit/s, CPU 4×): Startseite
+    900 → 820 ms, Impressum 832 → 700 ms. Layoutverschiebung beim Laden mit Direktlink 0,031 →
+    0, beim Neuladen bis 0,46 → 0. Geprüft und verworfen: `rel="expect"` (wirkt nicht auf den
+    Wettlauf), `blocking="render"` am Ende des `<body>` (wirkt dort nicht). Der e2e-Test zum
+    Seitenwechsel verwirft späte Versuche nicht mehr, er verlangt das Skript vor dem ersten Bild.
+  - **Bewegungsschalter faltet sich** über `clip-path`, statt seine Breite zu ändern: keine
+    Verschiebung mehr bei jedem Formwechsel des Headers (vorher 0,0009), und das Auffalten gleitet.
+  - **Fokus im Formwechsel**: Im einen verborgenen Bild bleibt das fokussierte Bedienelement zu
+    sehen (`visibility` statt `opacity`); der Test prüft auch dieses Bild.
+  - **Taste während des Ausgleitens**: Das Ziel springt auf die aktuelle Lage, ohne Lenis
+    anzuhalten (kein `overflow: clip` mehr, kein neues Layout); neuer e2e-Test.
+  - **Bewegungswächter** erkennt auch Kurven als Schlüsselwort (`ease-in-out` am Equalizer, jetzt
+    aus den Tokens).
+  - **Bewusst offen** (`docs/TODO.md`): der sofortige Formwechsel bei reduzierter Bewegung zählt
+    als kleine Verschiebung (sonst ein sichtbares Blinken), die Lage nach dem Fortsetzen im Hero
+    (gestaltet, sie gleitet), der Absturz von Chromium bei einem bestimmten
+    `getComputedStyle()` (nur in Testsonden, Fehlerbericht an Chromium).

@@ -86,30 +86,16 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
 - [ ] Shop (Phase 5, separater Auftrag mit eigenem Threat Model; AGB im Bestand vorhanden).
 - [ ] Hero-Fotos in höherer Auflösung (keine Datei im Bestand ist breiter als 1920 px).
 - [ ] Fotos der Ausstellung an der Weiten Gasse 9 (es gibt nur ein Innenbild).
-- [ ] Der Bewegungsschalter verschiebt sich bei jedem Header-Wechsel minimal (CLS 0,0009, Bestand).
-- [ ] Mit Tastaturfokus im Header ist der Knopf beim Formwechsel zwei Bilder lang verborgen
-      (`is-swapping`, gegen Layoutverschiebung); bewusst so belassen.
 - [ ] Bei reduzierter und angehaltener Bewegung wechselt der Header sofort die Form; das zählt
       als Layoutverschiebung (CLS 0,031 je Wechsel, gemessen am Desktop beim Scrollen mit dem
       Rad). Bewusst so belassen: Die Leiste dafür ein Bild lang zu verbergen, wie beim animierten
-      Wechsel, wäre ohne Abtauchen ein sichtbares Blinken. Dasselbe beim Laden mit Direktlink
-      (`/#kontakt`, `/#ueber`), wenn das Skript erst nach dem ersten Bild läuft (in rund der
-      Hälfte der Läufe); selten (2 von 12) zeigt das erste Bild beim Neuladen noch die
-      Wiederherstellung des Browsers (CLS 0,41), bevor `home.ts` die gemerkte Ansicht ansteuert.
-      Möglich: `history.scrollRestoration = 'manual'` in einem frühen Skript mit Hash.
+      Wechsel, wäre ohne Abtauchen ein sichtbares Blinken. (Beim Laden mit Direktlink und beim
+      Neuladen gibt es keine Verschiebung mehr, seit das Skript vor dem ersten Bild läuft,
+      Entscheid 44.)
 - [ ] Chromium (153) stürzt ab, wenn ein Skript während eines Seitenübergangs mit
       `getComputedStyle()` den Stil einer nicht beteiligten Ebene liest, für die eine Regel mit
       `:only-child` gilt (etwa `::view-transition-new(site-bar)`). Die Website liest ihn nie,
       Tests nutzen `getAnimations()`. Kleinstes Beispiel bei Bedarf als Fehlerbericht an Chromium.
-- [ ] Seitenwechsel: Läuft das Skript der neuen Seite erst nach ihrem ersten Bild (beim ersten
-      Besuch und auf langsamen Geräten oft), kommt eine Seite mit Marke erst oben an und springt
-      dann, und der Header wechselt mit ihr wie vor Entscheid 41 (Entscheid 42). Möglich: das
-      Modul der Startseite auf den Unterseiten vorladen (`modulepreload`, gemessen: seltener,
-      nicht nie) oder ein kleines klassisches Skript am Ende des `<body>` nur für den Header.
-      Mit `blocking="render"` im Kopf behoben, aber 170 ms später das erste Bild (verworfen).
 - [ ] Setzt man im Hero fort, steht man am Ende der angepinnten Strecke (die Ansicht bleibt, die
       erste Zeile und das Bild gleiten zu ihrem Endpunkt, Entscheid 42). Oben am Anfang zu bleiben,
       hiesse den Inhalt um die gescrollte Strecke zu verschieben.
-- [ ] Eine Taste zum Scrollen während eines Ausgleitens von Lenis kostet einmal 3 bis 12 ms
-      (Lenis setzt beim Anhalten kurz `overflow: clip` am `<html>`, mit klassischen Bildlaufleisten
-      rechnet der Browser das Layout neu). Nicht sichtbar; bei Bedarf ohne Anhalten zurücksetzen.

@@ -20,6 +20,25 @@ async function openHome(page: Page, origin = PROD, hash = '') {
   await layOutAll(page);
 }
 
+/**
+ * Den Bewegungsschalter betätigen, ohne dorthin zu scrollen: Unter 80rem steht er am Ende der
+ * Seite, ein Klick von Playwright scrollte die Seite erst zu ihm.
+ */
+async function toggleMotion(page: Page, state: 'on' | 'off') {
+  await page.evaluate(() => document.querySelector<HTMLElement>('[data-motion-toggle]')!.click());
+  await expect(page.locator('html')).toHaveAttribute('data-motion', state);
+}
+
+/**
+ * Den Bewegungsschalter dort anklicken, wo er zu sehen ist: Zusammengefaltet (am Desktop nach
+ * dem Scrollen) zeigt er nur sein rundes Ende rechts, und nur dort trifft ein Klick.
+ */
+async function clickMotionToggle(page: Page) {
+  const toggle = page.locator('[data-motion-toggle]');
+  const box = await toggle.boundingBox();
+  await toggle.click({ position: { x: box!.width - box!.height / 2, y: box!.height / 2 } });
+}
+
 /** Zwei Bilder abwarten: Bis dahin hat jeder IntersectionObserver gemeldet, was er sieht. */
 async function nextFrames(page: Page) {
   await page.evaluate(
@@ -325,10 +344,10 @@ test.describe('Navigation', () => {
     await expect(header).not.toHaveAttribute('data-test-morphed');
   });
 
-  test('Sprung aus der Leiste landet genau unter dem Header', async ({ page, isMobile }) => {
-    test.skip(isMobile, 'Die Navigation in der Leiste gibt es nur am Desktop');
+  test('Sprung aus Leiste oder Menü landet genau unter dem Header', async ({ page, isMobile }) => {
     // Bei 1280 px Breite läge ein Fehler deutlich daneben (gemessen 35 px), bei 1440 px nur 3 px.
-    await page.setViewportSize({ width: 1280, height: 800 });
+    // Auf dem Handy springt der Browser selbst, aus dem Menü (eine Leiste mit Navigation fehlt).
+    if (!isMobile) await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(`${PROD}/`);
     await page.evaluate(() => document.fonts.ready);
     await page.mouse.wheel(0, 10);
@@ -339,7 +358,12 @@ test.describe('Navigation', () => {
     await nextFrames(page);
     // Unterwegs darf die Seite oberhalb des Ziels nicht mehr wachsen (etwa der Öffnungsstatus,
     // der erst beim Vorbeiscrollen erschiene): Sonst endete das Gleiten zu tief.
-    await page.locator('.bar-nav a[href="#sortiment"]').click();
+    if (isMobile) {
+      await page.locator('[data-menu-toggle]').click();
+      await page.locator('[data-menu-link][href="#sortiment"]').click();
+    } else {
+      await page.locator('.bar-nav a[href="#sortiment"]').click();
+    }
     await expect(page).toHaveURL(/#sortiment$/);
     await expectLanded(page, '#sortiment');
     const offset = await page.evaluate(() => {
@@ -350,20 +374,16 @@ test.describe('Navigation', () => {
   });
 
   test('Seitenwechsel zu einer Marke: Der Header wird nicht verzerrt', async ({
-    browser,
+    page,
     isMobile,
   }) => {
-    test.skip(isMobile, 'Die Navigation in der Leiste gibt es nur am Desktop');
     // Mit den Cache-Regeln der Produktion: Bei no-store überspringt Chromium den Übergang oft.
     const server = await serve({ dir: 'apps/web/dist', port: 0, quiet: true, production: true });
     const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-    const page = await context.newPage();
     // Auf jeder neuen Seite festhalten, welche Teile der Übergang für Leiste und Kapsel hat.
     await page.addInitScript(() => {
-      // Meldet die Seite ihren pagereveal-Zuhörer erst danach an, kam ihr Skript zu spät, um die
-      // Form vor dem ersten Bild einzustellen. Das entscheidet der Browser (header.ts): Ein
-      // solcher Versuch zählt nicht.
+      // Meldet die Seite ihren pagereveal-Zuhörer erst danach an, lief ihr Skript nach dem ersten
+      // Bild. Das darf nicht sein: Das Modul hält das erste Bild an (early-script.mjs).
       let revealed = false;
       window.addEventListener('pagereveal', () => (revealed = true));
       const add = EventTarget.prototype.addEventListener;
@@ -402,13 +422,30 @@ test.describe('Navigation', () => {
     });
     const html = page.locator('html');
     /*
+     * Zu einer Marke der Startseite: am Desktop über die Navigation der Leiste bzw. den Knopf der
+     * Kapsel, auf dem Handy über das Menü (dort gibt es beides nicht).
+     */
+    const toKontakt = async (capsule = false) => {
+      if (isMobile) {
+        await page.locator('[data-menu-toggle]').click();
+        await page.locator('[data-menu-link][href="/#kontakt"]').first().click();
+      } else {
+        await page
+          .locator(capsule ? '.bar-cta' : '.bar-nav a[href="/#kontakt"]')
+          .first()
+          .click();
+      }
+    };
+    const toHome = () => page.locator('[data-header] .bar-logo').first().click();
+    /*
      * Ein Wechsel mit Übergang; Chromium lässt ihn gelegentlich aus, dann noch einmal. `script`:
-     * Das Ergebnis hängt davon ab, dass die neue Seite ihre Form vor dem ersten Bild einstellt.
+     * Das Ergebnis hängt davon ab, dass die neue Seite ihre Form vor dem ersten Bild einstellt;
+     * ihr Skript muss darum vor diesem Bild gelaufen sein, in jedem Versuch.
      * `scrolled`: Die alte Seite steht weiter unten, ihr Header ist die Kapsel.
      */
     const change = async (
       from: string,
-      link: string,
+      go: () => Promise<void>,
       url: RegExp,
       { script = false, scrolled = false } = {},
     ) => {
@@ -416,15 +453,20 @@ test.describe('Navigation', () => {
         await page.goto(`${origin}${from}`);
         await page.evaluate(() => document.fonts.ready);
         if (scrolled) {
-          await page.mouse.wheel(0, 600);
+          await page.evaluate(() => window.scrollTo({ top: 600, behavior: 'instant' }));
           await expect(page.locator('[data-header]')).toHaveClass(/is-scrolled/);
           await page.waitForTimeout(700);
         }
-        await page.locator(link).first().click();
+        await go();
         await expect(page).toHaveURL(url);
         await page.waitForLoadState('load');
         await page.waitForTimeout(600);
-        if (script && (await html.getAttribute('data-test-late')) !== null) continue;
+        if (script) {
+          expect(
+            await html.getAttribute('data-test-late'),
+            'Skript lief vor dem ersten Bild',
+          ).toBeNull();
+        }
         const parts = await html.getAttribute('data-test-bar');
         if (parts !== null) return parts;
       }
@@ -434,7 +476,7 @@ test.describe('Navigation', () => {
       // Oben von Seite zu Seite: Die Leiste steht still. Alte und neue Leiste bilden ein Paar (die
       // Gruppe), und überblendet wird nicht: Weder die alte noch die neue Leiste hat eine
       // Animation (eine neue Leiste ohne Partner blendete ein).
-      const still = await change('/impressum', '[data-header] .bar-logo', /\/$/);
+      const still = await change('/impressum', toHome, /\/$/);
       expect(still, 'Übergang hat stattgefunden').not.toBeNull();
       expect(still).toContain('::view-transition-group(site-bar)');
       expect(still).not.toContain('::view-transition-old(site-bar)');
@@ -443,9 +485,7 @@ test.describe('Navigation', () => {
       // alten Seite; nichts zieht die Kapsel auf die Breite der Leiste. Die Kapsel steht schon
       // beim ersten Bild der neuen Seite und kommt mit ihr, statt dass oben kurz die Leiste
       // erscheint.
-      const toMark = await change('/impressum', '.bar-nav a[href="/#kontakt"]', /#kontakt$/, {
-        script: true,
-      });
+      const toMark = await change('/impressum', () => toKontakt(), /#kontakt$/, { script: true });
       expect(toMark, 'Übergang hat stattgefunden').toBe('none');
       expect(await html.getAttribute('data-test-named')).toBe('false');
       // Ohne alte Kapsel kommt die neue mit ihrer Seite.
@@ -454,7 +494,7 @@ test.describe('Navigation', () => {
       );
 
       // Von Kapsel zu Kapsel: Beide bilden ein Paar und stehen, keine blendet aus oder ein.
-      const capsule = await change('/impressum', '.bar-cta', /#kontakt$/, {
+      const capsule = await change('/impressum', () => toKontakt(true), /#kontakt$/, {
         script: true,
         scrolled: true,
       });
@@ -470,14 +510,17 @@ test.describe('Navigation', () => {
       for (let attempt = 0; attempt < 6 && back === null; attempt++) {
         await page.goto(`${origin}/impressum`);
         await page.evaluate(() => document.fonts.ready);
-        await page.locator('[data-header] .bar-logo').first().click();
+        await toHome();
         await expect(page).toHaveURL(/\/$/);
         await page.waitForLoadState('load');
         await page.waitForTimeout(600);
         await page.evaluate(() => history.back());
         await expect(page).toHaveURL(/\/impressum$/);
         await page.waitForTimeout(600);
-        if ((await html.getAttribute('data-test-late')) !== null) continue;
+        expect(
+          await html.getAttribute('data-test-late'),
+          'Skript lief vor dem ersten Bild',
+        ).toBeNull();
         back = await html.getAttribute('data-test-bar');
       }
       expect(back, 'Übergang hat stattgefunden').not.toBeNull();
@@ -496,17 +539,14 @@ test.describe('Navigation', () => {
           });
         }
       });
-      const blind = await change('/impressum', '.bar-nav a[href="/#kontakt"]', /#kontakt$/);
+      const blind = await change('/impressum', () => toKontakt(), /#kontakt$/);
       expect(blind, 'Übergang hat stattgefunden').not.toBeNull();
       expect(blind).not.toContain('::view-transition-old(site-bar)');
       expect(blind).not.toContain('::view-transition-group(site-bar)');
-      const blindTop = await change('/impressum', '[data-header] .bar-logo', /\/$/, {
-        script: true,
-      });
+      const blindTop = await change('/impressum', toHome, /\/$/, { script: true });
       expect(blindTop, 'Übergang hat stattgefunden').toBe('none');
       expect(await html.getAttribute('data-test-types')).toContain('stand');
     } finally {
-      await context.close();
       server.close();
     }
   });
@@ -534,8 +574,7 @@ test.describe('Navigation', () => {
     }
   });
 
-  test('Skip-Link führt zum Inhalt', async ({ page, isMobile }) => {
-    test.skip(isMobile, 'Tastatur');
+  test('Skip-Link führt zum Inhalt (auch mit Tastatur am Handy)', async ({ page }) => {
     await page.goto(`${PROD}/impressum`);
     await page.keyboard.press('Tab');
     const skip = page.locator('.skip-link');
@@ -809,10 +848,14 @@ test.describe('Bewegung und Chrome', () => {
       const focused = document.activeElement!;
       let lowest = 1;
       const sample = () => {
-        if (header.classList.contains('is-morphing')) {
-          let value = 1;
+        // Auch im Bild des Wechsels (is-swapping) bleibt der Fokus zu sehen, dann am Gegenstück.
+        const current = header.classList.contains('is-swapping')
+          ? document.activeElement!
+          : focused;
+        if (header.matches('.is-morphing, .is-swapping') && header.contains(current)) {
+          let value = getComputedStyle(current).visibility === 'visible' ? 1 : 0;
           for (
-            let node: Element | null = focused;
+            let node: Element | null = current;
             node && node !== header;
             node = node.parentElement
           ) {
@@ -821,7 +864,8 @@ test.describe('Bewegung und Chrome', () => {
           lowest = Math.min(lowest, value);
           header.dataset.testLowest = String(lowest);
         }
-        if (header.classList.contains('is-scrolled')) requestAnimationFrame(sample);
+        // Weiter bis nach dem Bild des Wechsels.
+        if (header.matches('.is-scrolled, .is-swapping')) requestAnimationFrame(sample);
       };
       requestAnimationFrame(sample);
     });
@@ -842,15 +886,15 @@ test.describe('Bewegung und Chrome', () => {
     expect(state).toEqual({ inHeader: true, visible: true, ring: true });
   });
 
-  test('Tastatur: Ein Link der Navigation taucht nicht ab, Tab geht in der Kapsel weiter', async ({
+  test('Tastatur: Was in der Kapsel fehlt, taucht nicht ab, Tab geht in der Kapsel weiter', async ({
     page,
     isMobile,
   }) => {
-    test.skip(isMobile, 'Die Navigation in der Leiste gibt es nur am Desktop');
     await page.goto(`${PROD}/`);
     await page.evaluate(() => document.fonts.ready);
     const header = page.locator('[data-header]');
-    const link = header.locator('.bar-nav a').first();
+    // Am Desktop fehlt in der Kapsel die Navigation, auf dem Handy (unter 30rem) das Logo.
+    const link = isMobile ? header.locator('.bar-logo') : header.locator('.bar-nav a').first();
     await link.focus();
     expect(await link.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
     await page.evaluate(() => {
@@ -858,10 +902,15 @@ test.describe('Bewegung und Chrome', () => {
       const focused = document.activeElement!;
       let lowest = 1;
       const sample = () => {
-        if (header.classList.contains('is-morphing') && document.activeElement === focused) {
-          let value = 1;
+        // Bis zum Wechsel das Fokussierte, im Bild des Wechsels (is-swapping) sein Gegenstück.
+        const current = document.activeElement!;
+        const watched =
+          (header.classList.contains('is-morphing') && current === focused) ||
+          (header.classList.contains('is-swapping') && header.contains(current));
+        if (watched) {
+          let value = getComputedStyle(current).visibility === 'visible' ? 1 : 0;
           for (
-            let node: Element | null = focused;
+            let node: Element | null = current;
             node && node !== header;
             node = node.parentElement
           ) {
@@ -870,16 +919,17 @@ test.describe('Bewegung und Chrome', () => {
           lowest = Math.min(lowest, value);
           header.dataset.testLowest = String(lowest);
         }
-        if (!header.classList.contains('is-scrolled')) requestAnimationFrame(sample);
+        // Weiter bis nach dem Bild des Wechsels.
+        if (header.matches(':not(.is-scrolled), .is-swapping')) requestAnimationFrame(sample);
       };
       requestAnimationFrame(sample);
     });
     await page.keyboard.press('PageDown');
     await expect(header).toHaveClass(/is-scrolled/);
-    // Solange der Header abtaucht, bleibt der fokussierte Link ganz sichtbar.
+    // Solange der Header abtaucht, bleibt das Fokussierte ganz sichtbar.
     expect(Number(await header.getAttribute('data-test-lowest'))).toBeGreaterThan(0.99);
-    // In der Kapsel gibt es die Navigation nicht: Der Fokus geht zum nächsten Bedienelement der
-    // Leiste (Anrufen), steht sofort ganz da, und Tab führt weiter durch die Kapsel.
+    // In der Kapsel fehlt es: Der Fokus geht zum nächsten Bedienelement der Leiste
+    // (Anrufen), steht sofort ganz da, und Tab führt weiter durch die Kapsel.
     const after = await page.evaluate(() => {
       const active = document.activeElement as HTMLElement;
       let opacity = 1;
@@ -893,7 +943,6 @@ test.describe('Bewegung und Chrome', () => {
       return {
         phone: active.matches('.bar-phone'),
         ring: active.matches(':focus-visible'),
-        swapping: document.querySelector('[data-header]')!.matches('.is-swapping'),
         opacity,
         transition: [
           getComputedStyle(active).transitionProperty,
@@ -903,7 +952,7 @@ test.describe('Bewegung und Chrome', () => {
     });
     expect(after.phone).toBe(true);
     expect(after.ring).toBe(true);
-    if (!after.swapping) expect(after.opacity).toBeGreaterThan(0.99);
+    expect(after.opacity).toBeGreaterThan(0.99);
     // Sofort stehen nur Deckkraft und Lage; die Farben beim Hover gleiten weiter.
     const [properties, durations] = after.transition.map((list) => list.split(', '));
     // Ist die Liste der Dauern kürzer, wiederholt CSS sie (wie hier nachgebildet).
@@ -944,8 +993,10 @@ test.describe('Bewegung und Chrome', () => {
     expect(errors).toEqual([]);
   });
 
-  test('Leertaste auf einem Knopf hält das Ausgleiten nicht an', async ({ page, isMobile }) => {
-    test.skip(isMobile, 'Am Handy gleitet nichts aus (kein Lenis)');
+  test('Leertaste auf einem Knopf löst ihn aus und lässt das Scrollen, wie es ist', async ({
+    page,
+    isMobile,
+  }) => {
     await page.goto(`${PROD}/`);
     await layOutAll(page);
     await page.mouse.wheel(0, 10);
@@ -955,18 +1006,58 @@ test.describe('Bewegung und Chrome', () => {
     await page.evaluate(() => window.scrollTo({ top: 1500, behavior: 'instant' }));
     await page.waitForTimeout(300);
     const start = await page.evaluate(() => window.scrollY);
-    await page.mouse.wheel(0, 1500);
-    await page.waitForTimeout(120);
+    // Auf dem Handy gleitet nichts aus (kein Lenis): Dort darf die Leertaste die Seite gar nicht
+    // bewegen. Am Desktop gleitet das Rad gerade aus, wenn die Taste kommt.
+    if (!isMobile) {
+      await page.mouse.wheel(0, 1500);
+      await page.waitForTimeout(120);
+    }
     // Den Knopf des Bands fokussieren, ohne dorthin zu scrollen, und mit der Leertaste auslösen.
     await page.evaluate(() =>
       document.querySelector<HTMLElement>('[data-ticker-toggle]')!.focus({ preventScroll: true }),
     );
     await page.keyboard.press('Space');
     await expect(page.locator('[data-ticker-toggle]')).toHaveText(/Band fortsetzen/);
+    if (isMobile) {
+      await page.waitForTimeout(400);
+      expect(await page.evaluate(() => window.scrollY)).toBe(start);
+      return;
+    }
     // Die Seite gleitet trotzdem bis ans Ziel des Mausrads.
     await expect
       .poll(() => page.evaluate(() => window.scrollY), { timeout: 5_000 })
       .toBeGreaterThan(start + 1490);
+  });
+
+  test('Eine Taste zum Scrollen gilt, auch während die Seite noch ausgleitet', async ({
+    page,
+    isMobile,
+  }) => {
+    await page.goto(`${PROD}/`);
+    await layOutAll(page);
+    await page.mouse.wheel(0, 10);
+    await expect(page.locator('html')).toHaveAttribute('data-scroll', 'ready', {
+      timeout: 15_000,
+    });
+    await page.evaluate(() => window.scrollTo({ top: 3000, behavior: 'instant' }));
+    await page.waitForTimeout(300);
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    // Am Desktop gleitet das Rad gerade 2000 px nach unten aus, wenn die Taste kommt; auf dem
+    // Handy (ohne Lenis) scrollt der Browser selbst.
+    if (!isMobile) {
+      await page.mouse.move(700, 450);
+      await page.mouse.wheel(0, 2000);
+      await page.waitForTimeout(100);
+    }
+    const before = await page.evaluate(() => window.scrollY);
+    await page.keyboard.press('Home');
+    // Pos1 gilt: Die Seite steht oben und gleitet nicht zurück zum Ziel des Rads.
+    await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 3_000 }).toBe(0);
+    await page.waitForTimeout(800);
+    expect(before).toBeGreaterThan(2900);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    // Ohne Anhalten von Lenis: Am <html> erscheint dafür nie eine Klasse oder `overflow`.
+    expect(await page.evaluate(() => document.documentElement.className)).not.toMatch(/stopped/);
   });
 
   test('Auftritte beim Hereinscrollen: am Ende wartet nichts mehr', async ({ page }) => {
@@ -1341,10 +1432,9 @@ test.describe('Bewegung und Chrome', () => {
         frame!.evaluate((element) => element.querySelector('img')!.getAnimations().length),
       )
       .toBe(0);
-    const toggle = page.locator('[data-motion-toggle]');
-    await toggle.click();
+    await clickMotionToggle(page);
     await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
-    await toggle.click();
+    await clickMotionToggle(page);
     await expect(page.locator('html')).toHaveAttribute('data-motion', 'on');
     await nextFrames(page);
     expect(
@@ -1528,7 +1618,7 @@ test.describe('Bewegung und Chrome', () => {
 
     const toggle = page.locator('[data-motion-toggle]');
     await expect(toggle).toBeVisible();
-    await toggle.click();
+    await clickMotionToggle(page);
     await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
     // Sofort: Nichts wartet mehr, keine Überschrift ist geteilt.
     expect(await page.locator('[data-enter="wait"]').count()).toBe(0);
@@ -1547,7 +1637,7 @@ test.describe('Bewegung und Chrome', () => {
     await page.goto(`${PROD}/`);
     const toggle = page.locator('[data-motion-toggle]');
     await expect(toggle).toBeVisible();
-    await toggle.click();
+    await clickMotionToggle(page);
     await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
     // Am Handy steht der Schalter im Seitenfluss, der Klick hat dorthin gescrollt: zurück nach oben.
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
@@ -1592,8 +1682,7 @@ test.describe('Bewegung und Chrome', () => {
     });
     // Am Desktop gleitet Lenis, bis jemand pausiert (am Handy scrollt ohnehin der Browser).
     expect(await page.locator('html.lenis').count()).toBe(isMobile ? 0 : 1);
-    const toggle = page.locator('[data-motion-toggle]');
-    await toggle.click();
+    await clickMotionToggle(page);
     await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
     expect(await page.locator('html.lenis').count()).toBe(0);
 
@@ -1634,7 +1723,7 @@ test.describe('Bewegung und Chrome', () => {
     expect(await dimmed()).toBe(0);
 
     // Fortsetzen: Am Desktop gleitet es wieder, und die Wörter der Haltung werden wieder hell.
-    await toggle.click();
+    await clickMotionToggle(page);
     await expect(page.locator('html')).toHaveAttribute('data-motion', 'on');
     expect(await page.locator('html.lenis').count()).toBe(isMobile ? 0 : 1);
     await midway();
@@ -1642,7 +1731,6 @@ test.describe('Bewegung und Chrome', () => {
   });
 
   test('Bewegung pausiert mitten im Sprung: Er kommt trotzdem an', async ({ page, isMobile }) => {
-    test.skip(isMobile, 'Die Navigation in der Leiste gibt es nur am Desktop');
     await page.goto(`${PROD}/`);
     await page.evaluate(() => document.fonts.ready);
     await page.mouse.wheel(0, 10);
@@ -1651,16 +1739,22 @@ test.describe('Bewegung und Chrome', () => {
     });
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     await nextFrames(page);
-    await page.locator('.bar-nav a[href="#kontakt"]').click();
-    await page.waitForTimeout(200);
-    // Noch unterwegs: Lenis gleitet gut anderthalb Sekunden durch die Seite.
-    const midway = await page.evaluate(() => window.scrollY);
-    const goal = await page.evaluate(
-      () => document.querySelector('#kontakt')!.getBoundingClientRect().top + window.scrollY,
-    );
-    expect(goal - midway).toBeGreaterThan(1000);
-    await page.locator('[data-motion-toggle]').click();
-    await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
+    if (isMobile) {
+      // Auf dem Handy springt der Browser selbst und ist sofort am Ziel; angehalten wird direkt
+      // danach, die Seite bleibt am Ziel.
+      await page.locator('[data-menu-toggle]').click();
+      await page.locator('[data-menu-link][href="#kontakt"]').first().click();
+    } else {
+      await page.locator('.bar-nav a[href="#kontakt"]').click();
+      await page.waitForTimeout(200);
+      // Noch unterwegs: Lenis gleitet gut anderthalb Sekunden durch die Seite.
+      const midway = await page.evaluate(() => window.scrollY);
+      const goal = await page.evaluate(
+        () => document.querySelector('#kontakt')!.getBoundingClientRect().top + window.scrollY,
+      );
+      expect(goal - midway).toBeGreaterThan(1000);
+    }
+    await toggleMotion(page, 'off');
     await nextFrames(page);
     const offset = await page.evaluate(() => {
       const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop);
@@ -1673,7 +1767,6 @@ test.describe('Bewegung und Chrome', () => {
     page,
     isMobile,
   }) => {
-    test.skip(isMobile, 'Angepinnt wird der Hero nur auf grossen Bildschirmen');
     await page.goto(`${PROD}/`);
     await layOutAll(page);
     await page.mouse.wheel(0, 200);
@@ -1681,8 +1774,12 @@ test.describe('Bewegung und Chrome', () => {
       timeout: 15_000,
     });
     const hero = page.locator('[data-hero]');
-    await expect(hero).toHaveAttribute('data-pinned', '');
-    const toggle = page.locator('[data-motion-toggle]');
+    // Angepinnt wird der Hero nur auf grossen Bildschirmen; auf dem Handy nie.
+    const pinned = async () => {
+      if (isMobile) await expect(hero).not.toHaveAttribute('data-pinned');
+      else await expect(hero).toHaveAttribute('data-pinned', '');
+    };
+    await pinned();
     const anchor = page.locator('#sortiment');
     const top = () => anchor.evaluate((element) => element.getBoundingClientRect().top);
     const bringUp = async () => {
@@ -1697,8 +1794,7 @@ test.describe('Bewegung und Chrome', () => {
     };
     // Anhalten mitten auf der Seite: Der Hero gibt sein Anpinnen auf, was im Bild ist, bleibt.
     const before = await bringUp();
-    await toggle.click();
-    await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
+    await toggleMotion(page, 'off');
     await expect(hero).not.toHaveAttribute('data-pinned');
     expect(Math.abs((await top()) - before)).toBeLessThanOrEqual(1);
     // Ganz oben bewegt schon das erste Scrollen den Inhalt (keine stille Strecke).
@@ -1712,9 +1808,8 @@ test.describe('Bewegung und Chrome', () => {
     expect(Math.abs(moved - 100)).toBeLessThanOrEqual(1);
     // Fortsetzen: wieder angepinnt, und wieder bleibt die Ansicht, wo sie ist.
     const again = await bringUp();
-    await toggle.click();
-    await expect(page.locator('html')).toHaveAttribute('data-motion', 'on');
-    await expect(hero).toHaveAttribute('data-pinned', '');
+    await toggleMotion(page, 'on');
+    await pinned();
     expect(Math.abs((await top()) - again)).toBeLessThanOrEqual(1);
   });
 
@@ -1722,7 +1817,6 @@ test.describe('Bewegung und Chrome', () => {
     page,
     isMobile,
   }) => {
-    test.skip(isMobile, 'Angepinnt wird der Hero nur auf grossen Bildschirmen');
     await page.goto(`${PROD}/`);
     await page.evaluate(() => document.fonts.ready);
     await page.mouse.wheel(0, 10);
@@ -1731,13 +1825,19 @@ test.describe('Bewegung und Chrome', () => {
     });
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     await nextFrames(page);
-    const toggle = page.locator('[data-motion-toggle]');
-    await toggle.click();
-    await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
-    // Angehalten ein Stück in den Hero scrollen, dann fortsetzen: Die Ansicht bleibt, man steht
-    // damit am Ende der angepinnten Strecke, wo die erste Zeile halb zurückgetreten ist.
-    await page.evaluate(() => window.scrollTo({ top: 100, behavior: 'instant' }));
+    await toggleMotion(page, 'off');
+    /*
+     * Angehalten ein Stück in den Hero scrollen, dann fortsetzen. Am Desktop bleibt die Ansicht,
+     * man steht damit am Ende der angepinnten Strecke, wo die erste Zeile halb zurückgetreten ist.
+     * Auf dem Handy (nie angepinnt) so weit, dass der Verlauf am Ende ist: Angehalten steht die
+     * Zeile ganz da, fortgesetzt tritt sie halb zurück.
+     */
+    await page.evaluate((mobile) => {
+      const track = document.querySelector<HTMLElement>('[data-hero-track]')!;
+      window.scrollTo({ top: mobile ? track.offsetHeight * 0.6 + 10 : 100, behavior: 'instant' });
+    }, isMobile);
     await nextFrames(page);
+    expect(await page.locator('.q1').evaluate((line) => getComputedStyle(line).opacity)).toBe('1');
     const samples = await page.evaluate(
       () =>
         new Promise<number[]>((resolve) => {
@@ -1761,11 +1861,10 @@ test.describe('Bewegung und Chrome', () => {
     expect(samples.at(-1)).toBeCloseTo(0.5, 1);
   });
 
-  test('Rad übernimmt einen Sprung: Anhalten lässt die Seite, wo sie ist', async ({
+  test('Selbst gescrollt nach einem Sprung: Anhalten lässt die Seite, wo sie ist', async ({
     page,
     isMobile,
   }) => {
-    test.skip(isMobile, 'Die Navigation in der Leiste gibt es nur am Desktop');
     await page.goto(`${PROD}/`);
     await page.evaluate(() => document.fonts.ready);
     await page.mouse.wheel(0, 10);
@@ -1774,18 +1873,25 @@ test.describe('Bewegung und Chrome', () => {
     });
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     await nextFrames(page);
-    await page.locator('.bar-nav a[href="#kontakt"]').click();
-    await page.waitForTimeout(250);
-    // Mitten im Gleiten übernimmt das Rad (nach oben), kurz danach hält jemand die Bewegung an.
-    await page.mouse.move(700, 450);
-    await page.mouse.wheel(0, -400);
+    if (isMobile) {
+      // Auf dem Handy ist der Sprung sofort am Ziel; danach wischt man selbst ein Stück zurück.
+      await page.locator('[data-menu-toggle]').click();
+      await page.locator('[data-menu-link][href="#kontakt"]').first().click();
+      await expectLanded(page, '#kontakt');
+      await page.evaluate(() => window.scrollBy({ top: -800, behavior: 'instant' }));
+    } else {
+      await page.locator('.bar-nav a[href="#kontakt"]').click();
+      await page.waitForTimeout(250);
+      // Mitten im Gleiten übernimmt das Rad (nach oben), kurz danach hält jemand die Bewegung an.
+      await page.mouse.move(700, 450);
+      await page.mouse.wheel(0, -400);
+    }
     await page.waitForTimeout(120);
     const before = await page.evaluate(() => window.scrollY);
-    await page.locator('[data-motion-toggle]').click();
-    await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
+    await toggleMotion(page, 'off');
     await nextFrames(page);
-    // Die Seite springt nicht gegen das Rad zur Marke. (Der Hero gibt sein Anpinnen auf, die
-    // Ansicht bleibt dabei; gemessen wird darum am Ziel, nicht an der Scrollposition.)
+    // Die Seite springt nicht gegen das eigene Scrollen zur Marke. (Der Hero gibt sein Anpinnen
+    // auf, die Ansicht bleibt dabei; gemessen wird darum am Ziel, nicht an der Scrollposition.)
     const offset = await page.evaluate(() => {
       const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop);
       return document.querySelector('#kontakt')!.getBoundingClientRect().top - padding;
@@ -1812,9 +1918,9 @@ test.describe('Bewegung und Chrome', () => {
     await expect(toggle).toBeVisible();
     expect((await running()).length, 'Der Auftakt läuft noch').toBeGreaterThan(0);
 
-    await toggle.click();
+    await clickMotionToggle(page);
     await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
-    await toggle.click();
+    await clickMotionToggle(page);
     await expect(page.locator('html')).toHaveAttribute('data-motion', 'on');
     await nextFrames(page);
     // Nach dem Fortsetzen steht der Hero fertig da und baut sich nicht nochmals auf.
@@ -1853,10 +1959,9 @@ test.describe('Bewegung und Chrome', () => {
       { timeout: 5_000 },
     );
 
-    const toggle = page.locator('[data-motion-toggle]');
-    await toggle.click();
+    await clickMotionToggle(page);
     await expect(page.locator('html')).toHaveAttribute('data-motion', 'off');
-    await toggle.click();
+    await clickMotionToggle(page);
     await expect(page.locator('html')).toHaveAttribute('data-motion', 'on');
     await nextFrames(page);
     const after = await media!.evaluate((element) => ({
@@ -1867,6 +1972,57 @@ test.describe('Bewegung und Chrome', () => {
     }));
     expect(after.running).toBe(0);
     expect(after.clip).toBe('none');
+  });
+
+  test('Bewegungsschalter: faltet sich zusammen, ohne dass sich etwas verschiebt', async ({
+    page,
+    isMobile,
+  }) => {
+    await page.goto(`${PROD}/`);
+    await page.evaluate(() => document.fonts.ready);
+    const toggle = page.locator('[data-motion-toggle]');
+    await expect(toggle).toBeAttached();
+    const state = () =>
+      toggle.evaluate((button) => {
+        const rect = button.getBoundingClientRect();
+        const label = button.querySelector('[data-motion-label]')!.getBoundingClientRect();
+        const hit = (x: number, y: number) => button.contains(document.elementFromPoint(x, y));
+        return {
+          rect: [rect.left, rect.top, rect.width, rect.height].map(Math.round),
+          position: getComputedStyle(button).position,
+          clip: getComputedStyle(button).clipPath,
+          labelHit: hit(label.left + label.width / 2, label.top + label.height / 2),
+          endHit: hit(rect.right - rect.height / 2, rect.top + rect.height / 2),
+        };
+      });
+    if (isMobile) {
+      // Auf dem Handy steht der Schalter mit Beschriftung in der Zeile am Ende der Seite.
+      await toggle.scrollIntoViewIfNeeded();
+      const end = await state();
+      expect(end.position).toBe('static');
+      expect(end.clip).toBe('none');
+      expect(end.labelHit).toBe(true);
+      return;
+    }
+    // Oben auf der Startseite: ausgeklappt, die Beschriftung ist zu sehen und zu treffen.
+    await expect(toggle).toBeVisible();
+    const open = await state();
+    expect(open.position).toBe('fixed');
+    expect(open.labelHit).toBe(true);
+    // Nach dem Scrollen (Kapsel): nur das runde Ende. Ausgelegt ist der Knopf wie vorher, ein
+    // Klick auf die verborgene Beschriftung trifft, was darunter liegt.
+    await page.evaluate(() => window.scrollTo({ top: 1500, behavior: 'instant' }));
+    await expect(page.locator('[data-header]')).toHaveClass(/is-scrolled/);
+    await expect.poll(async () => (await state()).labelHit).toBe(false);
+    const folded = await state();
+    expect(folded.rect).toEqual(open.rect);
+    expect(folded.endHit).toBe(true);
+    expect(folded.clip).toMatch(/^inset\(/);
+    // Zeiger darauf: wieder ausgeklappt.
+    await toggle.hover({
+      position: { x: open.rect[2]! - open.rect[3]! / 2, y: open.rect[3]! / 2 },
+    });
+    await expect.poll(async () => (await state()).labelHit).toBe(true);
   });
 
   test('Cookie-Hinweis öffnet und schliesst sich', async ({ page }) => {

@@ -62,6 +62,13 @@ Restposten (`docs/DECISIONS.md` 43): Menüpunkt am Desktop springt unter dem Vor
 ganzen Pixeln, Rahmen nebeneinander als eine Folge, Header ohne JavaScript, Bewegungswächter als
 Positivliste, Testserver mit Cache-Regeln der Produktion. Ein neuer e2e-Test (ohne JavaScript).
 
+Alles läuft (`docs/DECISIONS.md` 44): Kein e2e-Test wird mehr übersprungen; jeder läuft auf
+Desktop und Handy mit dem, was das Gerät tut, die HTML-Prüfungen einmal im eigenen Projekt. Das
+Skript jeder Seite läuft vor ihrem ersten Bild (Seitenwechsel zu einer Marke ohne Sprung,
+Layoutverschiebung beim Laden 0, erstes Bild früher). Bewegungsschalter faltet sich über
+`clip-path`, Fokus bleibt im Formwechsel sichtbar, Taste während des Ausgleitens ohne neues
+Layout. Drei neue e2e-Tests, drei neue Unit-Tests.
+
 ## 20.11.2026: Demo nach dem PSYber-System
 
 Auftrag des Repository-Inhabers: Stil, Design, Format und Logik von `valITino/PsySec`

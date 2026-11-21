@@ -283,12 +283,17 @@ const pad = (index: number) => String(index + 1).padStart(2, '0');
   }
 
   /*
-   * Im ersten Bild nach dem Wechsel ist die Leiste ganz verborgen (header.ts nimmt die Klasse ein
-   * Bild später weg). Zu sehen ist in diesem Moment ohnehin nichts, aber so zählt der Browser den
-   * Sprung von Breite und Lage nicht als Layoutverschiebung (CLS).
+   * Im ersten Bild nach dem Wechsel ist die Leiste verborgen (header.ts nimmt die Klasse ein Bild
+   * später weg). Zu sehen ist in diesem Moment ohnehin nichts, aber so zählt der Browser den
+   * Sprung von Breite und Lage nicht als Layoutverschiebung (CLS). Nur was den Tastaturfokus
+   * trägt, bleibt zu sehen (WCAG 2.4.7): visibility lässt sich für ein Kind wieder aufheben.
    */
   .site-header:global(.is-swapping) .bar {
-    opacity: 0;
+    visibility: hidden;
+  }
+
+  .site-header:global(.is-swapping) .bar :focus-visible {
+    visibility: visible;
   }
 
   /* ---------- Navigation (nur Desktop, nur oben) ---------- */

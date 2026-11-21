@@ -2,10 +2,10 @@ import { expect, test } from '@playwright/test';
 import { PREVIEW, PROD } from './helpers.ts';
 
 /**
- * Regeln für Suchmaschinen (docs/DESIGN.md, Abschnitt 8), geprüft am rohen HTML.
- * Läuft nur einmal (Desktop), weil es um das ausgelieferte HTML geht.
+ * Regeln für Suchmaschinen (docs/DESIGN.md, Abschnitt 8), geprüft am rohen HTML. Das HTML ist
+ * für alle Geräte gleich: Diese Datei läuft darum einmal, im eigenen Projekt «html» ohne Gerät
+ * (playwright.config.ts).
  */
-test.skip(({ isMobile }) => isMobile, 'HTML ist für alle Geräte gleich');
 
 const INDEXED = ['/', '/impressum', '/datenschutz'] as const;
 const HIDDEN = ['/404', '/styleguide'] as const;
@@ -78,6 +78,17 @@ test.describe('Produktion', () => {
     for (const path of INDEXED) expect(xml).toContain(`https://luescherwohnen.ch${path}`);
     expect(xml).not.toContain('styleguide');
     expect(xml).not.toContain('404');
+  });
+
+  test('Zoomen bleibt auf jeder Seite erlaubt (WCAG 1.4.4), auch auf dem Handy', async ({
+    request,
+  }) => {
+    for (const path of [...INDEXED, ...HIDDEN]) {
+      const html = await (await request.get(`${PROD}${path}`)).text();
+      const viewport = await meta(html, 'viewport');
+      expect(viewport, path).toBe('width=device-width, initial-scale=1');
+      expect(html, path).not.toMatch(/maximum-scale|user-scalable/);
+    }
   });
 
   test('security.txt nach RFC 9116', async ({ request }) => {

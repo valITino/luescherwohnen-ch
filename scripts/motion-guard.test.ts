@@ -33,6 +33,9 @@ const LINEAR_ALLOWED = [
   'apps/web/src/components/sections/Band.astro',
 ];
 const usesLinear = (source: string) => /\blinear\b(?![-(])/.test(source);
+/** Kurven als Schlüsselwort (ease, ease-out …) statt aus tokens.css */
+const usesKeywordEase = (source: string) =>
+  /(?<![-\w])ease(?:-in|-out|-in-out)?(?![-\w])/.test(source);
 
 /** Wörter in einem Übergang, die keine Eigenschaft sind */
 const NOT_A_PROPERTY =
@@ -180,7 +183,10 @@ describe('Bewegung: nur transform, opacity und clip-path', () => {
 
   it('Kurven stehen nur in tokens.css und schwingen nie über', () => {
     const elsewhere = sources
-      .filter(({ file, css: source }) => file !== TOKENS && curves(source).length > 0)
+      .filter(
+        ({ file, css: source }) =>
+          file !== TOKENS && (curves(source).length > 0 || usesKeywordEase(source)),
+      )
       .map(({ file }) => file);
     expect(elsewhere).toEqual([]);
     const tokens = curves(sources.find(({ file }) => file === TOKENS)?.css ?? '');
@@ -228,6 +234,8 @@ describe('Bewegung: nur transform, opacity und clip-path', () => {
     expect(['border-color', 'color', 'display', 'translate'].filter(forbidden)).toEqual([]);
     expect(usesLinear('.x { animation: a 1s linear; }')).toBe(true);
     expect(usesLinear('.x { background: linear-gradient(red, blue); }')).toBe(false);
+    expect(usesKeywordEase('.x { transition: opacity 1s ease-out; }')).toBe(true);
+    expect(usesKeywordEase('.x { transition: opacity var(--dur-1) var(--ease-out); }')).toBe(false);
     expect(overshoots([0.16, 1, 0.3, 1])).toBe(false);
   });
 });

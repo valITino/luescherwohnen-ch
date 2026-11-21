@@ -249,19 +249,19 @@ Alles andere ist leise:
    blendet für sich ein (`--dur-2`). Die neue Seite stellt ihre Form in `pagereveal` ein: Beginnt
    sie unten, kommt die Kapsel mit der Seite, statt dass oben kurz die Leiste erscheint; kam auch
    die alte Seite als Kapsel, trägt die Kapsel für den Wechsel einen eigenen Namen
-   (`site-capsule`, `is-handing`), und die beiden bleiben als Paar stehen. Das gelingt nur, wenn
-   das Skript der neuen Seite vor ihrem ersten Bild läuft, und darauf wartet der Browser nicht
-   immer (gemessen: bei wiederholtem Besuch meist, beim ersten Besuch und auf langsamen Geräten
-   oft nicht). Dann kommt die neue Seite erst oben an und springt zur Marke, und der Header
-   wechselt mit ihr, wie vor dieser Verbesserung. Zurück und vor (und ohne Navigation API) zu
-   einer Seite, die oben beginnt, setzt sie den Übergangstyp `stand`, auch nachträglich, wenn ihr
-   Skript spät lief: Ihre Leiste steht sofort, die alte weicht darunter (überblendet würde der
-   Header einige Bilder lang grau). Stehen beide oben, werden alte und neue Leiste nicht
+   (`site-capsule`, `is-handing`), und die beiden bleiben als Paar stehen. Dafür läuft das Skript
+   jeder Seite vor ihrem ersten Bild (siehe Regeln); vorher zeigte der Browser die neue Seite oft
+   erst oben und sprang dann zur Marke. Zurück und vor (und ohne Navigation API) zu einer Seite,
+   die oben beginnt, setzt sie den Übergangstyp `stand`: Ihre Leiste steht sofort, die alte
+   weicht darunter (überblendet würde der Header einige Bilder lang grau). Stehen beide oben, werden alte und neue Leiste nicht
    überblendet: Die neue steht vom ersten Bild an (eine Überblendung gleicher Bilder kann im
    ersten Bild aus dem Takt geraten, dann wird die Leiste für ein Bild grau). Die alte Seite weicht schnell (`--dur-1`,
    `--ease-out`), die neue setzt sich 40 ms später von leicht unten (480 ms, `--ease-expo`); so
    liegen die beiden kaum übereinander.
-9. **Kleinigkeiten**: Der Hover-Schein der Buttons liegt auf einer eigenen Ebene (`::after`) und
+9. **Kleinigkeiten**: Der Bewegungsschalter faltet sich am Desktop beim Scrollen (und auf den
+   Unterseiten) zu seinem runden Ende und mit Zeiger oder Fokus wieder auf, nur über den
+   Ausschnitt (`clip-path`, `--dur-3`, `--ease-expo`): Nichts verschiebt sich, ein Klick trifft
+   nur, was zu sehen ist. Der Hover-Schein der Buttons liegt auf einer eigenen Ebene (`::after`) und
    blendet nur über; die Lichtkante des sekundären Buttons wächst aus der Mitte (`scaleX`,
    `--dur-3`). Fotos zoomen bei Hover fein (nur feiner Pointer). Der Cookie-Hinweis wächst aus
    seinem Knopf ohne Überschwingen, die «404» rückt einmal von leicht unten an ihren Platz.
@@ -283,6 +283,15 @@ Alles andere ist leise:
   prüft `e2e/web.spec.ts`).
 - **Das grösste Element zuerst**: Foto und Lead im Hero sind ab dem ersten Bild sichtbar (LCP,
   geprüft in `e2e/web.spec.ts`).
+- **Das Skript vor dem ersten Bild**: Das Modul jeder Seite steht im `<head>` und hält das erste
+  Bild an, bis es gelaufen ist (`blocking="render"`, die eingebundenen Module mit
+  `modulepreload`; im Build gesetzt von `packages/config/src/early-script.mjs`, weil Astro an
+  gebündelten Skripten keine Attribute erlaubt). So steht der Header beim ersten Bild in seiner
+  Form, eine Seite mit Marke beginnt an der Marke, und nichts verschiebt sich beim Laden. Das
+  erste Bild kommt dadurch nicht später, sondern früher (das Modul lädt mit dem Kopf).
+- **Fokus bleibt sichtbar**: Auch im einen Bild, in dem der Header beim Formwechsel verborgen
+  ist (`is-swapping`, gegen Layoutverschiebung), bleibt das fokussierte Bedienelement stehen
+  (`visibility`).
 - **Reduzierte Bewegung**: `base.css` schaltet jede Animation ab (`none`, auch eine winzige
   Dauer zeigte im ersten Bild ihren Anfang) und setzt jeden Übergang auf 0. Kein Lenis, kein
   Anpinnen, keine Auftritte, kein Seitenübergang, das Band bricht um.

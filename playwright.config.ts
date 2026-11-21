@@ -32,15 +32,23 @@ export default defineConfig({
     trace: 'off',
     launchOptions: { executablePath },
   },
+  /*
+   * Jeder Test läuft auf Desktop und Handy und prüft dort, was das Gerät tut (am Handy etwa das
+   * Menü statt der Navigation in der Leiste). Die Prüfungen am rohen HTML (seo.spec.ts) laufen
+   * einmal, ohne Gerät: Das HTML ist für alle gleich.
+   */
   projects: [
     {
       name: 'desktop',
+      testIgnore: /seo\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
     },
     {
       name: 'mobile',
+      testIgnore: /seo\.spec\.ts$/,
       use: { ...devices['Pixel 7'], viewport: { width: 390, height: 844 } },
     },
+    { name: 'html', testMatch: /seo\.spec\.ts$/ },
   ],
   webServer: [server('apps/web/dist', 4321), server('dist-pages', 4322, '/luescherwohnen-ch')],
 });

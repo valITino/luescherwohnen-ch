@@ -90,18 +90,19 @@ export function initSmoothScroll(): SmoothScroll {
 
   /*
    * Scrollt jemand mit der Tastatur (Pos1, Ende, Bild auf/ab, Leertaste, Pfeile), während Lenis
-   * noch vom Mausrad ausgleitet, hält Lenis an: Sonst zöge es die Seite nach der Taste zurück an
-   * sein altes Ziel. Kurz anhalten und wieder starten setzt das Ziel auf die aktuelle Lage.
-   * Ein offenes Menü (gestopptes Lenis) bleibt gesperrt. Die Leertaste auf einem Knopf löst den
-   * Knopf aus und scrollt nicht: Dann gleitet die Seite weiter.
+   * noch vom Mausrad ausgleitet, endet das Ausgleiten: Sonst zöge Lenis die Seite nach der Taste
+   * zurück an sein altes Ziel. Das Ziel springt dafür auf die aktuelle Lage, ohne Lenis anzuhalten
+   * (Anhalten setzte kurz `overflow: clip` am <html>, mit klassischen Bildlaufleisten rechnete
+   * der Browser dafür das ganze Layout neu). Ein offenes Menü (gestopptes Lenis) bleibt gesperrt.
+   * Die Leertaste auf einem Knopf löst den Knopf aus und scrollt nicht: Dann gleitet die Seite
+   * weiter.
    */
   window.addEventListener('keydown', (event) => {
     if (!lenis || !SCROLL_KEYS.has(event.key) || event.altKey || event.ctrlKey || event.metaKey)
       return;
     if (event.defaultPrevented || editable(event.target) || pressed(event)) return;
     if (lenis.isStopped || lenis.isScrolling !== 'smooth') return;
-    lenis.stop();
-    lenis.start();
+    lenis.scrollTo(lenis.animatedScroll, { immediate: true, force: true });
   });
 
   gsap.ticker.add((time: number) => lenis?.raf(time * 1000));
