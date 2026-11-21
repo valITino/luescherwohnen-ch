@@ -32,7 +32,9 @@ const fields = {
         Der Kreis schliesst sich: Wenn der Kontakt ins Bild kommt, öffnet sich oben rechts einmal
         eine grüne Scheibe wie die Blende des Fotos im Hero (reveal.ts setzt data-enter).
       */}
-      <span class="kontakt-disc" aria-hidden="true"></span>
+      <span class="kontakt-aura" aria-hidden="true">
+        <span class="kontakt-disc"></span>
+      </span>
       <div class="kontakt-info">
         <SectionHead num="05" kicker="Kontakt" title="Wir freuen uns auf Sie." id="kontakt-title" />
         {/* Der Live-Status wie oben im Hero: Die Seite endet mit dem Signal, mit dem sie beginnt. */}
@@ -348,23 +350,35 @@ const fields = {
     position: relative;
     isolation: isolate;
     display: grid;
-    overflow: clip;
     gap: clamp(2.5rem, 6vw, 4rem);
     padding: clamp(1.5rem, 0.6rem + 3.6vw, 4.5rem);
   }
 
-  /* Nur ab 64rem: Auf schmalen Bildschirmen läge der Bogen dicht an der Überschrift. */
-  .kontakt-disc {
+  /*
+   * Die Scheibe liegt in einer eigenen Ebene, die sie an der Bühne abschneidet. Die Bühne selbst
+   * schneidet nichts ab: Ragte je ein Inhalt hinaus, bliebe er sichtbar und fiele in den Tests
+   * auf (cutOff, boxOverflow), statt still zu verschwinden.
+   * Nur ab 64rem: Auf schmalen Bildschirmen läge der Bogen dicht an der Überschrift.
+   */
+  .kontakt-aura {
     display: none;
   }
 
   @media (min-width: 64rem) {
+    .kontakt-aura {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      display: block;
+      overflow: clip;
+      border-radius: inherit;
+      pointer-events: none;
+    }
+
     .kontakt-disc {
       position: absolute;
       top: 0;
       right: 0;
-      z-index: -1;
-      display: block;
       width: min(44rem, 60vw);
       aspect-ratio: 1;
       border-radius: 50%;

@@ -5,6 +5,7 @@ import {
   PAGES,
   PREVIEW,
   PROD,
+  boxOverflow,
   brokenWords,
   collectErrors,
   cutOff,
@@ -349,10 +350,29 @@ test.describe('Layout', () => {
         expect(await cutOff(page), `${width}px`).toEqual([]);
         expect(await brokenWords(page), `${width}px`).toEqual([]);
         expect(await imageCollisions(page), `${width}px`).toEqual([]);
+        expect(await boxOverflow(page), `${width}px`).toEqual([]);
       }
       await context.close();
     });
   }
+
+  // Die Produktion unterscheidet sich auf der Startseite (Kontakt ohne Formular, ohne Projekte).
+  test('nichts ragt über den Rand oder aus seinem Kasten: / (Produktion)', async ({ browser }) => {
+    const context = await browser.newContext({ reducedMotion: 'reduce' });
+    const page = await context.newPage();
+    await page.goto(`${PROD}/`);
+    await page.evaluate(() => document.fonts.ready);
+    for (const width of WIDTHS) {
+      await page.setViewportSize({ width, height: 900 });
+      await layOutAll(page);
+      expect(await horizontalOverflow(page), `${width}px`).toBe(0);
+      expect(await cutOff(page), `${width}px`).toEqual([]);
+      expect(await brokenWords(page), `${width}px`).toEqual([]);
+      expect(await imageCollisions(page), `${width}px`).toEqual([]);
+      expect(await boxOverflow(page), `${width}px`).toEqual([]);
+    }
+    await context.close();
+  });
 
   test('Porträt: Das Foto reicht bis zum Bildtext, Ecken und Linie liegen darauf', async ({
     page,
@@ -377,6 +397,57 @@ test.describe('Layout', () => {
     expect(box.photo.bottom - box.corners[1]!).toBeGreaterThan(0);
     expect(box.photo.bottom - box.corners[1]!).toBeLessThan(40);
     expect(Math.abs(box.scan - box.photo.height)).toBeLessThanOrEqual(1);
+  });
+
+  test('Öffnungszeiten im Kontakt: passen in ihr Feld, Tag und Zeit je auf einer Zeile', async ({
+    page,
+  }) => {
+    await page.goto(`${PROD}/`);
+    await page.evaluate(() => document.fonts.ready);
+    for (const width of [320, 360, 390, 430, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await layOutAll(page);
+      const rows = await page.locator('#kontakt .hours-row').evaluateAll((list) => {
+        // Das Feld um die Öffnungszeiten, gemessen an seiner Innenkante (ohne Innenabstand).
+        const panel = list[0]!.closest('.kontakt-direct, .kontakt-info')!;
+        const style = getComputedStyle(panel);
+        const frame = panel.getBoundingClientRect();
+        const left = frame.left + parseFloat(style.paddingLeft) + parseFloat(style.borderLeftWidth);
+        const right =
+          frame.right - parseFloat(style.paddingRight) - parseFloat(style.borderRightWidth);
+        const lines = (cell: Element) => {
+          const range = document.createRange();
+          range.selectNodeContents(cell);
+          return new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size;
+        };
+        return list.map((row) => {
+          const day = row.querySelector('dt')!;
+          const time = row.querySelector('dd')!;
+          const dayBox = day.getBoundingClientRect();
+          const timeBox = time.getBoundingClientRect();
+          return {
+            label: day.textContent!.trim(),
+            dayLines: lines(day),
+            timeLines: lines(time),
+            inside: dayBox.left >= left - 0.5 && timeBox.right <= right + 0.5,
+            sideBySide: Math.abs(dayBox.bottom - timeBox.bottom) < dayBox.height / 2,
+          };
+        });
+      });
+      expect(rows.map((row) => row.label)).toEqual([
+        'Montag',
+        'Dienstag bis Freitag',
+        'Samstag',
+        'Sonntag',
+      ]);
+      for (const row of rows) {
+        expect(row.inside, `${width}px: ${row.label} im Feld`).toBe(true);
+        expect(row.dayLines, `${width}px: ${row.label}`).toBe(1);
+        expect(row.timeLines, `${width}px: ${row.label}`).toBe(1);
+        // Ist Platz, stehen Tag und Zeit nebeneinander; sonst rückt die Zeit in die nächste Zeile.
+        if (width >= 768) expect(row.sideBySide, `${width}px: ${row.label}`).toBe(true);
+      }
+    }
   });
 
   test('Vorschau-Hinweis passt auf jede Breite', async ({ page }) => {
@@ -788,12 +859,27 @@ test.describe('Öffnungszeiten', () => {
     );
   });
 
-  test('ohne JavaScript bleibt die Tabelle, der Status fehlt', async ({ browser }) => {
+  test('Samstag ab 9:00 Uhr: Status, Öffnungszeiten und Menü nennen dieselbe Zeit', async ({
+    page,
+  }) => {
+    // Samstag, 28. November 2026, 09:30 in Baden: schon geöffnet (Entscheid 47).
+    await page.clock.setFixedTime(new Date('2026-11-28T09:30:00+01:00'));
+    await page.goto(`${PROD}/`);
+    await page.locator('.visit').scrollIntoViewIfNeeded();
+    await expect(page.locator('.visit [data-open-status-text]')).toHaveText('Geöffnet bis 16:00');
+    const saturday = (scope: string) => page.locator(scope).filter({ hasText: 'Samstag' }).first();
+    await expect(saturday('#kontakt .hours-row')).toContainText('09:00–16:00 Uhr');
+    // Das Menü führt die Öffnungszeiten aus derselben Quelle.
+    await expect(saturday('[data-menu] li')).toHaveText(/Samstag\s*09:00–16:00/);
+  });
+
+  test('ohne JavaScript bleiben die Öffnungszeiten, der Status fehlt', async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     await page.goto(`${PROD}/`);
-    // Die Öffnungszeiten stehen als Tabelle im Kontakt; die Besuchszeile zeigt Adresse und Wege.
-    await expect(page.locator('#kontakt .hours-table tr')).toHaveCount(4);
+    // Die Öffnungszeiten stehen als Liste im Kontakt; die Besuchszeile zeigt Adresse und Wege.
+    await expect(page.locator('#kontakt .hours-row')).toHaveCount(4);
+    await expect(page.locator('#kontakt .hours-list')).toBeVisible();
     await expect(page.locator('.visit [data-open-status]')).toBeHidden();
     await expect(page.locator('#kontakt [data-open-status]')).toBeHidden();
     await expect(page.locator('.visit')).toContainText('Weite Gasse 9, 5400 Baden');

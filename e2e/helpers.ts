@@ -89,6 +89,85 @@ export async function cutOff(page: Page): Promise<string[]> {
 }
 
 /**
+ * Inhalte, die seitlich aus ihrem Kasten ragen: jede sichtbare Textzeile, jedes Bedienelement und
+ * jeder Kasten wird am nächsten Vorfahren mit Rahmen oder Grund gemessen (Karte, Bühne, Feld,
+ * Knopf). cutOff misst nur am Bildrand: Ein Inhalt, der breiter ist als sein Feld, aber noch im
+ * Bild liegt, fällt erst hier auf (so ragten die Öffnungszeiten bei 360 px aus ihrem Feld).
+ * Was in einem eigenen Ausschnitt ohne Rahmen läuft (Band, Masken der Überschriften), zählt nicht;
+ * reine Dekoration (`aria-hidden`) auch nicht.
+ */
+export async function boxOverflow(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const visible = (element: Element): boolean =>
+      element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) &&
+      !element.closest('[aria-hidden="true"], .sr-only, .hp, .skip-link, [inert]');
+    const boxed = (element: Element): boolean => {
+      const style = getComputedStyle(element);
+      return (
+        parseFloat(style.borderRightWidth) > 0 ||
+        parseFloat(style.borderLeftWidth) > 0 ||
+        style.backgroundColor !== 'rgba(0, 0, 0, 0)'
+      );
+    };
+    const clips = (element: Element): boolean =>
+      /(hidden|clip|auto|scroll)/.test(getComputedStyle(element).overflowX);
+    /** Der nächste Kasten ab `start`; null, wenn vorher ein eigener Ausschnitt ohne Rahmen kommt. */
+    const boxOf = (start: Element | null): Element | null => {
+      for (
+        let element: Element | null = start;
+        element && element !== document.body;
+        element = element.parentElement
+      ) {
+        if (boxed(element)) return element;
+        if (clips(element)) return null;
+      }
+      return null;
+    };
+    const name = (element: Element): string => {
+      const classes = typeof element.className === 'string' ? element.className.trim() : '';
+      return `${element.tagName.toLowerCase()}${classes ? `.${classes.split(/\s+/).join('.')}` : ''}`;
+    };
+    const found = new Map<Element, string>();
+    const check = (element: Element, rects: DOMRect[], box: Element | null): void => {
+      if (!box || found.has(element)) return;
+      const frame = box.getBoundingClientRect();
+      const rect = rects.find(
+        (candidate) =>
+          candidate.width > 0 &&
+          candidate.height > 0 &&
+          (candidate.right > frame.right + 1 || candidate.left < frame.left - 1),
+      );
+      if (!rect) return;
+      const text = (element.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 40);
+      found.set(
+        element,
+        `${name(element)} [${Math.round(rect.left)}..${Math.round(rect.right)}] ragt aus ` +
+          `${name(box)} [${Math.round(frame.left)}..${Math.round(frame.right)}] «${text}»`,
+      );
+    };
+
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const range = document.createRange();
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const parent = node.parentElement;
+      if (!node.textContent?.trim() || !parent || !visible(parent)) continue;
+      if (['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(parent.tagName)) continue;
+      range.selectNodeContents(node);
+      check(parent, [...range.getClientRects()], boxOf(parent));
+    }
+    for (const element of document.querySelectorAll('body *')) {
+      if (!visible(element)) continue;
+      const control = element.matches('a, button, input, select, textarea, img');
+      if (!control && !(boxed(element) && element.textContent?.trim())) continue;
+      // Fest oder absolut gesetzte Teile (Kapsel, schwebende Knöpfe) liegen bewusst frei.
+      if (/(fixed|absolute|sticky)/.test(getComputedStyle(element).position)) continue;
+      check(element, [element.getBoundingClientRect()], boxOf(element.parentElement));
+    }
+    return [...found.values()];
+  });
+}
+
+/**
  * Wörter, die mitten im Wort auf die nächste Zeile umbrechen («Datenschu-tz»). Das passiert, wenn
  * eine Spalte schmaler ist als ihr längstes Wort und `overflow-wrap: anywhere` einspringt.
  * Nicht gemeint sind Trennungen an einem weichen Trennzeichen und Adressen in Mono-Schrift.

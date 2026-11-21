@@ -20,7 +20,7 @@ import { startClock } from './clock.ts';
 
 /**
  * «Geöffnet bis 18:30» bzw. «Geschlossen · öffnet morgen 10:00», jede Minute neu.
- * Ohne Skript bleibt die Anzeige verborgen; die Öffnungszeiten stehen daneben als Tabelle.
+ * Ohne Skript bleibt die Anzeige verborgen; die Öffnungszeiten stehen im Kontakt als Liste.
  * Gibt eine Funktion zurück, die die Anzeige sofort zeigt (home.ts vor einem Sprung): Erscheint
  * sie erst unterwegs, wird die Seite unter einem laufenden Sprung länger, und er endet zu tief.
  */

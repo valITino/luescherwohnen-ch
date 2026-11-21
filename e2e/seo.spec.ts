@@ -70,9 +70,22 @@ test.describe('Produktion', () => {
       addressLocality: 'Baden',
       addressCountry: 'CH',
     });
-    const hours = store.openingHoursSpecification as { dayOfWeek: string[]; opens: string }[];
+    const hours = store.openingHoursSpecification as {
+      dayOfWeek: string[];
+      opens: string;
+      closes: string;
+    }[];
     expect(hours.flatMap((entry) => entry.dayOfWeek)).not.toContain('Monday');
     expect(hours.flatMap((entry) => entry.dayOfWeek)).not.toContain('Sunday');
+    // Samstag 9:00 bis 16:00 Uhr, Dienstag bis Freitag 10:00 bis 18:30 Uhr (wie auf der Seite).
+    expect(hours.find((entry) => entry.dayOfWeek.includes('Saturday'))).toMatchObject({
+      opens: '09:00',
+      closes: '16:00',
+    });
+    expect(hours.find((entry) => entry.dayOfWeek.includes('Tuesday'))).toMatchObject({
+      opens: '10:00',
+      closes: '18:30',
+    });
     // Keine Bewertungen, keine Preise
     expect(raw).not.toMatch(/aggregateRating|review|price/i);
   });
