@@ -21,8 +21,13 @@ Abschnitt 6).
 - **Sortiment am Handy**: Eine Wahl im Index bringt die Bühne ins Bild.
 - Drei Fehler des Umbaus beim Nachmessen gefunden und behoben (Porträt ragte in seinen Bildtext,
   ein Foto der Bühne lud zu spät, ruhender Mauszeiger überschrieb eine Wahl).
-- Neu `e2e/years.spec.ts` (elf Tests), dazu fünf neue Tests in den bestehenden Dateien: 222
-  e2e-Tests (vorher 192), keiner übersprungen. JavaScript 14,8 KB von 120 KB; Lighthouse 100 in
+- Eine unabhängige Durchsicht fand danach drei nachgestellte Fehler im Rückfall «Bühne passt
+  nicht ins Fenster» (Sprung zum Kontakt landete daneben, Passform zu früh und am falschen Mass
+  gemessen, Grössenänderung warf den Leser an den Anfang). Behoben: früh entscheiden, am Layout
+  messen, keine Bedingung an die schwankende Fensterhöhe, Leser behält seine Stelle; dazu die
+  Karten nach ihrer Spalte statt nach dem Fenster.
+- Neu `e2e/years.spec.ts` (15 Tests), dazu fünf neue Tests in den bestehenden Dateien: 230
+  e2e-Tests (vorher 192), keiner übersprungen. JavaScript 15,3 KB von 120 KB; Lighthouse 100 in
   allen vier Kategorien auf den drei Seiten im Index, Handy und Desktop.
 
 ## 21.11.2026: Bewegung folgt dem Scrollen

@@ -121,7 +121,10 @@ Nach jeder Änderung an der Website: obige Prüfungen, dann Screenshots in
   im Wort um (Tests `cutOff`, `boxOverflow`, `brokenWords`, auf Vorschau und
   Produktion); Flächen schneiden ihre Inhalte nicht ab (Dekoration in eigener
   Ebene); was stehen bleibt, passt ganz ins Fenster (auch 1366×650 und
-  360×640), sonst gilt die Form ohne Stehenbleiben.
+  360×640), sonst gilt die Form ohne Stehenbleiben. Ob etwas passt, früh und
+  am Layout messen (bevor jemand dort ankommt, nie am Überlauf); keine
+  CSS-Bedingung an die Fensterhöhe, sie schwankt am Handy mit der Adressleiste.
+  Ändert sich die Länge der Seite, behält der Leser seine Stelle.
 - Keine Cookies, kein Web-Speicher, keine Requests an Dritte, keine Zählung.
 - Aus `docs/ressources/` nur Bilddateien über `pnpm images` übernehmen; nie ZIP-,
   PHP- oder HTML-Dateien (Schadcode im Bestand, `docs/TODO.md`).

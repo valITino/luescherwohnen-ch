@@ -90,8 +90,11 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
     Überschriften, Fotos, Band, Linie im Service), Fotos sind in ihren runden Rahmen sauber
     abgeschnitten (`overflow: clip`), und beim Wischen stockt nichts.
   - Firmengeschichte dort: Die Bühne bleibt unter dem Header stehen, die Karten folgen dem
-    Finger, die Linie erreicht jeden Punkt, wenn seine Karte ankommt; mit ein- und ausgeblendeter
-    Adressleiste des Browsers bleibt nichts abgeschnitten (die Bühne rechnet mit `svh`).
+    Finger, die Linie erreicht jeden Punkt, wenn seine Karte ankommt. Mit ein- und ausgeblendeter
+    Adressleiste des Browsers bleibt nichts abgeschnitten, und die Bühne schaltet dabei nicht um
+    (sie rechnet mit `svh`). Punkt auf der Achse und «Weiter» wechseln im selben Moment wie die
+    Karte, auch mit ausgeblendeter Adressleiste (das Skript rechnet die Strecke dann mit dem
+    höheren Fenster, wie es der Browser vermutlich tut; nicht prüfbar von hier).
     Handy quer: Die Zeitleiste gilt. Handy auf der Bühne drehen: Man bleibt in der
     Firmengeschichte.
   - Safari vor 26 und Firefox: Dort gibt es die Bewegung beim Scrollen nicht (`@supports`).

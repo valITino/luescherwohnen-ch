@@ -600,8 +600,8 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
     24rem; am Handy 390×844 zusammen 1950 px. Die Knöpfe der Achse und «Weiter» bleiben und
     scrollen an die Stelle ihres Jahrs: Es gibt nur einen Zustand, den der Scrollposition.
     Im HTML steht eine Zeitleiste mit allen sechs Momenten; so bleibt sie ohne Skript, bei
-    reduzierter Bewegung, in Fenstern unter 36rem Höhe, im Druck, und wenn die Bühne nicht in
-    ihr Fenster passt (gemessen im Skript, etwa bei 320×580). Ohne scrollgekoppelte Animationen
+    reduzierter Bewegung, im Druck, und wo die Bühne nicht ins Fenster passt (gemessen im
+    Skript; etwa Handy quer 844×390 oder 320×580). Ohne scrollgekoppelte Animationen
     (Firefox, Safari vor 26) wechseln die Karten in Schritten: Die Funktion gibt es in jedem
     Browser, geführt wird sie, wo er es kann.
   - **Ersetzt frühere Entscheide**: «Nie als Bühne, die das Scrollen weiterschaltet» und «kein
@@ -645,15 +645,41 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
   - **Gemessen** (Chromium ohne Grafikchip, CPU 4-fach gedrosselt, je drei Läufe): langsame
     Bilder über die ersten 7000 px am Handy 3/1/5 von rund 297 (vorher 0/4/3), am Desktop
     6/18/13 von rund 288 (vorher 2/10/16), also im Rauschen; über die Strecke der Bühne am Handy
-    1/2/4 von rund 152, am Desktop 6/11/6 von rund 155. JavaScript 14,8 KB (vorher 13,4 KB).
+    1/2/4 von rund 152, am Desktop 6/11/6 von rund 155. JavaScript 15,3 KB (vorher 13,4 KB).
     Lighthouse auf `/`, `/impressum` und `/datenschutz`, Handy und Desktop: 100 in allen vier
     Kategorien, CLS 0.
-  - **Tests**: neu `e2e/years.spec.ts` (elf Tests je auf Desktop und Handy: geführt, Knöpfe und
-    Tastatur, Direktlink, in Schritten, angehalten, als Zeitleiste, Passform auf sechs
-    Fenstergrössen, Rückfall, gedrehtes Handy, neu geladen, Fotos). In `e2e/scroll.spec.ts` neu:
+  - **Tests**: neu `e2e/years.spec.ts` (15 Tests je auf Desktop und Handy: geführt, Knöpfe und
+    Tastatur, Direktlink, in Schritten, angehalten, als Zeitleiste, Passform auf acht
+    Fenstergrössen, Rückfall, gedrehtes Handy, Sprung zum Kontakt ohne Bühne, Heranscrollen
+    gegen direktes Landen, Umschalten über dem Leser, ohne `svh`, neu geladen, Fotos). In `e2e/scroll.spec.ts` neu:
     gleitende Fotos füllen ihren Rahmen in jeder Lage, und der nächste Bogen erreicht den
     letzten Inhalt erst um die Fenstermitte. In `e2e/web.spec.ts` neu: Bühne des Sortiments
     kommt ins Bild, Wahl per Klick gilt. In `e2e/a11y.spec.ts` neu: axe auf der Bühne. Der Test
     der alten Wahl per Klick ist entfallen (es gibt sie nicht mehr).
+  - **Nach einer unabhängigen Durchsicht** (ein Prüfer, gegen den gebauten Stand gemessen): Der
+    Rückfall «Bühne passt nicht» war falsch gebaut. Die Bühne galt ab dem Laden und wurde erst
+    zurückgenommen, wenn man in ihre Nähe kam; die Seite wurde dann mitten im Weg um 1200 bis
+    2000 px kürzer. Nachgestellt: Ein Sprung zum Kontakt landete in Fenstern wie 1024×650 oder
+    1280×600 rund 1000 bis 1260 px daneben, im Footer oder in der Firmengeschichte. Die Passform
+    wurde am Überlauf gemessen, der den beim Hereinscrollen noch verschobenen Inhalt mitzählte
+    (herangescrollt Zeitleiste, direkt gelandet Bühne). Und im Rückfall warf jede
+    Grössenänderung den Leser an den Anfang der Firmengeschichte, auch aus dem Kontakt.
+    Behoben: Entschieden wird, sobald der Abschnitt ausgelegt ist, also vor jedem Sprung;
+    gemessen wird am Layout; neu entschieden wird nur, wenn sich Breite, kleinste Fensterhöhe
+    oder Schriftgrösse ändern; schaltet die Bühne später um, behält der Leser seine Stelle
+    (festgemacht an der gemerkten Ansicht aus `position.ts`). Die Bedingung an die Fensterhöhe
+    im CSS ist entfallen: Sie schwankt am Handy mit der Adressleiste, die Bühne wäre auf
+    kleinen Handys beim Scrollen ein- und ausgeschaltet worden. Browser ohne `svh` bekommen die
+    Zeitleiste. Gegenprobe: Ohne die frühe Entscheidung landet der Sprung 1084 px (1024×500)
+    und 1440 px (844×390) daneben, mit ihr auf den Pixel.
+  - **Karten nach ihrer Spalte**: Am Tablet quer und am kleinen Laptop steht der Titel neben
+    der Bühne; in der schmalen Spalte brach der Satz neben Jahr und Foto in acht und mehr
+    Zeilen um, die Bühne passte bei 1024 px Breite erst ab 684 px Höhe. Jahr, Foto und Satz
+    stehen jetzt erst ab 52rem Spaltenbreite in einer Reihe (Containerabfrage). Gemessen auf 48
+    Fenstergrössen (320 bis 1366 breit, 500 bis 768 hoch): Wo die Bühne gilt, passt sie, und
+    Heranscrollen und direktes Landen ergeben überall dieselbe Form.
+  - **Bekannt und so belassen**: Ein Blättern mit Bild-ab oder Leertaste ist rund zwei Jahre
+    weit; wer so scrollt, überspringt Jahre. Die Achse (Pfeiltasten, Eingabe) und «Weiter»
+    führen Jahr für Jahr.
   - **Nicht prüfbar von hier**: Safari und Firefox (nur Chromium installiert) und echte Geräte;
     die Punkte stehen in `docs/TODO.md`.

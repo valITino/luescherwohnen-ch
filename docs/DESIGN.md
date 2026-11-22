@@ -280,8 +280,8 @@ Kante, wie hoch er auch ist.
     bleibt der Bogen zurück. Die Knöpfe der Achse und «Weiter» scrollen an die Stelle ihres
     Jahrs: Der Zustand hängt immer an der Scrollposition. Drei Stufen:
     - **Zeitleiste** (Grundform im HTML): alle sechs Momente untereinander, am Desktop drei
-      nebeneinander. Ohne Skript, bei reduzierter Bewegung, in Fenstern unter 36rem Höhe (Handy
-      quer), im Druck, und wenn die Bühne nicht in ihr Fenster passt (das Skript misst es).
+      nebeneinander. Ohne Skript, bei reduzierter Bewegung, im Druck, und wo die Bühne nicht ins
+      Fenster passt (Handy quer, niedrige Fenster, starker Zoom; das Skript misst es).
     - **In Schritten**: Die Bühne steht, die Karten wechseln nach der Scrollposition mit einem
       kurzen Übergang (`--dur-3`). Ohne scrollgekoppelte Animationen (Firefox, Safari vor 26)
       und, ohne Übergang, bei angehaltener Bewegung.
@@ -391,8 +391,27 @@ Alles andere ist leise:
 - **Stehen bleibt nur die Firmengeschichte**, und nur solange ihre Jahre durchlaufen: Jedes
   Stück Weg bewegt dort sichtbar etwas (Linie, Karte), nichts wartet. Die Bühne passt ganz ins
   Fenster (auch 1366×650 und 360×640, geprüft in `e2e/years.spec.ts`); passt sie nicht, gilt die
-  Zeitleiste. Ihre Bedingung (Bewegung erwünscht, Fenster ab 36rem Höhe) steht einmal im CSS;
-  `years.ts` liest sie an `--yr-deck` ab, statt sie zu wiederholen.
+  Zeitleiste. Ob Bewegung erwünscht ist, steht einmal im CSS (`years.ts` liest es an `--yr-deck`
+  ab, statt es zu wiederholen); ob die Bühne passt, misst `years.ts`.
+- **Mit oder ohne Bühne ist die Seite verschieden lang.** Darum vier Regeln, alle aus Fehlern
+  gelernt (Entscheid 50) und in `e2e/years.spec.ts` geprüft:
+  - **Früh entscheiden**: sobald der Abschnitt ausgelegt ist (`data-laid`), also bevor jemand
+    dort ankommt und bevor ein Sprung zu einer Marke sein Ziel rechnet.
+  - **Am Layout messen**, nicht am Überlauf: Beim Hereinscrollen steht der Inhalt noch etwas
+    tiefer (`translate`), und der Überlauf zählte das als «passt nicht».
+  - **Keine Bedingung an die Fensterhöhe im CSS**: Sie schwankt am Handy mit der Adressleiste,
+    und die Bühne spränge mit. Die Bühne rechnet mit dem kleinsten Fenster (`svh`); neu
+    entschieden wird nur, wenn sich Breite, diese Höhe oder die Schriftgrösse ändern. Browser
+    ohne `svh` bekommen die Zeitleiste (`@supports`).
+  - **Der Leser behält seine Stelle**, wenn die Bühne später umschaltet (Handy gedreht, Fenster
+    gezogen): Wer in der Firmengeschichte stand, steht an ihrem Anfang; wer dahinter las, bleibt
+    dort. Festgemacht an der Ansicht, die sich die Seite beim letzten Halt gemerkt hat
+    (`position.ts`), denn der Browser hat die Seite schon neu umbrochen, bevor ein Skript vom
+    neuen Fenster erfährt.
+- **Karten richten sich nach ihrer Spalte, nicht nach dem Fenster** (Containerabfrage): Jahr,
+  Foto und Satz stehen erst in einer Reihe, wenn die Spalte 52rem breit ist. Am Tablet quer und
+  am kleinen Laptop steht der Titel neben der Bühne, die Spalte ist schmal; in einer Reihe brach
+  der Satz dort in acht und mehr Zeilen um.
 - **Farbe am Scrollen nur als begründete Ausnahme**: Die zurücktretende Karte der
   Firmengeschichte nimmt den Ton des Bogens an (`background-color`). Ein Schleier darüber wäre
   billiger, aber dann könnte axe den Kontrast ihres Textes nicht mehr messen.
@@ -444,7 +463,7 @@ Alles andere ist leise:
   Custom Properties setzen (z. B. `--yr-p`). Platz in einer Folge (`--sc-i`, `--w`, `--i`) kommt
   aus `:nth-child`-Regeln, nie aus einem `style`-Attribut.
 - **Eine Bibliothek**: Lenis (lerp 0.1) für sanftes Scrollen mit Maus oder Trackpad. GSAP,
-  ScrollTrigger und SplitText sind entfallen (Entscheid 49): JavaScript der Startseite 14,8 KB
+  ScrollTrigger und SplitText sind entfallen (Entscheid 49): JavaScript der Startseite 15,3 KB
   statt 63,0 KB. Auf Geräten, die man nur mit dem Finger bedient, scrollt der Browser selbst
   (Lenis hängte sich sonst mit blockierenden Zuhörern an jede Berührung), Sprünge zu Marken sind
   dort sofort am Ziel. Ein Punkt im Menü springt auch am Desktop sofort, unter dem Vorhang: Hebt
