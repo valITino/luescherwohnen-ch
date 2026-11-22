@@ -87,8 +87,11 @@ Nach jeder Änderung an der Website: obige Prüfungen, dann Screenshots in
   Fehlendes in `docs/TODO.md` sammeln, nie erfinden.
 - Wenig Text, jede Angabe einmal, ein Gedanke je Bildschirm: Vertiefendes steht
   hinter «Mehr lesen» (`.more`, natives `<details>`, bleibt im HTML). Index mit
-  Bühne über `choice.ts` (Sortiment, Firmengeschichte); gewechselt wird nur durch
-  eine Wahl, nie durch Scrollen. Nummern tragen nur die Ziele des Menüs.
+  Bühne über `choice.ts` (Sortiment): gewechselt wird nur durch eine Wahl, nie
+  durch Scrollen. Die Firmengeschichte hat eine Reihenfolge und geht mit dem
+  Scrollen weiter (`years.ts`, Entscheid 50); im HTML ist sie eine Zeitleiste,
+  ihre Knöpfe scrollen an die Stelle ihres Jahrs. Nummern tragen nur die Ziele
+  des Menüs.
 - Farben nur aus den Tokens; Grün `--leaf` nur als Fläche mit dunkler Schrift,
   grüne Schrift und Fokus nur in `--leaf-deep`. Schrift Manrope, Nummern und
   Zeiten in Geist Mono, Telefonnummern mit `.tabular`.
@@ -99,11 +102,17 @@ Nach jeder Änderung an der Website: obige Prüfungen, dann Screenshots in
   überall; ohne JavaScript ist alles sichtbar.
 - Was beim Scrollen geschieht, hängt an der Scrollposition (CSS
   `animation-timeline`, nur in den beiden `scroll.css`), nie an einem
-  Zeitgeber: Nichts wartet, nichts läuft von selbst, kein Abschnitt hält das
-  Scrollen an. Oberhalb von 70 % der Fensterhöhe steht alles still. Nach Zeit
-  läuft nur die Antwort auf eine Handlung (Laden, Menü, Header, Seitenwechsel,
-  Wahl). Rahmen um solche Inhalte: `overflow: clip`, nie `hidden`
-  (`docs/DESIGN.md`, Abschnitt 6).
+  Zeitgeber: Nichts wartet, nichts läuft von selbst. Stehen bleibt nur die
+  Bühne der Firmengeschichte, solange ihre Jahre durchlaufen und jedes Stück
+  Weg dort etwas bewegt. Oberhalb von 70 % der Fensterhöhe steht jeder Text
+  still; nur grosse Fotos gleiten in ihrem Rahmen weiter (`.sc-drift`). Wie
+  weit ein Bogen zurückbleibt, hängt am freien Platz unter seinem Inhalt, nie
+  an der Fensterhöhe (am Handy wäre der letzte Inhalt sonst verdeckt, bevor
+  man ihn liest). Nach Zeit läuft nur die Antwort auf eine Handlung (Laden,
+  Menü, Header, Seitenwechsel, Wahl, «Mehr lesen»). Rahmen um solche Inhalte:
+  `overflow: clip`, nie `hidden` (`docs/DESIGN.md`, Abschnitt 6).
+- Bewegung für Handy und Desktop prüfen, nicht nur für eines: an festen
+  Scrollpositionen in 390×844 und 1440×900, mitten im Übergang und in Ruhe.
 - Keine Inline-`style`-Attribute und keine Inline-Skripte (CSP mit Hashes).
   Interne Links über `href()` (Basis-Pfad der Pages-Vorschau).
 - Satzzeichen direkt nach einem Link: auf eine Zeile mit `{/* prettier-ignore */}`.
@@ -111,7 +120,8 @@ Nach jeder Änderung an der Website: obige Prüfungen, dann Screenshots in
 - Nichts ragt über den Bildrand oder aus seinem Kasten, kein Wort bricht mitten
   im Wort um (Tests `cutOff`, `boxOverflow`, `brokenWords`, auf Vorschau und
   Produktion); Flächen schneiden ihre Inhalte nicht ab (Dekoration in eigener
-  Ebene); angepinnte Flächen passen in 1366×650.
+  Ebene); was stehen bleibt, passt ganz ins Fenster (auch 1366×650 und
+  360×640), sonst gilt die Form ohne Stehenbleiben.
 - Keine Cookies, kein Web-Speicher, keine Requests an Dritte, keine Zählung.
 - Aus `docs/ressources/` nur Bilddateien über `pnpm images` übernehmen; nie ZIP-,
   PHP- oder HTML-Dateien (Schadcode im Bestand, `docs/TODO.md`).

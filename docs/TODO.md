@@ -76,18 +76,31 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
 ## Prüfungen, die noch Menschen brauchen
 
 - [ ] Manueller Tastatur- und Screenreader-Test (NVDA/VoiceOver) der Kernflüsse (WEB-Q-001); axe
-      deckt nur einen Teil von WCAG 2.2 AA ab. Dabei auch hören, ob «Nächster Raum» und «Weiter»
-      ihre Meldung ansagen («Polstermöbel, 2 von 7», Entscheid 48).
+      deckt nur einen Teil von WCAG 2.2 AA ab. Dabei auch hören, ob «Nächster Raum» im Sortiment
+      und die Knöpfe der Firmengeschichte ihre Meldung ansagen («Polstermöbel, 2 von 7»,
+      «1983, 4 von 6»; Entscheide 48 und 50), und ob das aktuelle Jahr als aktuell gelesen wird
+      (`aria-current="step"`).
 - [ ] Sichtprüfung auf echten Geräten (iOS Safari, Android Chrome, Windows/Edge).
 - [ ] Repository-Einstellungen (nur mit Admin-Recht, von hier nicht prüfbar): Pages-Quelle
       «GitHub Actions»; Environment `github-pages` nur für `main` (`docs/DEPLOY.md`, Abschnitt 1).
 - [ ] Freigabe des Designs durch den Auftraggeber.
-- [ ] Bewegung auf echten Geräten ansehen (Entscheid 49), geprüft ist sie nur in Chromium:
+- [ ] Bewegung auf echten Geräten ansehen (Entscheide 49 und 50), geprüft ist sie nur in
+      Chromium (in der Cloud-Umgebung ist kein anderer Browser installiert):
   - iPhone und iPad mit Safari 26 oder neuer: Die Bewegung hängt am Scrollen (Bogen über Bogen,
     Überschriften, Fotos, Band, Linie im Service), Fotos sind in ihren runden Rahmen sauber
     abgeschnitten (`overflow: clip`), und beim Wischen stockt nichts.
+  - Firmengeschichte dort: Die Bühne bleibt unter dem Header stehen, die Karten folgen dem
+    Finger, die Linie erreicht jeden Punkt, wenn seine Karte ankommt; mit ein- und ausgeblendeter
+    Adressleiste des Browsers bleibt nichts abgeschnitten (die Bühne rechnet mit `svh`).
+    Handy quer: Die Zeitleiste gilt. Handy auf der Bühne drehen: Man bleibt in der
+    Firmengeschichte.
   - Safari vor 26 und Firefox: Dort gibt es die Bewegung beim Scrollen nicht (`@supports`).
-    Alles steht, das Band ist eine umbrechende Liste; Auftakt, Menü und Header bleiben.
+    Alles steht, das Band ist eine umbrechende Liste; Auftakt, Menü und Header bleiben. Die
+    Firmengeschichte geht trotzdem mit dem Scrollen weiter, in Schritten: Die Bühne steht
+    (`position: sticky`), die Karten wechseln mit kurzem Übergang. Hier nur nachgestellt
+    geprüft (Chromium ohne die Regeln).
+  - Sortiment am Handy: Ein Tipp auf einen Namen im Index lässt die Seite zur Bühne gleiten
+    (auf Geräten nur mit Finger scrollt der Browser selbst weich).
   - Mittelklasse-Android (Chrome DevTools, Leistung): Wischen durch die ganze Seite und der
     Menü-Vorhang. In der Cloud-Umgebung ohne Grafikchip sagt die Messung über echte Geräte
     wenig aus.
@@ -104,6 +117,10 @@ Entscheidungsregister in `docs/requirements-analysis.md`, W… auf Widersprüche
 ## Später
 
 - [ ] Shop (Phase 5, separater Auftrag mit eigenem Threat Model; AGB im Bestand vorhanden).
+- [ ] Sortiment am Handy: Bühne und Index passen zusammen nicht in ein Fenster. Nach einer Wahl
+      stehen die Bühne und die ersten Namen im Bild, die unteren darunter (Entscheid 50).
+      Möglich wären eine stehende Bühne wie in der Firmengeschichte oder Wischen auf dem Foto;
+      beides ist ein grösserer Umbau eines breit getesteten Bausteins und braucht einen Auftrag.
 - [ ] Hero-Fotos in höherer Auflösung (keine Datei im Bestand ist breiter als 1920 px).
 - [ ] Fotos der Ausstellung an der Weiten Gasse 9 (es gibt nur ein Innenbild).
 - [ ] Bei reduzierter und angehaltener Bewegung wechselt der Header sofort die Form; das zählt

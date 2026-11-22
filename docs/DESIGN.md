@@ -120,16 +120,23 @@ acht Breiten). E-Mail-Adressen dürfen nur am «@» umbrechen (`<wbr>`).
   Index mit einer Bühne (Muster «Accordion» der APG, eine Tafel offen, «Weiter» auf der Bühne,
   Pfeiltasten, Direktlink über die Marke des Eintrags). Ohne Skript bleibt es eine Liste, alle
   Texte und Bilder stehen im HTML. Genutzt im Sortiment («Raum für Raum», Index links, Foto mit
-  Text rechts; mit feinem Zeiger zeigt schon kurzes Verweilen den Raum) und in der
-  Firmengeschichte («Jahr für Jahr», Achse mit sechs Jahren, eine grüne Linie wächst bis zum
-  gewählten Jahr). Gewechselt wird nur durch eine Wahl, nie durch Scrollen. Die alte Tafel bleibt
-  stehen, bis alle Auftritte der neuen zu Ende sind (das neue Foto deckt das alte ganz); die
-  Tafeln liegen in einem eigenen Stapel (`isolation: isolate`), «Weiter» immer darüber. «Weiter»
-  behält den Fokus und meldet Screenreadern leise, was jetzt zu sehen ist («Polstermöbel, 2 von
-  7», `role="status"`).
+  Text rechts; mit feinem Zeiger zeigt schon kurzes Verweilen den Raum; am Handy steht die Bühne
+  über dem Index und kommt nach einer Wahl ins Bild). Gewechselt wird nur durch eine Wahl, nie
+  durch Scrollen: Die Räume haben keine Reihenfolge. Die alte Tafel bleibt stehen, bis alle
+  Auftritte der neuen zu Ende sind (das neue Foto deckt das alte ganz); die Tafeln liegen in
+  einem eigenen Stapel (`isolation: isolate`), «Weiter» immer darüber. «Weiter» behält den Fokus
+  und meldet Screenreadern leise, was jetzt zu sehen ist («Polstermöbel, 2 von 7»,
+  `role="status"`).
+- **Jahr für Jahr** (`years.ts`, Firmengeschichte): im HTML eine Zeitleiste mit sechs Momenten.
+  Mit Bewegung wird sie zur Bühne, auf der die Jahre mit dem Scrollen weitergehen: eine Achse
+  mit sechs Knöpfen (das aktuelle Jahr trägt `aria-current="step"`), darunter Karten aus Papier
+  mit grosser Jahreszahl, Foto und Satz, darunter «Weiter». Die Knöpfe scrollen an die Stelle
+  ihres Jahrs und melden es leise («1983, 4 von 6»); Pfeile, Pos1 und Ende wandern auf der
+  Achse. Zu sehen und für Screenreader vorhanden ist jeweils die Karte, die gilt. Einzelheiten
+  in Abschnitt 6.
 - **Mehr lesen** (`.more`, natives `<details>`): Was nicht jeder lesen muss, steht hinter einer
   leisen Zeile mit Plus, das zum Minus wird. Der Text steht im HTML (für Suchmaschinen
-  gleichwertig) und erscheint beim Öffnen sofort, ohne Einblenden.
+  gleichwertig) und klappt beim Öffnen von oben auf, ohne Einblenden.
 - **Unser Team** (Über uns): runde Fotos mit Name und Aufgabe; wo es noch kein Foto gibt, die
   Initialen auf Salbei statt eines Platzhalterbildes. Beim Hereinscrollen rücken die Personen
   eine nach der anderen nach, die Fotos setzen sich im Kreis aus einem leichten Zoom.
@@ -147,9 +154,10 @@ acht Breiten). E-Mail-Adressen dürfen nur am «@» umbrechen (`<wbr>`).
 
 ## 6. Motion
 
-Stand nach dem Umbau vom 21.11.2026 (Entscheid 49): Was beim Scrollen geschieht, hängt an der
-Scrollposition. Davor liefen Auftritte nach Zeit (Entscheide 37 bis 44); beim Scrollen in
-normalem Tempo standen Überschriften und Fotos dann mitten im Bild noch halb fertig da.
+Stand nach dem Umbau vom 21.11.2026 (Entscheid 49) und der Abstimmung für kleine Bildschirme
+vom 22.11.2026 (Entscheid 50): Was beim Scrollen geschieht, hängt an der Scrollposition. Davor
+liefen Auftritte nach Zeit (Entscheide 37 bis 44); beim Scrollen in normalem Tempo standen
+Überschriften und Fotos dann mitten im Bild noch halb fertig da.
 Bewegung soll ruhig und präzise wirken und eine Zielgruppe ab 40 nie beim Lesen aufhalten.
 
 ### Grundsätze
@@ -164,16 +172,18 @@ Bewegung soll ruhig und präzise wirken und eine Zielgruppe ab 40 nie beim Lesen
    auf das Porträt scharf. Die Blende vom Anfang schliesst sich am Ende. Was keinen Grund hat,
    bewegt sich nicht.
 3. **Lesen geht vor.** Alles kommt von unten und setzt sich im unteren Teil des Fensters.
-   Oberhalb von 70 % der Fensterhöhe (von oben gezählt) steht alles still: die Lesezone. Text
-   blendet nie ein, er rückt nur nach oder steigt aus seiner Maske. Foto und Lead im Hero stehen
-   ab dem ersten Bild.
+   Oberhalb von 70 % der Fensterhöhe (von oben gezählt) steht jeder Text still: die Lesezone.
+   Nur grosse Fotos gleiten in ihrem Rahmen leise weiter; so bewegt sich immer etwas mit dem
+   Finger, auch am Handy, wo ein Block oft das ganze Fenster füllt. Text blendet nie ein, er
+   rückt nur nach oder steigt aus seiner Maske. Foto und Lead im Hero stehen ab dem ersten Bild.
 4. **Eine Sprache.** Text steigt aus einer Maske, Fotos setzen sich aus einem leichten Zoom,
-   Flächen falten sich auf. Bewegt werden nur `transform` (auch `translate` und `scale`),
-   `opacity` und `clip-path`. Farbwechsel bis 250 ms bei Hover und Fokus sind erlaubt. Kein
-   Überschwingen, kein Federn, keine Drehung, keine Unschärfe.
+   Flächen schieben sich übereinander: Bogen über Bogen auf der Seite, Karte über Karte in der
+   Firmengeschichte. Bewegt werden nur `transform` (auch `translate` und `scale`), `opacity` und
+   `clip-path`. Farbwechsel bis 250 ms bei Hover und Fokus sind erlaubt. Kein Überschwingen,
+   kein Federn, keine Drehung, keine Unschärfe.
 5. **Nach Zeit läuft nur, was eine Antwort auf eine Handlung ist:** der Auftakt beim Laden, das
-   Menü, der Formwechsel des Headers, der Seitenwechsel, eine Wahl («Raum für Raum»). Das bremst
-   weich in seine Lage und antwortet im ersten Bild.
+   Menü, der Formwechsel des Headers, der Seitenwechsel, eine Wahl («Raum für Raum»), das
+   Aufklappen von «Mehr lesen». Das bremst weich in seine Lage und antwortet im ersten Bild.
 6. **Im Zweifel steht alles.** Der normale Stil ist der Endzustand. Ohne Unterstützung im
    Browser, bei reduzierter Bewegung, im Druck und mit dem Schalter «Bewegung pausieren» gilt er
    allein. Ohne JavaScript läuft die Bewegung beim Scrollen trotzdem: Sie ist reines CSS.
@@ -215,25 +225,38 @@ Fensterhöhe, nicht in Anteilen des Elements: So setzt sich jeder Block gleich w
 Kante, wie hoch er auch ist.
 
 1. **Bogen über Bogen**: Sobald der nächste Bogen unten ins Bild kommt, bleibt der aktuelle
-   zurück (er zieht nur noch gut halb so schnell weiter, `translate`), und der nächste schiebt
-   sich mit seinen runden Ecken darüber. Die Strecke ist immer eine Fensterhöhe, wie hoch der
-   Bogen auch ist. Der Hero ist der erste Bogen: Er hält das Scrollen nicht an (früher stand er
-   am Desktop 675 px lang still). Das schmale Band zieht ganz durch, der letzte Bogen (Kontakt)
-   läuft normal in den Footer.
+   zurück (er zieht etwas langsamer weiter, `translate`), und der nächste schiebt sich mit
+   seinen runden Ecken darüber. Die Strecke ist immer eine Fensterhöhe, wie hoch der Bogen auch
+   ist. Wie weit er zurückbleibt, hängt am freien Platz unter seinem Inhalt, nicht an der
+   Fensterhöhe: das 1,5-Fache von `--section-y` plus `--r-sheet` (`--sc-leave`; gemessen am
+   Handy 390×844 144 px, am Desktop 1440×900 269 px). So erreicht der nächste Bogen den letzten
+   Inhalt auf jedem Gerät erst um die Fenstermitte (gemessen 42 bis 53 % der Höhe); als fester
+   Anteil der Fensterhöhe war er am Handy schon bei 77 % verdeckt. Der Hero ist der erste Bogen: Er hält
+   das Scrollen nicht an (früher stand er am Desktop 675 px lang still) und bleibt schmal etwas
+   weniger weit zurück, weil unter seinem letzten Link weniger Platz ist. Das schmale Band zieht
+   ganz durch, der letzte Bogen (Kontakt) läuft normal in den Footer.
 2. **Auftritt** (`.sc-rise`): Ein Block kommt etwas tiefer ins Bild (32 bis 60 px je nach
    Bildschirm) und holt auf den ersten 30 % der Fensterhöhe auf. Die Kurve bremst: Der grösste
-   Teil des Wegs liegt gleich an der Kante. Geschwister nebeneinander (Karten, Personen) sind
-   versetzt (`--sc-i`).
+   Teil des Wegs liegt gleich an der Kante. Geschwister nebeneinander (Karten, Personen, Spalten
+   im Footer) sind versetzt (`--sc-i`). Wo ein Block höher ist als das halbe Fenster, rückt auch
+   sein Inhalt Stück für Stück nach (Karten in «Aktuell», Zeilen im Kontakt): Am Handy baut er
+   sich so unter dem Finger auf, statt als fertiger Block hereinzufahren.
 3. **Überschriften** (`Words.astro`, `.sc-w`): Jedes Wort steht in einer eigenen Maske und
    steigt auf den ersten 24 % der Fensterhöhe heraus. Wörter einer Zeile kommen gemeinsam ins
    Bild und steigen darum gemeinsam: Zeile für Zeile, ohne dass ein Skript die Zeilen kennen
    muss. Für Screenreader sind die Wörter stumm, die Überschrift trägt den Text als
    `aria-label` (ohne weiche Trennstriche).
-4. **Fotos** (`.sc-zoom`): vom ersten Pixel an ganz zu sehen (weder durchsichtig noch
-   beschnitten, darum lädt der Browser sie rechtzeitig vor) und setzen sich über 60 % der
-   Fensterhöhe gleichmässig aus einem Zoom von 1.16. Der Rahmen schneidet ab.
-5. **Hero**: Während er zurückbleibt, rückt das runde Foto näher (`scale` bis 1.1): Es geht in
-   die Räume.
+4. **Fotos**: vom ersten Pixel an ganz zu sehen (weder durchsichtig noch beschnitten, darum
+   lädt der Browser sie rechtzeitig vor). Grosse Fotos (`.sc-drift`: Sortiment, Aktuell,
+   Projekte, Porträt) setzen sich gleichmässig aus einem Zoom von 1.16 auf 1.04 und gleiten
+   dabei etwas langsamer als ihr Rahmen durchs Bild (in ihm von 4 % oben nach 2 % unten), über
+   den ganzen Weg von der unteren bis zur oberen Fensterkante. Der Zoom reicht in jeder Lage für
+   die Verschiebung: Der Rahmen zeigt nie seinen Grund (ein e2e-Test misst es). Der Rahmen fasst
+   allein das Foto und schneidet ab. Kleine Bilder (`.sc-zoom`: Porträts im Kreis, Initialen)
+   setzen sich über 60 % der Fensterhöhe aus dem Zoom von 1.16 und stehen dann still.
+5. **Hero**: Während er zurückbleibt, rückt das runde Foto näher (`scale` bis 1.1) und gleitet
+   etwas langsamer als der Hero (7 % seiner Höhe): Es liegt tiefer als der Text, es geht in die
+   Räume.
 6. **Band**: Die Wörter aus Sortiment und Service als zwei Reihen grosser Schrift. Sie laufen
    nicht von selbst: Die obere zieht mit dem Scrollen nach links, die untere nach rechts. Darum
    braucht das Band keinen Knopf zum Anhalten. Ohne Bewegung ist es eine ruhige, umbrechende
@@ -246,9 +269,27 @@ Kante, wie hoch er auch ist.
    liest. Jeder Punkt wird grün, wenn die Spitze ihn erreicht.
 9. **Über uns**: Der Sucher stellt scharf. Die vier Ecken rücken an ihren Platz, während das
    Porträt sich setzt. Die Personen im Team rücken eine nach der anderen nach.
-10. **Der Kreis schliesst sich**: Kommt der Kontakt ins Bild, öffnet sich oben rechts die grüne
-    Scheibe (ab 64rem), wie die Blende des Fotos ganz oben. Am Ende der Seite steigt die
-    Wortmarke im Footer mit den letzten Schritten aus ihrer Maske.
+10. **Firmengeschichte** (`years.ts`, Entscheid 50): Die Jahre gehen mit dem Scrollen weiter,
+    ohne Klick. Die Bühne (Titel, Achse, Karte, «Weiter») bleibt unter dem Header stehen,
+    solange die sechs Jahre durchlaufen; sie ist so hoch wie das Fenster darunter. Mit jedem
+    Stück Weg wächst die grüne Linie der Achse, und die Karte des nächsten Jahrs schiebt sich
+    von unten über die des vorherigen, die etwas kleiner wird und den Ton des Bogens annimmt.
+    Je Jahr 42 % der Fensterhöhe (höchstens 24rem): das erste Viertel ruht die Karte, dann
+    steigt die nächste; die Linie erreicht jeden Punkt genau dann, wenn seine Karte ankommt.
+    Nach «Heute» ruht die Bühne einen halben Schritt und gibt die Seite frei; erst danach
+    bleibt der Bogen zurück. Die Knöpfe der Achse und «Weiter» scrollen an die Stelle ihres
+    Jahrs: Der Zustand hängt immer an der Scrollposition. Drei Stufen:
+    - **Zeitleiste** (Grundform im HTML): alle sechs Momente untereinander, am Desktop drei
+      nebeneinander. Ohne Skript, bei reduzierter Bewegung, in Fenstern unter 36rem Höhe (Handy
+      quer), im Druck, und wenn die Bühne nicht in ihr Fenster passt (das Skript misst es).
+    - **In Schritten**: Die Bühne steht, die Karten wechseln nach der Scrollposition mit einem
+      kurzen Übergang (`--dur-3`). Ohne scrollgekoppelte Animationen (Firefox, Safari vor 26)
+      und, ohne Übergang, bei angehaltener Bewegung.
+    - **Geführt**: Karte, Linie und die zurücktretende Karte hängen am Finger (reines CSS).
+11. **Der Kreis schliesst sich**: Kommt der Kontakt ins Bild, öffnet sich oben rechts die grüne
+    Scheibe (ab 64rem), wie die Blende des Fotos ganz oben. Die Kontaktwege rücken Zeile für
+    Zeile nach. Am Ende der Seite steigt die Wortmarke im Footer mit den letzten Schritten aus
+    ihrer Maske.
 
 ### Nach Zeit
 
@@ -301,11 +342,17 @@ Alles andere ist leise:
 3. **Eins wählen, eins sehen**: Im Sortiment steigt beim Wechsel das neue Foto vom unteren Rand
    seines Rahmens über das alte (`unveil`, `clip-path` und Zoom am Bild, `--dur-4`,
    `--ease-expo`), das alte bleibt stehen, bis es gedeckt ist; der Text ist sofort lesbar und
-   rückt nur 4 px nach (`--dur-3`). Der gewählte Name wird dunkel und rückt 6 px ein. In der
-   Firmengeschichte steigt die grosse Jahreszahl aus ihrer Maske, das Foto öffnet sich, die grüne
-   Linie wächst (`scaleX`, `--dur-4`). Bei reduzierter oder angehaltener Bewegung wechselt alles
-   sofort.
-4. **Kleinigkeiten**: Der Bewegungsschalter faltet sich am Desktop beim Scrollen (und auf den
+   rückt nur 4 px nach (`--dur-3`). Der gewählte Name wird dunkel und rückt 6 px ein. Bei
+   reduzierter oder angehaltener Bewegung wechselt alles sofort. Am Handy steht die Bühne über
+   dem Index: Ist sie bei einer Wahl im Index nicht im Bild, gleitet die Seite so weit, dass sie
+   unter dem Header steht; danach bleibt die Seite bei weiteren Wahlen stehen. Mit der Tastatur
+   gewählt, bleibt der Knopf mit dem Fokus dabei ganz im Bild. Eine Wahl per Klick gilt, bis
+   sich der Zeiger wirklich bewegt: Zieht die Seite danach unter dem ruhenden Zeiger weiter,
+   zeigt das Verweilen keinen anderen Raum.
+4. **Mehr lesen**: Der Text klappt von oben auf (`clip-path`, `--dur-3`) und rückt 8 px nach;
+   der Platz ist sofort da, nichts verschiebt sich nachträglich. Danach gilt wieder der normale
+   Stil ohne Ausschnitt, damit kein Fokus-Ring beschnitten wird.
+5. **Kleinigkeiten**: Der Bewegungsschalter faltet sich am Desktop beim Scrollen (und auf den
    Unterseiten) zu seinem runden Ende und mit Zeiger oder Fokus wieder auf, nur über den
    Ausschnitt (`clip-path`, `--dur-3`, `--ease-expo`): Nichts verschiebt sich, ein Klick trifft
    nur, was zu sehen ist. Der Hover-Schein der Buttons liegt auf einer eigenen Ebene (`::after`) und
@@ -339,7 +386,16 @@ Alles andere ist leise:
     eine Zeitleiste hat und sich an der Seite misst.
 - **Als Fenster gilt die Fläche unter dem Header**: Der Browser zieht `scroll-padding-top` von
   der Zeitleiste ab. Wo auf das ganze Fenster gemessen wird (Hero, Linie im Service), steht der
-  Abzug 0 dabei.
+  Abzug 0 dabei; die Bühne der Firmengeschichte misst von ihrer Oberkante unter dem Header bis
+  zum unteren Fensterrand.
+- **Stehen bleibt nur die Firmengeschichte**, und nur solange ihre Jahre durchlaufen: Jedes
+  Stück Weg bewegt dort sichtbar etwas (Linie, Karte), nichts wartet. Die Bühne passt ganz ins
+  Fenster (auch 1366×650 und 360×640, geprüft in `e2e/years.spec.ts`); passt sie nicht, gilt die
+  Zeitleiste. Ihre Bedingung (Bewegung erwünscht, Fenster ab 36rem Höhe) steht einmal im CSS;
+  `years.ts` liest sie an `--yr-deck` ab, statt sie zu wiederholen.
+- **Farbe am Scrollen nur als begründete Ausnahme**: Die zurücktretende Karte der
+  Firmengeschichte nimmt den Ton des Bogens an (`background-color`). Ein Schleier darüber wäre
+  billiger, aber dann könnte axe den Kontrast ihres Textes nicht mehr messen.
 - **Dauern und Versätze aus den Tokens.** Ein Einzelwert braucht einen Kommentar mit Grund.
 - **Was nach Zeit läuft, endet**: Der Hero ruht nach 1,5 s (geprüft in `e2e/web.spec.ts`).
   Einzige Ausnahme ist ein Signal, kein Auftritt: Der grüne Punkt des Öffnungsstatus atmet beim
@@ -361,7 +417,9 @@ Alles andere ist leise:
   Dauer zeigte im ersten Bild ihren Anfang) und setzt jeden Übergang auf 0; der Block in
   `scroll.css` gilt gar nicht. Kein Lenis, kein Seitenübergang, das Band bricht um.
 - **Pause** (`html[data-motion="off"]`): Die Regeln in `scroll.css` gelten nicht, alles steht an
-  seinem Platz im Layout (auch mitten in einem Übergang zwischen zwei Bogen). `base.css` hält
+  seinem Platz im Layout (auch mitten in einem Übergang zwischen zwei Bogen). Die Bühne der
+  Firmengeschichte bleibt, damit die Seite beim Anhalten nicht kürzer wird und springt: Ihre
+  Jahre wechseln dann ohne Übergang. `base.css` hält
   jede Animation nach Zeit an und setzt jeden Übergang auf 0 (Menü-Vorhang, Hover-Zoom);
   `header.ts` wechselt die Form ohne Abtauchen und überspringt den Seitenübergang; `smooth.ts`
   beendet Lenis, der Browser scrollt selbst (ein gleitender Sprung kommt vorher sofort am Ziel
@@ -372,7 +430,8 @@ Alles andere ist leise:
   (bfcache), überspringt sie den Übergang. Der Schalter gilt nur für die aktuelle Seite: Ohne
   Web-Speicher kann ihn die nächste Seite nicht kennen.
 - **Ohne Unterstützung** (Firefox, Safari vor 26): Der Block in `scroll.css` gilt nicht. Alles
-  steht, das Band ist eine umbrechende Liste; Auftakt, Menü, Header und Wahl bleiben.
+  steht, das Band ist eine umbrechende Liste; Auftakt, Menü, Header und Wahl bleiben. Die
+  Firmengeschichte geht auch dort mit dem Scrollen weiter, in Schritten (`years.ts`).
 - **Ohne JavaScript** läuft die Bewegung beim Scrollen wie mit (reines CSS); CSS-Auftritte nach
   Zeit (Hero, 404) enden sichtbar. Nur der Schalter fehlt; `prefers-reduced-motion` gilt.
 - **Sprünge** (`data-jump` am `<html>`, `home.ts`): Die Marke zeigt, dass die Seite unterwegs
@@ -382,10 +441,10 @@ Alles andere ist leise:
   Ziels noch verlängern würde (Teile mit `data-lazy`, Öffnungsstatus): Sonst endete das Gleiten
   zu tief. Auf fertigem Inhalt landet er von selbst.
 - **CSP**: keine `style`-Attribute im Markup; Skripte dürfen `element.style` und eigene
-  Custom Properties setzen (z. B. `--yr-p`). Platz in einer Folge (`--sc-i`, `--w`) kommt aus
-  `:nth-child`-Regeln, nie aus einem `style`-Attribut.
+  Custom Properties setzen (z. B. `--yr-p`). Platz in einer Folge (`--sc-i`, `--w`, `--i`) kommt
+  aus `:nth-child`-Regeln, nie aus einem `style`-Attribut.
 - **Eine Bibliothek**: Lenis (lerp 0.1) für sanftes Scrollen mit Maus oder Trackpad. GSAP,
-  ScrollTrigger und SplitText sind entfallen (Entscheid 49): JavaScript der Startseite 13,4 KB
+  ScrollTrigger und SplitText sind entfallen (Entscheid 49): JavaScript der Startseite 14,8 KB
   statt 63,0 KB. Auf Geräten, die man nur mit dem Finger bedient, scrollt der Browser selbst
   (Lenis hängte sich sonst mit blockierenden Zuhörern an jede Berührung), Sprünge zu Marken sind
   dort sofort am Ziel. Ein Punkt im Menü springt auch am Desktop sofort, unter dem Vorhang: Hebt
@@ -395,9 +454,10 @@ Alles andere ist leise:
   Safari vor 17.4; `requestIdleCallback`; `animation-timeline` über `@supports`).
 
 Bewusst nicht: Bewegung, die von selbst läuft, Auftritte nach Zeit beim Scrollen, Auftritte aus
-der Unschärfe, Fliesstext, der beim Scrollen einblendet, Bühnen, die das Scrollen weiterschaltet
-(gewechselt wird nur durch eine Wahl), ein Abschnitt, der das Scrollen anhält, eigener
-Mauszeiger, magnetische oder kippende Elemente, Zähler.
+der Unschärfe, Fliesstext, der beim Scrollen einblendet, ein Abschnitt, der stehen bleibt, ohne
+dass das Scrollen dort etwas führt, eine Auswahl ohne Reihenfolge, die das Scrollen
+weiterschaltet (die Räume wählt man; nur die Jahre haben eine Reihenfolge), Bewegung quer zur
+Scrollrichtung, eigener Mauszeiger, magnetische oder kippende Elemente, Zähler.
 
 ## 7. Technische Regeln fürs Markup
 

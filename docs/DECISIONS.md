@@ -580,3 +580,80 @@ Architekturentscheide mit grösserer Tragweite stehen zusätzlich als ADR in `do
     festen Scrollpositionen ab, ohne auf Abläufe zu warten. Elf Tests für Wartezustände und
     Zeit-Auftritte sind entfallen, weil es diese Zustände nicht mehr gibt; acht weitere sind
     angepasst.
+- **50.** **Die Firmengeschichte geht mit dem Scrollen weiter, und die Bewegung ist für kleine
+  Bildschirme eigens abgestimmt** (Auftrag des Repository-Inhabers vom 22.11.2026: Am Desktop
+  passe es, gemeint seien vor allem kleinere Bildschirme und Handys; in der Firmengeschichte
+  solle die Zeitleiste beim Weiterscrollen weitergehen, der Knopf als Option bleiben; dazu mehr
+  Fluss, Übergänge und Animationen, für Desktop und Handy).
+  - **Befund am Handy** (390×844, Schritt für Schritt fotografiert und gemessen): Der nächste
+    Bogen verdeckte den letzten Inhalt eines Abschnitts schon bei 77 % der Fensterhöhe (im Hero
+    bei 81 %), also kaum dass er im Bild war: Die Lieferkarte und die Links «Route planen» und
+    «Öffnungszeiten und Termin» waren verdeckt, bevor man sie lesen konnte. Blöcke, die höher
+    sind als das halbe Fenster (Karten in «Aktuell», der Kontakt), fuhren als fertiger Block
+    herein. Oberhalb der unteren 30 % des Fensters bewegte sich gar nichts. Wer im Sortiment
+    einen Namen im Index antippte, sah den Wechsel nicht: Die Bühne steht am Handy über dem
+    Index und war aus dem Bild.
+  - **Firmengeschichte** (`years.ts`, `scroll.css`): Aus der Wahl per Klick wird eine Bühne, die
+    unter dem Header stehen bleibt, solange die sechs Jahre durchlaufen. Mit jedem Stück Weg
+    wächst die Linie der Achse, und die Karte des nächsten Jahrs schiebt sich über die des
+    vorherigen (dieselbe Sprache wie Bogen über Bogen). Je Jahr 42 % der Fensterhöhe, höchstens
+    24rem; am Handy 390×844 zusammen 1950 px. Die Knöpfe der Achse und «Weiter» bleiben und
+    scrollen an die Stelle ihres Jahrs: Es gibt nur einen Zustand, den der Scrollposition.
+    Im HTML steht eine Zeitleiste mit allen sechs Momenten; so bleibt sie ohne Skript, bei
+    reduzierter Bewegung, in Fenstern unter 36rem Höhe, im Druck, und wenn die Bühne nicht in
+    ihr Fenster passt (gemessen im Skript, etwa bei 320×580). Ohne scrollgekoppelte Animationen
+    (Firefox, Safari vor 26) wechseln die Karten in Schritten: Die Funktion gibt es in jedem
+    Browser, geführt wird sie, wo er es kann.
+  - **Ersetzt frühere Entscheide**: «Nie als Bühne, die das Scrollen weiterschaltet» und «kein
+    Abschnitt hält das Scrollen an» (49) gelten weiter, mit einer begründeten Ausnahme: Die
+    Jahre haben eine Reihenfolge, und auf der Bühne führt jedes Stück Weg sichtbar etwas (Linie,
+    Karte), nichts wartet. Der Hero stand dagegen still, ohne dass etwas geschah. Die Räume im
+    Sortiment haben keine Reihenfolge und bleiben eine Wahl (45).
+  - **Angehalten bleibt die Bühne**, nur die Übergänge entfallen. Grund: Fiele sie beim
+    Anhalten weg, würde die Seite um ihre ganze Strecke kürzer und spränge unter dem Leser weg.
+    Fällt sie aus anderem Grund weg (Handy gedreht), bleibt man am Anfang der Zeitleiste.
+  - **Bogen über Bogen nach dem freien Platz, nicht nach der Fensterhöhe**: Der Bogen bleibt
+    das 1,5-Fache des Platzes unter seinem Inhalt zurück (`--section-y` plus `--r-sheet`;
+    gemessen am Handy 390×844 144 px statt 321 px, am Desktop 1440×900 269 px statt 342 px).
+    Der nächste Bogen erreicht den letzten Inhalt von Sortiment, Service und «Aktuell» jetzt bei
+    42 bis 53 % der Fensterhöhe, gemessen auf sechs Fenstergrössen von 360×640 bis 2560×1440
+    (vorher 41 bis 77 %); den letzten Link des Heros am Handy bei 50 % statt 81 %.
+  - **Fotos gleiten**: Grosse Fotos setzen sich aus dem Zoom und gleiten dabei über den ganzen
+    Weg durchs Fenster etwas langsamer als ihr Rahmen. Damit ändert sich Grundsatz 3: In der
+    Lesezone steht jeder Text still, Fotos nicht mehr. Grund: Am Handy füllt ein Block oft das
+    ganze Fenster; ohne das stand dort alles, sobald es sich gesetzt hatte. «Parallax» stand
+    unter «Bewusst nicht» (37) und ist damit in dieser leisen Form (höchstens 6 % der Bildhöhe)
+    erlaubt.
+  - **Blöcke bauen sich auf**: In den Karten von «Aktuell» rücken Schlagwort, Überschrift (Wort
+    für Wort), Satz und «Mehr lesen» einzeln nach, im Kontakt jede Zeile, im Footer jede Spalte.
+  - **Sortiment**: Eine Wahl im Index bringt die Bühne ins Bild, wenn sie dort nicht zu sehen
+    ist. Mit der Tastatur gewählt, bleibt der Knopf mit dem Fokus im Bild.
+  - **«Mehr lesen»** klappt von oben auf (`clip-path`, 400 ms) statt hart zu erscheinen.
+  - **Drei Fehler des Umbaus, beim Nachmessen gefunden und behoben**: Das gleitende Porträt
+    ragte 28 px in seinen Bildtext (es hat jetzt einen eigenen Ausschnitt). Das Foto von 1983
+    lud erst, wenn seine Karte schon stieg, weil es bis dahin unter dem Rahmen verborgen ist
+    (die Fotos der Bühne laden jetzt, sobald sie in die Nähe kommt). Und nach einem Klick im
+    Sortiment zog die Seite unter dem ruhenden Mauszeiger weiter; das Verweilen zeigte dann
+    einen anderen Raum als den gewählten (eine Wahl per Klick gilt jetzt, bis sich der Zeiger
+    wirklich bewegt).
+  - **Verworfen**: ein Schleier über dem zurückbleibenden Bogen oder der zurücktretenden Karte
+    (axe könnte den Kontrast darunter nicht mehr messen; die Karte ändert stattdessen ihre
+    eigene Farbe); Einrasten an den Jahren (`scroll-snap` griffe in das Scrollen der ganzen
+    Seite ein und verträgt sich nicht mit Lenis); die Räume am Scrollen (keine Reihenfolge);
+    Wischen auf dem Foto im Sortiment und eine stehende Bühne dort (grösserer Umbau eines breit
+    getesteten Bausteins, nicht Teil dieses Auftrags).
+  - **Gemessen** (Chromium ohne Grafikchip, CPU 4-fach gedrosselt, je drei Läufe): langsame
+    Bilder über die ersten 7000 px am Handy 3/1/5 von rund 297 (vorher 0/4/3), am Desktop
+    6/18/13 von rund 288 (vorher 2/10/16), also im Rauschen; über die Strecke der Bühne am Handy
+    1/2/4 von rund 152, am Desktop 6/11/6 von rund 155. JavaScript 14,8 KB (vorher 13,4 KB).
+    Lighthouse auf `/`, `/impressum` und `/datenschutz`, Handy und Desktop: 100 in allen vier
+    Kategorien, CLS 0.
+  - **Tests**: neu `e2e/years.spec.ts` (elf Tests je auf Desktop und Handy: geführt, Knöpfe und
+    Tastatur, Direktlink, in Schritten, angehalten, als Zeitleiste, Passform auf sechs
+    Fenstergrössen, Rückfall, gedrehtes Handy, neu geladen, Fotos). In `e2e/scroll.spec.ts` neu:
+    gleitende Fotos füllen ihren Rahmen in jeder Lage, und der nächste Bogen erreicht den
+    letzten Inhalt erst um die Fenstermitte. In `e2e/web.spec.ts` neu: Bühne des Sortiments
+    kommt ins Bild, Wahl per Klick gilt. In `e2e/a11y.spec.ts` neu: axe auf der Bühne. Der Test
+    der alten Wahl per Klick ist entfallen (es gibt sie nicht mehr).
+  - **Nicht prüfbar von hier**: Safari und Firefox (nur Chromium installiert) und echte Geräte;
+    die Punkte stehen in `docs/TODO.md`.

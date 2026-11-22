@@ -1,5 +1,30 @@
 # Stand je Phase
 
+## 22.11.2026: Firmengeschichte am Scrollen, Bewegung für kleine Bildschirme
+
+Auftrag des Repository-Inhabers: Am Desktop passe die Bewegung, gemeint seien vor allem kleinere
+Bildschirme; die Firmengeschichte solle beim Weiterscrollen weitergehen (Knopf als Option), dazu
+mehr Fluss und Übergänge für Desktop und Handy (`docs/DECISIONS.md` 50, `docs/DESIGN.md`
+Abschnitt 6).
+
+- **Firmengeschichte**: Die Jahre gehen mit dem Scrollen weiter. Die Bühne bleibt unter dem
+  Header stehen, die Linie der Achse wächst, die Karte des nächsten Jahrs schiebt sich über die
+  des vorherigen; die Knöpfe der Achse und «Weiter» bleiben als Abkürzung (`years.ts`). Ohne
+  scrollgekoppelte Animationen und bei angehaltener Bewegung in Schritten; ohne Skript, bei
+  reduzierter Bewegung, in niedrigen Fenstern und im Druck eine Zeitleiste mit allen Momenten.
+- **Am Handy gemessen und behoben**: Der nächste Bogen verdeckte den letzten Inhalt eines
+  Abschnitts schon bei 77 % der Fensterhöhe; jetzt auf jedem Gerät erst um die Fenstermitte
+  (42 bis 53 %).
+- **Mehr Fluss**: Grosse Fotos gleiten in ihrem Rahmen über den ganzen Weg durchs Fenster; hohe
+  Blöcke bauen sich Stück für Stück auf (Karten in «Aktuell», Zeilen im Kontakt, Spalten im
+  Footer); das Foto im Hero liegt tiefer als der Text; «Mehr lesen» klappt auf.
+- **Sortiment am Handy**: Eine Wahl im Index bringt die Bühne ins Bild.
+- Drei Fehler des Umbaus beim Nachmessen gefunden und behoben (Porträt ragte in seinen Bildtext,
+  ein Foto der Bühne lud zu spät, ruhender Mauszeiger überschrieb eine Wahl).
+- Neu `e2e/years.spec.ts` (elf Tests), dazu fünf neue Tests in den bestehenden Dateien: 222
+  e2e-Tests (vorher 192), keiner übersprungen. JavaScript 14,8 KB von 120 KB; Lighthouse 100 in
+  allen vier Kategorien auf den drei Seiten im Index, Handy und Desktop.
+
 ## 21.11.2026: Bewegung folgt dem Scrollen
 
 Auftrag des Repository-Inhabers: Übergänge und Animationen sollen zum Scrollen passen und Sinn
