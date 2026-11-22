@@ -106,6 +106,13 @@ const cta = primaryCta(true);
 
 <style>
   .hero {
+    /*
+     * Unter dem letzten Link des Heros ist weniger Platz als unter einem Bogen: Er bleibt darum
+     * weniger weit zurück (scroll.css, Bogen über Bogen). Sonst läge der Link am Handy schon
+     * unter dem Sortiment, bevor er die Fenstermitte erreicht.
+     */
+    --sc-leave: 1.15;
+
     position: relative;
     padding-bottom: calc(var(--section-y) * 0.5 + var(--r-sheet));
     background-color: var(--linen);
@@ -333,6 +340,11 @@ const cta = primaryCta(true);
   }
 
   @media (min-width: 64rem) {
+    /* Der Hero füllt das erste Fenster: Er bleibt so weit zurück wie jeder Bogen. */
+    .hero {
+      --sc-leave: 1.5;
+    }
+
     /* Desktop: rechts, mittig zur Höhe; ausserhalb des Rasters, die Texte laufen links davon */
     .hero-orb {
       position: absolute;

@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 
 /** Sammelt Konsolenfehler, Seitenfehler und CSP-Verstösse einer Seite. */
 export function collectErrors(page: Page): string[] {
@@ -17,6 +17,12 @@ export async function horizontalOverflow(page: Page): Promise<number> {
   );
 }
 
+/*
+ * Die vier Prüfungen unten messen von Haus aus die ganze Seite. Mit `scope` (ein Selektor) nur
+ * einen Teil davon: für Zustände, die es nur mit Bewegung gibt. Dort ragen bewegte Teile anderswo
+ * absichtlich aus ihrem Rahmen (das Band, gleitende Fotos) und werden von ihm abgeschnitten.
+ */
+
 /**
  * Sichtbare Inhalte, die über den linken oder rechten Bildrand ragen.
  *
@@ -26,8 +32,9 @@ export async function horizontalOverflow(page: Page): Promise<number> {
  * oder Grund sowie alle Bedienelemente. Ausgenommen ist, was in einem eigenen Ausschnitt läuft
  * (Band, Bereiche mit eigenem Scrollen) und reine Dekoration (`aria-hidden`).
  */
-export async function cutOff(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
+export async function cutOff(page: Page, scope = 'body'): Promise<string[]> {
+  return page.evaluate((within) => {
+    const root = document.querySelector(within) ?? document.body;
     const width = document.documentElement.clientWidth;
     // Auch das Element selbst zählt: Wer selbst abschneidet (z. B. mit Auslassungspunkten), hält
     // seinen Text absichtlich im eigenen Ausschnitt.
@@ -67,7 +74,7 @@ export async function cutOff(page: Page): Promise<string[]> {
       );
     };
 
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const range = document.createRange();
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
       const parent = node.parentElement;
@@ -77,7 +84,7 @@ export async function cutOff(page: Page): Promise<string[]> {
       const rect = [...range.getClientRects()].find(outside);
       if (rect) note(parent, rect);
     }
-    for (const element of document.querySelectorAll('body *')) {
+    for (const element of root.querySelectorAll('*')) {
       if (!visible(element)) continue;
       const control = element.matches('a, button, input, select, textarea, img');
       if (!control && !(boxed(element) && element.textContent?.trim())) continue;
@@ -85,7 +92,7 @@ export async function cutOff(page: Page): Promise<string[]> {
       if (outside(rect)) note(element, rect);
     }
     return [...found.values()];
-  });
+  }, scope);
 }
 
 /**
@@ -96,8 +103,9 @@ export async function cutOff(page: Page): Promise<string[]> {
  * Was in einem eigenen Ausschnitt ohne Rahmen läuft (Band, Masken der Überschriften), zählt nicht;
  * reine Dekoration (`aria-hidden`) auch nicht.
  */
-export async function boxOverflow(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
+export async function boxOverflow(page: Page, scope = 'body'): Promise<string[]> {
+  return page.evaluate((within) => {
+    const root = document.querySelector(within) ?? document.body;
     const visible = (element: Element): boolean =>
       element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) &&
       !element.closest('[aria-hidden="true"], .sr-only, .hp, .skip-link, [inert]');
@@ -146,7 +154,7 @@ export async function boxOverflow(page: Page): Promise<string[]> {
       );
     };
 
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const range = document.createRange();
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
       const parent = node.parentElement;
@@ -155,7 +163,7 @@ export async function boxOverflow(page: Page): Promise<string[]> {
       range.selectNodeContents(node);
       check(parent, [...range.getClientRects()], boxOf(parent));
     }
-    for (const element of document.querySelectorAll('body *')) {
+    for (const element of root.querySelectorAll('*')) {
       if (!visible(element)) continue;
       const control = element.matches('a, button, input, select, textarea, img');
       if (!control && !(boxed(element) && element.textContent?.trim())) continue;
@@ -164,7 +172,7 @@ export async function boxOverflow(page: Page): Promise<string[]> {
       check(element, [element.getBoundingClientRect()], boxOf(element.parentElement));
     }
     return [...found.values()];
-  });
+  }, scope);
 }
 
 /**
@@ -172,10 +180,11 @@ export async function boxOverflow(page: Page): Promise<string[]> {
  * eine Spalte schmaler ist als ihr längstes Wort und `overflow-wrap: anywhere` einspringt.
  * Nicht gemeint sind Trennungen an einem weichen Trennzeichen und Adressen in Mono-Schrift.
  */
-export async function brokenWords(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
+export async function brokenWords(page: Page, scope = 'body'): Promise<string[]> {
+  return page.evaluate((within) => {
     const found = new Set<string>();
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const root = document.querySelector(within) ?? document.body;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const range = document.createRange();
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
       const parent = node.parentElement;
@@ -198,7 +207,7 @@ export async function brokenWords(page: Page): Promise<string[]> {
       }
     }
     return [...found];
-  });
+  }, scope);
 }
 
 /**
@@ -206,10 +215,13 @@ export async function brokenWords(page: Page): Promise<string[]> {
  * Spezifitäts- oder Grid-Fehlern lautlos: nichts ragt über den Rand, aber Text wird unlesbar oder
  * über dem Bild klafft eine Lücke. Bildunterschriften im selben Rahmen zählen nicht.
  */
-export async function imageCollisions(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
+export async function imageCollisions(page: Page, scope = 'body'): Promise<string[]> {
+  return page.evaluate((within) => {
     const found: string[] = [];
-    for (const source of document.querySelectorAll('picture > source')) {
+    const root = document.querySelector(within) ?? document.body;
+    const inScope = <T extends Element>(selector: string): T[] =>
+      [...document.querySelectorAll<T>(selector)].filter((element) => root.contains(element));
+    for (const source of inScope('picture > source')) {
       const rect = source.getBoundingClientRect();
       if (rect.width > 0 || rect.height > 0) {
         found.push(`<source> belegt ${Math.round(rect.width)}×${Math.round(rect.height)} px`);
@@ -225,14 +237,12 @@ export async function imageCollisions(page: Page): Promise<string[]> {
         element.checkVisibility({ visibilityProperty: true, opacityProperty: false })
       );
     };
-    const images = [...document.querySelectorAll<HTMLImageElement>('main img')].filter(
+    const images = inScope<HTMLImageElement>('main img').filter(
       (img) => visible(img) && img.getBoundingClientRect().width > 40,
     );
-    const texts = [
-      ...document.querySelectorAll<HTMLElement>(
-        'main :is(p, h1, h2, h3, h4, li, dt, dd, blockquote)',
-      ),
-    ].filter((element) => element.textContent?.trim() && visible(element));
+    const texts = inScope<HTMLElement>(
+      'main :is(p, h1, h2, h3, h4, li, dt, dd, blockquote)',
+    ).filter((element) => element.textContent?.trim() && visible(element));
     for (const img of images) {
       const frame = img.closest('figure') ?? img.parentElement;
       const box = img.getBoundingClientRect();
@@ -260,7 +270,7 @@ export async function imageCollisions(page: Page): Promise<string[]> {
       }
     }
     return found;
-  });
+  }, scope);
 }
 
 /**
@@ -314,6 +324,15 @@ export async function placeAt(page: Page, selector: string, fromTop: number): Pr
   );
   await scrollToY(page, top);
   return top;
+}
+
+/**
+ * Den Bewegungsschalter betätigen, ohne dorthin zu scrollen: Unter 80rem steht er am Ende der
+ * Seite, ein Klick von Playwright scrollte die Seite erst zu ihm.
+ */
+export async function toggleMotion(page: Page, state: 'on' | 'off'): Promise<void> {
+  await page.evaluate(() => document.querySelector<HTMLElement>('[data-motion-toggle]')!.click());
+  await expect(page.locator('html')).toHaveAttribute('data-motion', state);
 }
 
 /**

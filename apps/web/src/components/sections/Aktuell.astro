@@ -2,11 +2,15 @@
 /**
  * 03 Aktuell: zwei Beiträge der bisherigen Startseite (docs/Homepage.docx, Bildschirmfotos) als
  * Bildgeschichten: Foto, Überschrift, ein Satz; der Rest hinter «Mehr lesen» (bleibt im HTML).
+ * Beim Hereinscrollen kommt jede Karte von unten, und ihr Inhalt rückt Stück für Stück nach
+ * (scroll.css): Am Handy, wo eine Karte höher ist als der halbe Bildschirm, baut sie sich so
+ * unter dem Finger auf, statt als fertiger Block hereinzufahren.
  * Texte gekürzt, Aussagen unverändert. Aktualität bestätigen (docs/TODO.md). Das Zitat aus dem
  * Interview steht jetzt bei «Über uns», neben dem Porträt (Entscheid 45).
  */
 import { Picture } from 'astro:assets';
 import Icon from '@luescher/ui/components/Icon.astro';
+import Words from '@luescher/ui/components/Words.astro';
 import druck from '../../assets/photos/aktuell-3d-druck.jpg';
 import klang from '../../assets/photos/aktuell-klangboxen.jpg';
 import SectionHead from '../SectionHead.astro';
@@ -25,21 +29,23 @@ import SectionHead from '../SectionHead.astro';
             widths={[360, 600, 1000]}
             sizes="(min-width: 64rem) 43rem, (min-width: 48rem) 45vw, 100vw"
             alt="Ausstellungsecke mit 3D-gedruckten Sesseln, Hocker und Beistelltisch auf orangem Teppich"
-            class="story-photo sc-zoom"
+            class="story-photo sc-drift"
             loading="lazy"
           />
         </div>
         <div class="story-body">
-          <span class="tag">
+          <span class="tag sc-rise">
             <Icon name="recycle" size={14} />
             Nachhaltigkeit
           </span>
-          <h3 class="display h3 story-title">Es geht auch anders.</h3>
-          <p>
+          <h3 class="display h3 story-title" aria-label="Es geht auch anders.">
+            <Words text="Es geht auch anders." />
+          </h3>
+          <p class="sc-rise">
             Neu im Sortiment: Designmöbel aus Norddeutschland, aus überwiegend recycelten
             Materialien energieeffizient und ressourcenschonend im 3D-Druck hergestellt.
           </p>
-          <details class="more">
+          <details class="more sc-rise">
             <summary>
               <span class="more-icon" aria-hidden="true"></span>
               <span class="more-closed">Mehr lesen</span>
@@ -64,21 +70,23 @@ import SectionHead from '../SectionHead.astro';
             widths={[360, 600, 1000]}
             sizes="(min-width: 64rem) 43rem, (min-width: 48rem) 45vw, 100vw"
             alt="Rote Klangbox Senn und Klangbox Huuri aus Holz auf einem Sims mit Herbstlaub"
-            class="story-photo sc-zoom"
+            class="story-photo sc-drift"
             loading="lazy"
           />
         </div>
         <div class="story-body">
-          <span class="tag">
+          <span class="tag sc-rise">
             <Icon name="audio-lines" size={14} />
             Klangboxen
           </span>
-          <h3 class="display h3 story-title">Entspannen und Energie tanken.</h3>
-          <p>
+          <h3 class="display h3 story-title" aria-label="Entspannen und Energie tanken.">
+            <Words text="Entspannen und Energie tanken." />
+          </h3>
+          <p class="sc-rise">
             Unsere Klangboxen aus Holz entführen Sie mit wohltuenden Naturklängen weit weg vom
             hektischen Alltag.
           </p>
-          <details class="more">
+          <details class="more sc-rise">
             <summary>
               <span class="more-icon" aria-hidden="true"></span>
               <span class="more-closed">Mehr lesen</span>
@@ -136,6 +144,11 @@ import SectionHead from '../SectionHead.astro';
 
   .story-body > p {
     color: var(--fg-muted);
+  }
+
+  /* In der Karte rückt jedes Stück nur wenig nach: Die Karte selbst kommt schon von unten. */
+  .story-body > * {
+    --sc-y: 1rem;
   }
 
   .story-body :global(.tag .icon) {

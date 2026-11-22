@@ -1,7 +1,6 @@
 /**
  * «Eins wählen, eins sehen»: Eine Liste von Einträgen mit je einem Kopf (Name) und einer Tafel
- * (Bild, Text) wird zu einem Index mit einer Bühne. Genutzt vom Sortiment («Raum für Raum») und
- * von der Firmengeschichte («Jahr für Jahr»).
+ * (Bild, Text) wird zu einem Index mit einer Bühne. Genutzt vom Sortiment («Raum für Raum»).
  *
  * Alles steht im Markup (Astro): Köpfe, Tafeln, Texte und Bilder. Ohne dieses Skript bleibt es
  * eine gewöhnliche Liste. Das Skript macht aus jedem Kopf einen Knopf (Muster «Accordion» der
@@ -9,7 +8,8 @@
  * dem ersten Bild (early-script.mjs), es springt also nichts um.
  *
  * Gewechselt wird nur durch eine Wahl: Klick, Tippen, Tasten oder, mit feinem Zeiger, kurzes
- * Verweilen. Nie durch Scrollen (das wäre eine gescrubbte Galerie, DESIGN.md «Bewusst nicht»).
+ * Verweilen. Nie durch Scrollen: Die Räume haben keine Reihenfolge, man wählt sie. (Die
+ * Firmengeschichte hat eine und geht darum mit dem Scrollen weiter, years.ts.)
  * Die neue Tafel erscheint in der Sprache der Bild-Enthüllung (`data-anim`, CSS); die alte bleibt
  * sichtbar (`data-leaving`), bis alle Auftritte der neuen zu Ende sind und sie die alte ganz
  * deckt. Bei reduzierter oder angehaltener Bewegung wechselt sie sofort. Eine Adresse mit der
@@ -41,6 +41,11 @@ export interface ChoiceOptions {
   preview?: boolean;
   /** Nach jedem Wechsel (auch dem ersten), etwa für einen Fortschritt. */
   changed?(index: number, items: ChoiceItem[]): void;
+  /**
+   * Scrollt die Seite an die Stelle `top`. Gesetzt, bringt eine Wahl am Kopf die Bühne ins Bild,
+   * wenn sie dort nicht zu sehen ist (am Handy steht sie über dem Index).
+   */
+  scrollTo?(top: number): void;
 }
 
 /** So lange muss ein feiner Zeiger auf einem Kopf verweilen, bevor er ihn zeigt. */
@@ -155,9 +160,76 @@ export function initChoice(root: HTMLElement, options: ChoiceOptions): ChoiceIte
   keys.Home = () => 0;
   keys.End = () => items.length - 1;
 
+  /** Lage im Layout, ohne Verschiebungen (was am Scrollen hängt, verschöbe sein Ziel selbst). */
+  const layoutTop = (element: HTMLElement) => {
+    let top = 0;
+    for (
+      let node: HTMLElement | null = element;
+      node;
+      node = node.offsetParent as HTMLElement | null
+    ) {
+      top += node.offsetTop;
+    }
+    return top;
+  };
+
+  /**
+   * Wer am Handy einen Namen im Index antippt, sieht die Bühne darüber nicht: Der Wechsel bliebe
+   * unbemerkt. Darum gleitet die Seite so weit hinauf, dass die Tafel unter dem Header steht.
+   * Danach stehen Bühne und Index zusammen im Bild, und weitere Wahlen bewegen die Seite nicht
+   * mehr. Steht die Tafel schon gut im Bild (am Desktop liegt sie neben dem Index), bleibt die
+   * Seite, wo sie ist.
+   * Mit der Tastatur gewählt, darf der Knopf mit dem Fokus dabei nicht aus dem Bild rutschen:
+   * Dann gleitet die Seite höchstens so weit, dass er unten noch ganz zu sehen ist.
+   */
+  const reveal = (item: ChoiceItem, byKeyboard: boolean) => {
+    if (!options.scrollTo) return;
+    const header =
+      Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+    const frame = window.innerHeight - header;
+    const top = layoutTop(item.panel) - window.scrollY;
+    const height = item.panel.offsetHeight;
+    const seen = Math.min(top + height, window.innerHeight) - Math.max(top, header);
+    if (seen >= Math.min(height, frame) * 0.6) return;
+    const stage = layoutTop(item.panel) - header;
+    const keepButton = layoutTop(item.button) + item.button.offsetHeight + 16 - window.innerHeight;
+    options.scrollTo(Math.max(0, Math.round(byKeyboard ? Math.max(stage, keepButton) : stage)));
+  };
+
+  /*
+   * Nach einer Wahl per Klick gilt sie, bis sich der Zeiger wirklich bewegt: Scrollt die Seite
+   * danach (von selbst oder mit dem Rad), ziehen andere Köpfe unter dem ruhenden Zeiger durch, und
+   * der Browser meldet das wie ein Betreten. Ohne diese Sperre zeigte das Verweilen dann einen
+   * anderen Eintrag als den eben gewählten.
+   */
+  let chosenAt: { x: number; y: number } | null = null;
   let dwell = 0;
+  /** Mit feinem Zeiger: Verweilt er auf einem Kopf, zeigt sich dessen Tafel. */
+  const hover = (item: ChoiceItem) => {
+    window.clearTimeout(dwell);
+    dwell = window.setTimeout(() => activate(item), DWELL_MS);
+  };
+  if (options.preview) {
+    root.addEventListener('pointermove', (event) => {
+      if (!chosenAt || event.pointerType !== 'mouse') return;
+      if (Math.abs(event.clientX - chosenAt.x) + Math.abs(event.clientY - chosenAt.y) <= 6) return;
+      chosenAt = null;
+      // Die Bewegung, die die Sperre löst, kann schon auf einem anderen Kopf liegen.
+      const over = items.find(
+        (item) => event.target instanceof Node && item.button.contains(event.target),
+      );
+      if (over && over !== current) hover(over);
+    });
+  }
+
   for (const item of items) {
-    item.button.addEventListener('click', () => activate(item));
+    item.button.addEventListener('click', (event) => {
+      window.clearTimeout(dwell);
+      chosenAt = { x: event.clientX, y: event.clientY };
+      activate(item);
+      // `detail` zählt die Klicks eines Zeigers; von der Tastatur ausgelöst ist es 0.
+      reveal(item, event.detail === 0);
+    });
     item.button.addEventListener('keydown', (event) => {
       const step = keys[event.key];
       if (!step) return;
@@ -167,9 +239,7 @@ export function initChoice(root: HTMLElement, options: ChoiceOptions): ChoiceIte
     });
     if (!options.preview) continue;
     item.button.addEventListener('pointerenter', (event) => {
-      if (event.pointerType !== 'mouse') return;
-      window.clearTimeout(dwell);
-      dwell = window.setTimeout(() => activate(item), DWELL_MS);
+      if (event.pointerType === 'mouse' && !chosenAt) hover(item);
     });
     item.button.addEventListener('pointerleave', () => window.clearTimeout(dwell));
   }

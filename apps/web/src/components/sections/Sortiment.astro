@@ -129,8 +129,9 @@ const total = pad(areas.length - 1);
                 </span>
               </h3>
               <figure class="room-panel" id={`raum-${area.slug}-tafel`} data-choice-panel>
-                {/* Beim Hereinscrollen rückt die Bühne nach, und das Foto setzt sich aus einem
-                    leichten Zoom (scroll.css). Gewechselt wird nur durch eine Wahl (choice.ts). */}
+                {/* Beim Hereinscrollen rückt die Bühne nach, das Foto setzt sich aus einem
+                    leichten Zoom und gleitet in seinem Rahmen mit (scroll.css). Gewechselt wird
+                    nur durch eine Wahl (choice.ts). */}
                 <div class="room-media sc-rise">
                   <Picture
                     src={area.image}
@@ -138,7 +139,7 @@ const total = pad(areas.length - 1);
                     widths={[480, 800, 1000]}
                     sizes="(min-width: 80rem) 46rem, (min-width: 54rem) 55vw, 92vw"
                     alt={area.alt}
-                    class="room-photo sc-zoom"
+                    class="room-photo sc-drift"
                     loading="lazy"
                   />
                 </div>

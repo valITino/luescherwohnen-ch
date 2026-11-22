@@ -57,7 +57,7 @@ const columns = [
 
         <nav class="footer-nav" id="seitenende" aria-label="Footer">
           {columns.map((column) => (
-            <div>
+            <div class="sc-rise">
               <h2 class="label-up footer-title">{column.title}</h2>
               <ul>
                 {column.links.map((item) => (
@@ -75,7 +75,7 @@ const columns = [
               </ul>
             </div>
           ))}
-          <div>
+          <div class="sc-rise">
             <h2 class="label-up footer-title">Kontakt</h2>
             <ul>
               <li>
@@ -186,6 +186,16 @@ const columns = [
     grid-column: 1 / -1;
   }
 
+  /* Die Spalten rücken eine nach der anderen nach (scroll.css, --sc-i). */
+  .footer-nav > div {
+    --sc-y: 1.5rem;
+    --sc-step: 0.875rem;
+  }
+
+  .footer-nav > div:nth-child(2) {
+    --sc-i: 1;
+  }
+
   .footer-title {
     margin-bottom: 1rem;
   }
@@ -257,6 +267,10 @@ const columns = [
     .footer-nav {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+
+    .footer-nav > div:nth-child(3) {
+      --sc-i: 2;
+    }
   }
 
   /* Vier Spalten erst, wenn jede breit genug für ihr längstes Wort ist («Datenschutz») */
@@ -266,6 +280,8 @@ const columns = [
     }
 
     .footer-nav > div:last-child {
+      --sc-i: 3;
+
       grid-column: auto;
     }
   }

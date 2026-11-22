@@ -4,16 +4,19 @@
  * Die Bausteine (Auftritt, Wörter, Foto, Bogen über Bogen) und die Regeln stehen im Designsystem
  * (packages/ui/src/styles/scroll.css). Hier steht, was nur ein Abschnitt tut, und jede Bewegung
  * hat ihren Grund:
- *   Hero       Das runde Foto rückt näher, während der Hero zurückbleibt: Es geht in die Räume.
+ *   Hero       Das runde Foto rückt näher und gleitet etwas langsamer als der Hero: Es liegt
+ *              tiefer als der Text, es geht in die Räume.
  *   Band       Die Wörter ziehen mit dem Scrollen, die Reihen gegenläufig. Nichts läuft von selbst.
  *   Haltung    Die Sätze werden Wort für Wort dunkel, im Lesetempo des Scrollens.
  *   Service    Der Weg von der Beratung bis «Danach» zeichnet sich; die Spitze bleibt auf Lesehöhe.
  *   Über uns   Der Sucher stellt scharf: Die Ecken rücken an, während das Porträt sich setzt.
+ *   Geschichte Die Jahre gehen mit dem Scrollen weiter: Die Linie der Achse wächst, Karte
+ *              schiebt sich über Karte (eigener Block weiter unten, mit seinem Aufbau).
  *   Kontakt    Die grüne Scheibe öffnet sich wie die Blende im Hero: Der Kreis schliesst sich.
  *   Footer     Die Wortmarke steigt mit den letzten Schritten herein und steht am Ende der Seite.
  *
- * Alles liegt in einem Block: ohne Unterstützung, bei reduzierter Bewegung, im Druck und mit
- * angehaltener Bewegung gilt nur der normale Stil der Komponenten (der Endzustand).
+ * Die Choreografie liegt in einem Block: ohne Unterstützung, bei reduzierter Bewegung, im Druck
+ * und mit angehaltener Bewegung gilt nur der normale Stil der Komponenten (der Endzustand).
  */
 
 @supports (animation-timeline: view()) {
@@ -131,9 +134,291 @@
   }
 }
 
+/*
+ * ---------- Firmengeschichte: Die Jahre gehen mit dem Scrollen weiter ----------
+ *
+ * Die eine Stelle der Seite, an der ein Bild stehen bleibt: Die Bühne (Titel, Achse, Karte,
+ * «Weiter») hält unter dem Header an, solange die sechs Jahre durchlaufen. Das Scrollen wird
+ * dabei nicht aufgehalten, es führt: Mit jedem Stück Weg wächst die Linie der Achse, und die
+ * Karte des nächsten Jahrs schiebt sich über die des vorherigen, so wie sich auf der ganzen
+ * Seite Bogen über Bogen schiebt. Niemand muss dafür klicken; die Knöpfe der Achse und «Weiter»
+ * bleiben als Abkürzung (years.ts).
+ *
+ * Drei Stufen:
+ *   Zeitleiste   ohne Skript, bei reduzierter Bewegung, in niedrigen Fenstern, im Druck: alle
+ *                sechs Momente untereinander (Ueber.astro). Nichts steht, nichts ist verborgen.
+ *   Bühne        mit Skript: Sie steht, und die Karten wechseln nach der Scrollposition. Ohne
+ *                scrollgekoppelte Animationen (Firefox, Safari vor 26) und bei angehaltener
+ *                Bewegung wechseln sie in Schritten; years.ts setzt dafür `data-on`/`data-past`.
+ *   Geführt      wo der Browser es kann und die Bewegung läuft: Karte und Linie hängen am Finger.
+ *
+ * Die Bühne ist so hoch wie das Fenster unter dem Header: Was oben und unten steht, ist dabei
+ * aus dem Bild, und sie gibt die Seite erst frei, wenn sie ganz gespielt ist. Der Bogen selbst
+ * bleibt darum erst danach zurück (Bogen über Bogen), nie gleichzeitig.
+ * Eine Bedingung für Aufbau und Bewegung: Beides steht darum hier und nicht in der Komponente.
+ */
+@media screen and (prefers-reduced-motion: no-preference) and (min-height: 36rem) {
+  .history[data-deck] {
+    /* Für years.ts: Die Bühne gilt (das Skript liest es ab, statt die Bedingungen zu wiederholen). */
+    --yr-deck: 1;
+    /* Oberkante der Bühne: knapp unter dem Header */
+    --yr-top: calc(var(--header-h) - 0.5rem);
+    /* Scrollweg je Jahr: kurz genug für einen Wisch, lang genug zum Lesen */
+    --yr-step: min(42svh, 24rem);
+    /* Fünf Wechsel und ein halber Schritt Ruhe beim letzten Jahr */
+    --yr-span: 5.5;
+    /* Anteil eines Schritts, in dem die nächste Karte steigt; davor ruht die aktuelle. */
+    --yr-rise: 0.75;
+
+    height: calc(100svh - var(--yr-top) + var(--yr-span) * var(--yr-step));
+  }
+
+  .history[data-deck] .history-stage {
+    position: sticky;
+    top: var(--yr-top);
+    box-sizing: border-box;
+    align-content: safe center;
+    height: calc(100svh - var(--yr-top));
+    padding-block: 0.5rem 1.25rem;
+  }
+
+  .history[data-deck] .years {
+    display: grid;
+    gap: clamp(0.75rem, 2svh, 1.5rem);
+  }
+
+  .history[data-deck] .yr-axis:not([hidden]) {
+    position: relative;
+    display: block;
+  }
+
+  .history[data-deck] .yr-next:not([hidden]) {
+    display: inline-flex;
+  }
+
+  /*
+   * Alle Karten liegen in derselben Zelle: Sie ist so hoch wie die höchste, beim Wechsel springt
+   * nichts. Der Rahmen schneidet ab (`clip`, kein eigener Scrollbereich): Was noch nicht dran
+   * ist, wartet unter seiner Unterkante.
+   */
+  .history[data-deck] .timeline {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    overflow: clip;
+    padding: 0;
+    border: 0;
+    border-radius: var(--r-card);
+  }
+
+  .history[data-deck] .moment {
+    display: grid;
+    grid-area: 1 / 1;
+    padding: 0;
+    border: 0;
+    /* In Schritten: Die Karte kommt von unten; verborgen ist, was nicht dran ist. */
+    translate: 0 105%;
+    visibility: hidden;
+    transition:
+      translate var(--dur-3) var(--ease-out),
+      visibility 0s var(--dur-3);
+  }
+
+  .history[data-deck] .moment::before {
+    display: none;
+  }
+
+  .history[data-deck] .moment:is([data-on], [data-past]) {
+    translate: 0 0;
+  }
+
+  /* Angehalten wechselt das Jahr ohne Übergang (base.css nimmt jedem Übergang die Dauer). */
+  .history[data-deck] .moment[data-on] {
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  .history[data-deck] .moment:nth-child(2) {
+    --i: 1;
+  }
+
+  .history[data-deck] .moment:nth-child(3) {
+    --i: 2;
+  }
+
+  .history[data-deck] .moment:nth-child(4) {
+    --i: 3;
+  }
+
+  .history[data-deck] .moment:nth-child(5) {
+    --i: 4;
+  }
+
+  .history[data-deck] .moment:nth-child(6) {
+    --i: 5;
+  }
+
+  /* Die Karte: Papier auf Salbei, oben gross das Jahr, unten der Satz. */
+  .history[data-deck] .moment-card {
+    position: relative;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'year photo'
+      'text text';
+    align-content: space-between;
+    gap: 1rem 1.25rem;
+    /* Am Handy ein hohes Blatt: oben das Jahr, unten der Satz, dazwischen Luft. */
+    min-height: clamp(18rem, 46svh, 27rem);
+    padding: clamp(1.25rem, 0.6rem + 2.6vw, 2.25rem);
+    border: 1px solid var(--border);
+    border-radius: var(--r-card);
+    background-color: var(--paper);
+    transform-origin: 50% 0;
+  }
+
+  .history[data-deck] .moment-year {
+    grid-area: year;
+    font-size: clamp(5rem, 2.6rem + 11vw, 9rem);
+    line-height: 0.86;
+  }
+
+  /* Foto und Satz ordnen sich direkt in der Karte ein. */
+  .history[data-deck] .moment-body {
+    display: contents;
+  }
+
+  .history[data-deck] .moment-body .moment-photo {
+    grid-area: photo;
+    align-self: start;
+    width: 4.75rem;
+  }
+
+  .history[data-deck] .moment-body p {
+    grid-area: text;
+    max-width: 30em;
+    color: var(--charcoal);
+    font-size: var(--fs-lead);
+    letter-spacing: -0.015em;
+    line-height: 1.36;
+  }
+
+  @media (min-width: 48rem) {
+    /* Breit: Jahr, Foto und Satz in einer Reihe; das Blatt wächst mit der Fensterhöhe mit. */
+    .history[data-deck] .moment-card {
+      grid-template-columns: auto auto minmax(0, 1fr);
+      grid-template-areas: 'year photo text';
+      align-content: center;
+      align-items: center;
+      gap: 1.5rem 2rem;
+      min-height: clamp(15rem, 34svh, 24rem);
+    }
+
+    .history[data-deck] .moment-body .moment-photo {
+      align-self: center;
+      width: 6rem;
+    }
+  }
+
+  @supports (animation-timeline: view()) {
+    /*
+     * Geführt. Die Strecke ist die Zeit, in der die Bühne steht: von «Oberkante unter dem Header»
+     * bis «Unterkante am unteren Fensterrand» (`contain` einer Fläche, die höher ist als das
+     * Fenster). Jahr `--i` kommt bei `--i / --yr-span` dieser Strecke an.
+     */
+    html:not([data-motion='off']) .history[data-deck] {
+      view-timeline: --years block;
+      view-timeline-inset: var(--yr-top) 0px;
+    }
+
+    /* Hier bestimmt die Strecke, was zu sehen ist, nicht der Schritt des Skripts. */
+    html:not([data-motion='off']) .history[data-deck] .moment {
+      translate: 0 0;
+      visibility: visible;
+      transition: none;
+    }
+
+    /* Die nächste Karte steigt über die aktuelle; ganz verdeckt ist die alte verborgen. */
+    html:not([data-motion='off']) .history[data-deck] .moment:first-child {
+      animation: yr-gone var(--scrub) both;
+      animation-timeline: --years;
+      animation-range: contain calc(100% * (1 - var(--yr-rise)) / var(--yr-span)) contain
+        calc(100% / var(--yr-span));
+    }
+
+    html:not([data-motion='off']) .history[data-deck] .moment:not(:first-child, :last-child) {
+      animation:
+        yr-rise var(--scrub) both,
+        yr-gone var(--scrub) both;
+      animation-timeline: --years, --years;
+      animation-range:
+        contain calc(100% * (var(--i) - var(--yr-rise)) / var(--yr-span)) contain
+          calc(100% * var(--i) / var(--yr-span)),
+        contain calc(100% * (var(--i) + 1 - var(--yr-rise)) / var(--yr-span)) contain
+          calc(100% * (var(--i) + 1) / var(--yr-span));
+    }
+
+    html:not([data-motion='off']) .history[data-deck] .moment:last-child {
+      animation: yr-rise var(--scrub) both;
+      animation-timeline: --years;
+      animation-range: contain calc(100% * (var(--i) - var(--yr-rise)) / var(--yr-span)) contain
+        calc(100% * var(--i) / var(--yr-span));
+    }
+
+    /*
+     * Die Karte darunter tritt zurück: etwas kleiner, und ihr Papier nimmt den Ton des Bogens an.
+     * Die Farbe gehört zur Karte selbst (kein Schleier darüber): Ihr Text bleibt so messbar
+     * lesbar, und Karten tragen weiterhin keinen Schatten.
+     */
+    html:not([data-motion='off']) .history[data-deck] .moment:not(:last-child) .moment-card {
+      animation: yr-back var(--scrub) both;
+      animation-timeline: --years;
+      animation-range: contain calc(100% * (var(--i, 0) + 1 - var(--yr-rise)) / var(--yr-span))
+        contain calc(100% * (var(--i, 0) + 1) / var(--yr-span));
+    }
+
+    /* Die Linie der Achse erreicht jeden Punkt genau dann, wenn seine Karte ankommt. */
+    html:not([data-motion='off']) .history[data-deck] .yr-track::after {
+      animation: yr-line var(--scrub) both;
+      animation-timeline: --years;
+      animation-range: contain 0% contain calc(100% * 5 / var(--yr-span));
+      transition: none;
+    }
+  }
+}
+
+@keyframes yr-rise {
+  from {
+    translate: 0 105%;
+    visibility: hidden;
+  }
+}
+
+@keyframes yr-gone {
+  to {
+    visibility: hidden;
+  }
+}
+
+@keyframes yr-back {
+  to {
+    scale: 0.94;
+    background-color: var(--sage-deep);
+  }
+}
+
+@keyframes yr-line {
+  from {
+    scale: 0 1;
+  }
+
+  to {
+    scale: 1 1;
+  }
+}
+
 @keyframes hero-near {
   to {
     scale: 1.1;
+    translate: 0 7%;
   }
 }
 

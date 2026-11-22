@@ -20,7 +20,7 @@
  *
  * Regeln:
  * - Alles kommt von unten und setzt sich im unteren Teil des Fensters. Was darüber steht, steht
- *   still und ist ganz lesbar.
+ *   still und ist ganz lesbar. Nur grosse Fotos gleiten in ihrem Rahmen leise weiter (kein Text).
  * - Text blendet nie ein: Er rückt nur nach (`translate`) oder steigt aus seiner Maske.
  * - Bewegt wird nur `translate`, `scale` und die Deckkraft von Dekoration. Das rechnet der
  *   Browser neben dem Scrollen, ohne Layout und ohne Skript. Beide Eigenschaften vertragen sich
@@ -57,7 +57,8 @@
     /*
      * Die Strecken sind feste Anteile der Fensterhöhe ab der unteren Fensterkante, nicht Anteile
      * des Elements: So setzt sich jeder Block gleich weit über der Kante, wie hoch er auch ist.
-     * Oberhalb von 70 % der Fensterhöhe (von oben gezählt) steht darum alles still: die Lesezone.
+     * Oberhalb von 70 % der Fensterhöhe (von oben gezählt) steht darum jeder Text still: die
+     * Lesezone.
      */
 
     /*
@@ -79,8 +80,8 @@
     }
 
     /*
-     * Ein Foto setzt sich in seinem Rahmen aus einem leichten Zoom, gleichmässig mit dem Weg und
-     * über eine längere Strecke: Es ist die ganze Zeit ganz zu sehen.
+     * Ein kleines Bild (Porträt im Kreis, Initialen) setzt sich in seinem Rahmen aus einem
+     * leichten Zoom und steht dann still.
      */
     html:not([data-motion='off']) .sc-zoom {
       animation: sc-zoom var(--scrub) both;
@@ -89,10 +90,31 @@
     }
 
     /*
+     * Ein grosses Foto setzt sich ebenso aus einem leichten Zoom und gleitet dabei etwas
+     * langsamer als sein Rahmen durchs Bild: Es liegt tiefer als die Seite. Gleichmässig und über
+     * den ganzen Weg durchs Fenster, von der unteren bis zur oberen Kante; darum bewegt sich
+     * immer etwas mit dem Finger, auch wenn alle Texte schon an ihrem Platz stehen. Das Foto ist
+     * die ganze Zeit ganz zu sehen, und die Vergrösserung reicht in jeder Lage für die
+     * Verschiebung: Der Rahmen zeigt nie seinen Grund (ein e2e-Test misst es). Der Rahmen muss
+     * allein das Foto fassen und abschneiden (`overflow: clip`).
+     */
+    html:not([data-motion='off']) .sc-drift {
+      animation: sc-drift var(--scrub) both;
+      animation-timeline: view();
+      animation-range: cover 0% cover var(--sc-end, 100%);
+    }
+
+    /*
      * Bogen über Bogen: Sobald der nächste Bogen unten ins Bild kommt, bleibt dieser zurück (er
-     * zieht nur noch gut halb so schnell weiter), und der nächste schiebt sich darüber. Die
-     * Strecke reicht von «Unterkante am unteren Fensterrand» bis «Unterkante am oberen» (unter dem
-     * Header), also immer eine Fensterhöhe, wie hoch der Bogen auch ist.
+     * zieht etwas langsamer weiter), und der nächste schiebt sich darüber. Die Strecke reicht von
+     * «Unterkante am unteren Fensterrand» bis «Unterkante am oberen» (unter dem Header), also
+     * immer eine Fensterhöhe, wie hoch der Bogen auch ist.
+     * Wie weit er zurückbleibt, hängt am freien Platz unter seinem Inhalt (`--section-y` und die
+     * runde Ecke des nächsten), nicht an der Fensterhöhe: Der nächste Bogen erreicht den letzten
+     * Inhalt so auf jedem Gerät erst um die Fenstermitte (gemessen: 42 bis 53 % der Höhe, vom
+     * kleinen Handy bis zum grossen Bildschirm). Als fester Anteil der Fensterhöhe gerechnet,
+     * war der letzte Inhalt am Handy schon bei 77 % der Höhe verdeckt (390×844), kaum dass er im
+     * Bild war.
      * Nur `translate`, keine Verkleinerung: Verkleinert zeigte ein farbiger Bogen links und rechts
      * einen Spalt, und seine Schrift würde weich.
      * Der letzte Bogen bleibt nicht zurück: Nach ihm kommt kein Bogen mehr, der ihn deckte.
@@ -129,8 +151,21 @@
   }
 }
 
+@keyframes sc-drift {
+  from {
+    scale: 1.16;
+    translate: 0 -4%;
+  }
+
+  to {
+    scale: 1.04;
+    translate: 0 2%;
+  }
+}
+
+/* `--sc-leave`: das Wievielfache des freien Platzes unter dem Inhalt (0: der Bogen zieht ganz durch). */
 @keyframes sc-leave {
   to {
-    translate: 0 calc(var(--sc-leave, 0.38) * 100svh);
+    translate: 0 calc(var(--sc-leave, 1.5) * (var(--section-y) + var(--r-sheet)));
   }
 }

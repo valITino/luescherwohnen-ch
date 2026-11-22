@@ -3,7 +3,8 @@
  * 04 Über uns: Porträt im Sucher-Rahmen, daneben Überschrift, Lead und das Zitat des Mannes im
  * Porträt (Gesicht und Stimme); Haltung und «Wir stehen für» hinter «Mehr über uns». Darunter das
  * Team (Fotos und Aufgaben von der aktuellen Website, Entscheid 46) und die Firmengeschichte
- * «Jahr für Jahr» (choice.ts). Die Standorte stehen im Kontakt (Entscheid 45).
+ * «Jahr für Jahr», die mit dem Scrollen weitergeht (years.ts, Entscheid 50). Die Standorte stehen
+ * im Kontakt (Entscheid 45).
  * Beim Hereinscrollen stellt der Sucher scharf: Die Ecken rücken an ihren Platz, während das
  * Foto sich setzt (scroll.css, an der Scrollposition, nicht nach Zeit).
  * Texte und Jahreszahlen: «Unternehmen», «Firmengeschichte», «Firmenstandorte» der bisherigen
@@ -84,15 +85,18 @@ const history = [
           <span class="portrait-corner portrait-corner-tr" aria-hidden="true"></span>
           <span class="portrait-corner portrait-corner-bl" aria-hidden="true"></span>
           <span class="portrait-corner portrait-corner-br" aria-hidden="true"></span>
-          <Picture
-            src={michael}
-            formats={['avif', 'webp']}
-            widths={[400, 800]}
-            sizes="(min-width: 56rem) 34rem, 100vw"
-            alt={`Porträt von ${company.management} vor Vorhangstoff-Mustern`}
-            class="portrait-photo sc-zoom"
-            loading="lazy"
-          />
+          {/* Eigener Ausschnitt: Das Foto gleitet darin (scroll.css), ohne in den Bildtext zu ragen. */}
+          <div class="portrait-media">
+            <Picture
+              src={michael}
+              formats={['avif', 'webp']}
+              widths={[400, 800]}
+              sizes="(min-width: 56rem) 34rem, 100vw"
+              alt={`Porträt von ${company.management} vor Vorhangstoff-Mustern`}
+              class="portrait-photo sc-drift"
+              loading="lazy"
+            />
+          </div>
           <figcaption class="portrait-caption">
             <span class="label-up">{company.management}</span>
             <span>Geschäftsleiter</span>
@@ -191,51 +195,66 @@ const history = [
       </ul>
     </div>
 
-    <div class="history">
-      <h3 class="display h3 history-title sc-rise">Firmengeschichte</h3>
-      {/*
-        «Jahr für Jahr» (choice.ts): eine Achse mit den Jahren und ein Moment. Ohne Skript die
-        Zeitleiste mit allen Momenten. Die grosse Jahreszahl ist nur Gestaltung (CSS, ohne Text).
-      */}
-      <div class="years sc-rise" data-years>
-        <span class="yr-track" aria-hidden="true"></span>
-        <ol class="timeline">
-          {history.map((entry) => (
-            <li
-              class="moment"
-              id={`jahr-${entry.year.toLowerCase()}`}
-              data-choice-item
-              data-choice-name={entry.year}
-            >
-              <span class="moment-year" data-choice-head data-choice-button="yr-btn">
-                {entry.year}
-              </span>
-              <div class="moment-panel" data-choice-panel>
-                <span class="yr-big" data-year={entry.year} aria-hidden="true"></span>
-                <div class="moment-body">
-                  {entry.photo && (
-                    <Picture
-                      src={entry.photo.src}
-                      formats={['avif', 'webp']}
-                      widths={[160, 320]}
-                      sizes="10rem"
-                      alt={entry.photo.alt}
-                      class="moment-photo"
-                      loading="lazy"
-                    />
-                  )}
-                  <p>{entry.text}</p>
+    {/*
+      Firmengeschichte «Jahr für Jahr». Im HTML steht eine Zeitleiste mit allen sechs Momenten:
+      So bleibt sie ohne Skript, bei reduzierter Bewegung, in niedrigen Fenstern und im Druck.
+      Sonst wird sie zur Bühne, auf der die Jahre mit dem Scrollen weitergehen (years.ts und
+      scroll.css): Die Bühne bleibt unter dem Header stehen, die Linie der Achse wächst, und die
+      Karte des nächsten Jahrs schiebt sich über die des vorherigen. Die Knöpfe der Achse und
+      «Weiter» bleiben als Abkürzung; ohne Skript sind sie verborgen (hidden).
+    */}
+    <div class="history" data-years>
+      <div class="history-stage">
+        <h3 class="display h3 history-title sc-rise">Firmengeschichte</h3>
+        <div class="years sc-rise">
+          <div
+            class="yr-axis"
+            role="group"
+            aria-label="Jahre der Firmengeschichte"
+            data-years-axis
+            hidden
+          >
+            <span class="yr-track" aria-hidden="true"></span>
+            <ol class="yr-stops">
+              {history.map((entry) => (
+                <li>
+                  <button type="button" class="yr-btn" data-years-to>
+                    {entry.year}
+                  </button>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <ol class="timeline">
+            {history.map((entry) => (
+              <li class="moment" id={`jahr-${entry.year.toLowerCase()}`} data-years-item>
+                <div class="moment-card">
+                  <p class="moment-year">{entry.year}</p>
+                  <div class="moment-body">
+                    {entry.photo && (
+                      <Picture
+                        src={entry.photo.src}
+                        formats={['avif', 'webp']}
+                        widths={[160, 320]}
+                        sizes="10rem"
+                        alt={entry.photo.alt}
+                        class="moment-photo"
+                        loading="lazy"
+                      />
+                    )}
+                    <p>{entry.text}</p>
+                  </div>
                 </div>
-              </div>
-            </li>
-          ))}
-        </ol>
-        <button type="button" class="yr-next" data-choice-next hidden>
-          <span data-choice-next-text>Weiter</span>
-          <span class="yr-next-icon" aria-hidden="true">
-            <Icon name="arrow-right" size={16} />
-          </span>
-        </button>
+              </li>
+            ))}
+          </ol>
+          <button type="button" class="yr-next" data-years-next hidden>
+            <span data-years-next-text>Weiter</span>
+            <span class="yr-next-icon" aria-hidden="true">
+              <Icon name="arrow-right" size={16} />
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -279,6 +298,13 @@ const history = [
     border: 1px solid var(--border);
     border-radius: var(--r-panel);
     background-color: var(--paper);
+  }
+
+  /* Das Foto füllt seine Zeile des Rahmens; was beim Gleiten übersteht, schneidet sie ab. */
+  .portrait-media {
+    display: grid;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .portrait-frame :global(.portrait-photo) {
@@ -509,10 +535,18 @@ const history = [
 
   /* ---------- Firmengeschichte ---------- */
 
+  /*
+   * Grundform: eine Zeitleiste mit allen Momenten (ohne Skript, bei reduzierter Bewegung, in
+   * niedrigen Fenstern, im Druck). Die Bühne, auf der die Jahre mit dem Scrollen weitergehen,
+   * steht samt ihrer Bewegung in scroll.css: Dort gilt eine Bedingung für beides.
+   */
   .history {
+    margin-top: clamp(4rem, 9vw, 8rem);
+  }
+
+  .history-stage {
     display: grid;
     gap: clamp(1.5rem, 3vw, 2.5rem);
-    margin-top: clamp(4rem, 9vw, 8rem);
   }
 
   .timeline {
@@ -524,9 +558,6 @@ const history = [
 
   .moment {
     position: relative;
-    display: grid;
-    align-content: start;
-    gap: 0.75rem;
   }
 
   /* Punkt auf der Linie */
@@ -540,6 +571,12 @@ const history = [
     border-radius: 50%;
     background-color: var(--leaf);
     content: '';
+  }
+
+  .moment-card {
+    display: grid;
+    align-content: start;
+    gap: 0.75rem;
   }
 
   .moment-year {
@@ -568,91 +605,28 @@ const history = [
     filter: sepia(0.15);
   }
 
-  .moment-panel {
-    display: grid;
-    gap: 0.75rem;
-  }
-
-  /* Nur mit Skript: die grosse Jahreszahl, die Achse und «Weiter» */
-  .yr-big,
-  .yr-track {
+  /*
+   * ---------- Achse und «Weiter»: nur auf der Bühne (scroll.css zeigt sie) ----------
+   * Sechs Jahre als Knöpfe auf einer Linie. Der Punkt des aktuellen Jahrs ist gross und grün,
+   * frühere sind grün gefüllt (years.ts: aria-current, data-past). Die grüne Linie wächst bis zum
+   * aktuellen Jahr: mit dem Scrollen, wo der Browser das kann (scroll.css), sonst in Schritten.
+   */
+  .yr-axis,
+  .yr-next {
     display: none;
   }
 
-  /*
-   * ---------- «Jahr für Jahr» (choice.ts setzt data-ready) ----------
-   * Zeile 1: die Achse mit den sechs Jahren (Knöpfe), Zeile 2: ein Moment, Zeile 3: «Weiter». Alle
-   * Momente liegen per Subgrid in derselben Zelle: Sie ist so hoch wie der längste, beim Wechsel
-   * springt nichts. Eine grüne Linie wächst von 1946 bis zum gewählten Jahr (nur transform).
-   */
-  .years[data-ready] {
-    position: relative;
+  .yr-stops {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
-    grid-template-rows: auto auto auto;
   }
 
-  .years[data-ready] .timeline,
-  .years[data-ready] .moment {
-    display: grid;
-    grid-column: 1 / -1;
-    grid-row: 1 / 3;
-    grid-template-columns: subgrid;
-    grid-template-rows: subgrid;
-    gap: 0;
-    padding: 0;
-    border: 0;
-  }
-
-  .years[data-ready] .moment {
-    pointer-events: none;
-  }
-
-  .years[data-ready] .moment > * {
-    pointer-events: auto;
-  }
-
-  .years[data-ready] .moment::before {
-    display: none;
-  }
-
-  .years[data-ready] .moment:nth-child(1) .moment-year {
-    grid-column: 1;
-  }
-
-  .years[data-ready] .moment:nth-child(2) .moment-year {
-    grid-column: 2;
-  }
-
-  .years[data-ready] .moment:nth-child(3) .moment-year {
-    grid-column: 3;
-  }
-
-  .years[data-ready] .moment:nth-child(4) .moment-year {
-    grid-column: 4;
-  }
-
-  .years[data-ready] .moment:nth-child(5) .moment-year {
-    grid-column: 5;
-  }
-
-  .years[data-ready] .moment:nth-child(6) .moment-year {
-    grid-column: 6;
-  }
-
-  .years[data-ready] .moment-year {
-    grid-row: 1;
-    font-size: inherit;
-    line-height: inherit;
-  }
-
-  /* Achse: von der Mitte der ersten bis zur Mitte der letzten Spalte */
-  .years[data-ready] .yr-track {
+  /* Von der Mitte der ersten bis zur Mitte der letzten Spalte */
+  .yr-track {
     position: absolute;
     top: calc(1rem - 0.5px);
     right: calc(100% / 12);
     left: calc(100% / 12);
-    display: block;
     height: 1px;
     background-color: var(--steel);
     pointer-events: none;
@@ -663,13 +637,13 @@ const history = [
     inset: -1px 0;
     background-color: var(--leaf-edge);
     content: '';
-    transform: scaleX(var(--yr-p, 0));
-    transform-origin: left;
-    transition: transform var(--dur-4) var(--ease-expo);
+    scale: var(--yr-p, 0) 1;
+    transform-origin: 0 50%;
+    transition: scale var(--dur-4) var(--ease-expo);
   }
 
-  /* Der Knopf entsteht im Skript (choice.ts), darum :global. */
-  .moment-year :global(.yr-btn) {
+  .yr-btn {
+    position: relative;
     display: grid;
     justify-items: center;
     gap: 0.625rem;
@@ -687,7 +661,7 @@ const history = [
   }
 
   /* Punkt auf der Achse */
-  .moment-year :global(.yr-btn)::before {
+  .yr-btn::before {
     width: 0.75rem;
     height: 0.75rem;
     margin-top: -0.375rem;
@@ -700,84 +674,31 @@ const history = [
       transform var(--dur-3) var(--ease-out);
   }
 
-  .moment[data-past] .moment-year :global(.yr-btn)::before {
+  .yr-btn[data-past]::before {
     background-color: var(--leaf);
   }
 
-  .moment[data-on] .moment-year :global(.yr-btn) {
+  .yr-btn[aria-current] {
     color: var(--charcoal);
     font-weight: 600;
   }
 
-  .moment[data-on] .moment-year :global(.yr-btn)::before {
+  .yr-btn[aria-current]::before {
     background-color: var(--leaf);
     transform: scale(1.5);
   }
 
   @media (hover: hover) and (pointer: fine) {
-    .moment-year :global(.yr-btn:hover) {
+    .yr-btn:hover {
       color: var(--charcoal);
     }
   }
 
-  .years[data-ready] .moment-panel {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    grid-template-columns: minmax(0, 1fr);
-    align-content: start;
-    gap: 1rem 2rem;
-    padding-top: clamp(1.5rem, 3vw, 2.5rem);
-    visibility: hidden;
-  }
-
-  .years[data-ready] .moment[data-on] .moment-panel {
-    visibility: visible;
-  }
-
-  /* Die grosse Jahreszahl ist reine Gestaltung: ein Pseudo-Element, kein zweiter Text im HTML. */
-  .years[data-ready] .yr-big {
-    display: block;
-    overflow: hidden;
-    margin-block: -0.1em;
-    padding-block: 0.1em;
-  }
-
-  .yr-big::before {
-    display: block;
-    color: var(--charcoal);
-    content: attr(data-year);
-    font-size: var(--fs-number);
-    font-weight: var(--fw-display);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: var(--ls-display);
-    line-height: 0.9;
-  }
-
-  .years[data-ready] .moment-body {
-    display: flex;
-    align-items: flex-start;
-    gap: 1.25rem;
-    max-width: 34em;
-    color: var(--charcoal);
-    font-size: var(--fs-lead);
-    letter-spacing: -0.015em;
-    line-height: 1.36;
-  }
-
-  .years[data-ready] .moment-body :global(.moment-photo) {
-    flex: none;
-    width: 6rem;
-  }
-
-  .years[data-ready] .yr-next:not([hidden]) {
-    display: inline-flex;
-    grid-column: 1 / -1;
-    grid-row: 3;
+  .yr-next {
     align-items: center;
     justify-self: start;
     gap: 0.5rem;
     min-height: 2.75rem;
-    margin-top: 1.5rem;
     padding: 0 0.4375rem 0 1rem;
     border: 1px solid var(--steel);
     border-radius: var(--r-pill);
@@ -799,85 +720,22 @@ const history = [
     border-radius: 50%;
     background-color: var(--leaf);
     color: var(--ink);
+    transition: transform var(--dur-2) var(--ease-out);
   }
 
   @media (hover: hover) and (pointer: fine) {
     .yr-next:hover {
       border-color: var(--leaf-deep);
     }
-  }
 
-  /* Wechsel: Die Jahreszahl steigt aus ihrer Maske, das Foto öffnet sich, der Text rückt nach. */
-  .moment[data-anim] .yr-big::before {
-    animation: yr-rise var(--dur-4) var(--ease-expo) both;
-  }
-
-  .moment[data-anim] .moment-body :global(.moment-photo) {
-    animation: unveil var(--dur-4) var(--ease-expo) var(--stagger) both;
-  }
-
-  .moment[data-anim] .moment-body p {
-    animation: yr-settle var(--dur-3) var(--ease-out) both;
-  }
-
-  @keyframes yr-rise {
-    from {
-      transform: translateY(105%);
-    }
-  }
-
-  @keyframes yr-settle {
-    from {
-      transform: translateY(0.25rem);
+    .yr-next:hover .yr-next-icon {
+      transform: translateX(2px);
     }
   }
 
   @media (min-width: 40rem) {
-    .years[data-ready] .moment-panel {
-      grid-template-columns: auto minmax(0, 1fr);
-      align-items: end;
-    }
-
-    .moment-year :global(.yr-btn) {
+    .yr-btn {
       font-size: var(--fs-small);
-    }
-  }
-
-  /* Ohne Subgrid und im Druck: die Zeitleiste wie ohne Skript. */
-  @supports not (grid-template-rows: subgrid) {
-    .years[data-ready],
-    .years[data-ready] .timeline,
-    .years[data-ready] .moment {
-      display: block;
-    }
-
-    .years[data-ready] .moment-panel {
-      visibility: visible;
-    }
-
-    .years[data-ready] .yr-track,
-    .years[data-ready] .yr-big,
-    .years[data-ready] .yr-next:not([hidden]) {
-      display: none;
-    }
-  }
-
-  @media print {
-    .years[data-ready],
-    .years[data-ready] .timeline,
-    .years[data-ready] .moment {
-      display: block;
-    }
-
-    .years[data-ready] .moment-panel {
-      visibility: visible;
-    }
-
-    /* Die grosse Jahreszahl stünde im Druck neben dem Jahr des Kopfs ein zweites Mal. */
-    .years[data-ready] .yr-track,
-    .years[data-ready] .yr-big,
-    .years[data-ready] .yr-next:not([hidden]) {
-      display: none;
     }
   }
 
@@ -894,26 +752,26 @@ const history = [
   }
 
   @media (min-width: 64rem) {
-    .history,
+    .history-stage,
     .team {
       grid-template-columns: minmax(0, 3fr) minmax(0, 9fr);
       align-items: start;
     }
 
-    /* Ohne Skript waagrecht: drei Momente pro Reihe, die Linie oben */
-    .years:not([data-ready]) .timeline {
+    /* Als Zeitleiste waagrecht: drei Momente pro Reihe, die Linie oben */
+    .timeline {
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 3rem 2.5rem;
       padding-left: 0;
       border-left: 0;
     }
 
-    .years:not([data-ready]) .moment {
+    .moment {
       padding-top: 1.75rem;
       border-top: 1px solid var(--border-strong);
     }
 
-    .years:not([data-ready]) .moment::before {
+    .moment::before {
       top: -6px;
       left: 0;
     }
@@ -925,7 +783,8 @@ const history = [
    * schneidet gleich ab, ohne das. Nur dort, wo es die Bewegung gibt.
    */
   @supports (animation-timeline: view()) {
-    .portrait-frame {
+    .portrait-frame,
+    .portrait-media {
       overflow: clip;
     }
 

@@ -44,8 +44,9 @@ const fields = {
           <span class="hours-status-note">(laut Öffnungszeiten)</span>
         </p>
 
+        {/* Jede Zeile rückt für sich nach, sobald sie ins Bild kommt (scroll.css). */}
         <dl class="kontakt-list">
-          <div>
+          <div class="sc-rise">
             <dt class="label-up">
               <Icon name="phone" size={16} />
               Telefon
@@ -56,7 +57,7 @@ const fields = {
               </a>
             </dd>
           </div>
-          <div>
+          <div class="sc-rise">
             <dt class="label-up">
               <Icon name="mail" size={16} />
               E-Mail
@@ -69,7 +70,7 @@ const fields = {
               </a>
             </dd>
           </div>
-          <div>
+          <div class="sc-rise">
             <dt class="label-up">
               <Icon name="map-pin" size={16} />
               Geschäft
@@ -87,7 +88,7 @@ const fields = {
               </a>
             </dd>
           </div>
-          <div>
+          <div class="sc-rise">
             <dt class="label-up">
               <Icon name="truck" size={16} />
               Lager
@@ -410,6 +411,8 @@ const fields = {
   }
 
   .kontakt-list > div {
+    --sc-y: 1.25rem;
+
     display: grid;
     gap: 0.5rem;
     padding-block: 1.25rem;

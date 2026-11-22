@@ -4,7 +4,7 @@
  *
  * Der Browser stellt in diesen Fällen die alte Scrollposition wieder her, kennt dafür aber nur
  * eine Zahl in Pixeln. Die Startseite bekommt ihre volle Länge erst nach und nach (zurückgestellte
- * Teile, angepinnter Hero): Dieselbe Zahl zeigt dann auf einen anderen Abschnitt.
+ * Teile, Bühne der Firmengeschichte): Dieselbe Zahl zeigt dann auf einen anderen Abschnitt.
  * Darum merkt sich die Seite selbst, welcher Abschnitt in der Bildmitte steht und wo, und
  * home.ts stellt genau das wieder her.
  *

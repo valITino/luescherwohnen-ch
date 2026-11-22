@@ -15,6 +15,7 @@ import {
   layOutAll,
   nextFrames,
   placeAt,
+  toggleMotion,
 } from './helpers.ts';
 
 /** Startseite, alle Teile sofort ausgelegt (für Prüfungen der ganzen Seite) */
@@ -22,15 +23,6 @@ async function openHome(page: Page, origin = PROD, hash = '') {
   await page.goto(`${origin}/${hash}`);
   await page.evaluate(() => document.fonts.ready);
   await layOutAll(page);
-}
-
-/**
- * Den Bewegungsschalter betätigen, ohne dorthin zu scrollen: Unter 80rem steht er am Ende der
- * Seite, ein Klick von Playwright scrollte die Seite erst zu ihm.
- */
-async function toggleMotion(page: Page, state: 'on' | 'off') {
-  await page.evaluate(() => document.querySelector<HTMLElement>('[data-motion-toggle]')!.click());
-  await expect(page.locator('html')).toHaveAttribute('data-motion', state);
 }
 
 /**
@@ -164,7 +156,7 @@ test.describe('Startseite', () => {
   });
 });
 
-test.describe('Raum für Raum, Jahr für Jahr, Mehr lesen', () => {
+test.describe('Raum für Raum, Mehr lesen, Unser Team', () => {
   test('Sortiment: ein Raum nach dem anderen, mit Tastatur und Direktlink', async ({ page }) => {
     await openHome(page);
     const rooms = page.locator('[data-rooms]');
@@ -291,6 +283,101 @@ test.describe('Raum für Raum, Jahr für Jahr, Mehr lesen', () => {
     ).toBe(1);
   });
 
+  test('Sortiment: Eine Wahl im Index bringt die Bühne ins Bild', async ({ page, isMobile }) => {
+    await openHome(page);
+    const rooms = page.locator('[data-rooms]');
+    await expect(rooms).toHaveAttribute('data-ready', '');
+    const buttons = rooms.locator('.room-btn');
+    const viewport = await page.evaluate(() => window.innerHeight);
+    const header = await page.evaluate(() =>
+      Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop),
+    );
+    /** Wie viel von der offenen Tafel unter dem Header im Fenster steht (Anteil) */
+    const seen = () =>
+      rooms.locator('.room[data-on] .room-panel').evaluate((panel, top) => {
+        const rect = panel.getBoundingClientRect();
+        const part = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, top as number);
+        return part / Math.min(rect.height, window.innerHeight - (top as number));
+      }, header);
+    /** Die Seite ist zur Ruhe gekommen (zwei Messungen im Abstand zeigen dieselbe Stelle). */
+    const settled = async () => {
+      await expect
+        .poll(async () => {
+          const first = await page.evaluate(() => window.scrollY);
+          await page.waitForTimeout(150);
+          return first === (await page.evaluate(() => window.scrollY));
+        })
+        .toBe(true);
+      return page.evaluate(() => window.scrollY);
+    };
+
+    // Der sechste Name steht oben im Fenster: Am Handy liegt die Bühne (darüber) dann nicht im
+    // Bild, und der Wechsel bliebe unbemerkt. Am Desktop steht sie neben dem Index und ist erst
+    // zu wenig zu sehen, wenn der Name fast unter dem Header steht.
+    await placeAt(page, '#raum-vorhaenge .room-btn', isMobile ? viewport * 0.3 : header + 8);
+    expect(await seen()).toBeLessThan(0.6);
+    await buttons.nth(5).click();
+    await expect(buttons.nth(5)).toHaveAttribute('aria-expanded', 'true');
+    // Die Seite gleitet so weit, dass die Tafel unter dem Header steht.
+    const landed = await settled();
+    const top = await rooms
+      .locator('#raum-vorhaenge .room-panel')
+      .evaluate((panel) => panel.getBoundingClientRect().top);
+    expect(Math.abs(top - header)).toBeLessThanOrEqual(2);
+    expect(await seen()).toBeGreaterThan(0.95);
+
+    // Jetzt stehen Bühne und Index zusammen im Bild: Eine weitere Wahl bewegt die Seite nicht.
+    await buttons.first().click();
+    await expect(buttons.first()).toHaveAttribute('aria-expanded', 'true');
+    expect(await settled()).toBe(landed);
+
+    // Mit der Tastatur gewählt, bleibt der Knopf mit dem Fokus ganz im Bild.
+    await placeAt(page, '#raum-lampen .room-btn', viewport * 0.3);
+    await buttons.last().focus();
+    await page.keyboard.press('Enter');
+    await expect(buttons.last()).toHaveAttribute('aria-expanded', 'true');
+    await settled();
+    await expect(buttons.last()).toBeFocused();
+    await expect(buttons.last()).toBeInViewport({ ratio: 1 });
+  });
+
+  test('Sortiment: Eine Wahl per Klick gilt, auch wenn die Seite unter dem Zeiger weiterzieht', async ({
+    page,
+  }) => {
+    await openHome(page);
+    const rooms = page.locator('[data-rooms]');
+    await expect(rooms).toHaveAttribute('data-ready', '');
+    const buttons = rooms.locator('.room-btn');
+    const viewport = await page.evaluate(() => window.innerHeight);
+    await placeAt(page, '#raum-vorhaenge .room-btn', viewport * 0.3);
+    // Mit der Maus: Zeiger auf den Namen, Klick. Danach gleitet die Seite zur Bühne, und andere
+    // Namen ziehen unter dem ruhenden Zeiger durch. Der Browser meldet das wie ein Betreten;
+    // ohne Sperre zeigte das Verweilen dann einen anderen Raum als den gewählten.
+    const box = (await buttons.nth(5).boundingBox())!;
+    const at = { x: box.x + 60, y: box.y + box.height / 2 };
+    await page.mouse.move(at.x, at.y);
+    await page.mouse.down();
+    await page.mouse.up();
+    await expect(buttons.nth(5)).toHaveAttribute('aria-expanded', 'true');
+    await expect
+      .poll(async () => {
+        const first = await page.evaluate(() => window.scrollY);
+        await page.waitForTimeout(150);
+        return first === (await page.evaluate(() => window.scrollY));
+      })
+      .toBe(true);
+    // Länger als das Verweilen: Die Wahl steht.
+    await page.waitForTimeout(400);
+    await expect(buttons.nth(5)).toHaveAttribute('aria-expanded', 'true');
+    await expect(rooms.locator('[aria-expanded="true"]')).toHaveCount(1);
+
+    // Bewegt sich der Zeiger wirklich auf einen anderen Namen, zeigt das Verweilen ihn wieder.
+    await buttons.first().scrollIntoViewIfNeeded();
+    const other = (await buttons.first().boundingBox())!;
+    await page.mouse.move(other.x + 60, other.y + other.height / 2, { steps: 8 });
+    await expect(buttons.first()).toHaveAttribute('aria-expanded', 'true');
+  });
+
   test('Sortiment ohne Skript: alle Bereiche als Liste, keine toten Knöpfe', async ({
     browser,
   }) => {
@@ -306,38 +393,6 @@ test.describe('Raum für Raum, Jahr für Jahr, Mehr lesen', () => {
     await context.close();
   });
 
-  test('Firmengeschichte: Jahr für Jahr, die Linie wächst bis zum gewählten Jahr', async ({
-    page,
-  }) => {
-    await openHome(page);
-    const years = page.locator('[data-years]');
-    await expect(years).toHaveAttribute('data-ready', '');
-    const buttons = years.locator('.yr-btn');
-    await expect(buttons).toHaveCount(6);
-    await expect(buttons.first()).toHaveAttribute('aria-expanded', 'true');
-    const next = years.locator('[data-choice-next]');
-    await expect(next).toHaveText(/Weiter: 1949/);
-    await buttons.nth(2).click();
-    await expect(buttons.nth(2)).toHaveAttribute('aria-expanded', 'true');
-    expect(await years.evaluate((root) => root.style.getPropertyValue('--yr-p'))).toBe('0.4');
-    await expect(years.locator('#jahr-1946')).toHaveAttribute('data-past', '');
-    // Am Ende führt «Weiter» zurück zum Anfang.
-    await buttons.last().click();
-    await expect(next).toHaveText(/Zurück zu 1946/);
-    await next.click();
-    await expect(buttons.first()).toHaveAttribute('aria-expanded', 'true');
-    await expect(years.getByRole('status')).toHaveText('1946, 1 von 6');
-    await expect(next).toHaveText(/Weiter: 1949/);
-    // Tastatur: Pfeile nach links und rechts
-    await buttons.last().focus();
-    await page.keyboard.press('Home');
-    await expect(buttons.first()).toBeFocused();
-    // Die grosse Jahreszahl ist Gestaltung, kein zweiter Text.
-    expect(
-      await years.locator('#jahr-1959 .yr-big').evaluate((element) => element.textContent),
-    ).toBe('');
-  });
-
   test('Mehr lesen: Der Text steht im HTML und öffnet mit der Tastatur', async ({ page }) => {
     await openHome(page);
     const more = page.locator('#aktuell details.more').first();
@@ -349,6 +404,14 @@ test.describe('Raum für Raum, Jahr für Jahr, Mehr lesen', () => {
     await expect(more).toHaveAttribute('open', '');
     await expect(more.locator('.more-body p')).toBeVisible();
     await expect(more.locator('summary')).toContainText('Weniger');
+    // Der Text klappt von oben auf (Ausschnitt, kein Einblenden) und steht danach ohne Ausschnitt:
+    // Ein Fokus-Ring im Text würde sonst beschnitten.
+    const body = more.locator('.more-body');
+    expect(await body.evaluate((element) => getComputedStyle(element).opacity)).toBe('1');
+    await expect
+      .poll(() => body.evaluate((element) => getComputedStyle(element).clipPath))
+      .toBe('none');
+    expect(await body.evaluate((element) => getComputedStyle(element).transform)).toBe('none');
   });
 
   test('Unser Team: vier Menschen, Initialen statt Platzhalterbildern', async ({ page }) => {
@@ -470,13 +533,14 @@ test.describe('Layout', () => {
   }) => {
     await page.goto(`${PROD}/`);
     await layOutAll(page);
-    // Gemessen wird im Bild, wo Foto und Ecken an ihrem Platz stehen (beim Hereinkommen setzt
-    // sich das Foto aus einem Zoom, und die Ecken rücken an: scroll.css).
+    // Gemessen wird im Bild, wo die Ecken an ihrem Platz stehen (beim Hereinkommen rücken sie an,
+    // und das Foto setzt sich aus einem Zoom: scroll.css).
     const viewport = await page.evaluate(() => window.innerHeight);
     await placeAt(page, '.portrait-frame', viewport * 0.1);
     const box = await page.locator('.portrait-frame').evaluate((frame) => {
       const rect = (selector: string) => frame.querySelector(selector)!.getBoundingClientRect();
-      const photo = rect('img');
+      // Der Ausschnitt des Fotos: Das Foto selbst gleitet darin und ist etwas grösser (scroll.css).
+      const photo = rect('.portrait-media');
       return {
         photo: { top: photo.top, bottom: photo.bottom, height: photo.height },
         caption: rect('.portrait-caption').top,
@@ -559,7 +623,7 @@ test.describe('Layout', () => {
     }
   });
 
-  test('angepinnte Flächen passen in niedrige Fenster', async ({ page }) => {
+  test('Das runde Foto im Hero passt in niedrige Fenster', async ({ page }) => {
     for (const viewport of [
       { width: 1366, height: 650 },
       { width: 1280, height: 740 },
@@ -1455,7 +1519,7 @@ test.describe('Bewegung und Chrome', () => {
         const atRest = new RegExp(rest);
         return [
           ...document.querySelectorAll<HTMLElement>(
-            'main > *, .sc-rise, .sc-wi, .sc-zoom, .ticker-row:not(.ticker-row-reverse), .hero-orb, .portrait-corner, .statement-text .w',
+            'main > *, .sc-rise, .sc-wi, .sc-zoom, .sc-drift, .ticker-row:not(.ticker-row-reverse), .hero-orb, .portrait-corner, .statement-text .w, .moment-card',
           ),
         ]
           .filter((element) => {

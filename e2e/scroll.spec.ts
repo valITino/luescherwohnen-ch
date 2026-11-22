@@ -40,7 +40,12 @@ test.describe('Bewegung folgt dem Scrollen', () => {
       ['#sortiment', null, 'sc-leave'],
       ['#sortiment .section-lead', null, 'sc-rise'],
       ['#sortiment-title .sc-wi', null, 'sc-word'],
-      ['#aktuell .story-photo', null, 'sc-zoom'],
+      ['#aktuell .story-photo', null, 'sc-drift'],
+      ['.member-img', null, 'sc-zoom'],
+      // Firmengeschichte: Karten, Linie und die zurücktretende Karte hängen an der Bühne.
+      ['#jahr-1949', null, 'yr-rise, yr-gone'],
+      ['#jahr-1946 .moment-card', null, 'yr-back'],
+      ['.yr-track', '::after', 'yr-line'],
       ['.hero-orb', null, 'hero-near'],
       ['.ticker-row', null, 'band-left'],
       ['.ticker-row-reverse', null, 'band-right'],
@@ -214,7 +219,7 @@ test.describe('Bewegung folgt dem Scrollen', () => {
     ).toBe('clip');
   });
 
-  test('Fotos sind vom ersten Pixel an ganz zu sehen und setzen sich aus einem leichten Zoom', async ({
+  test('Fotos sind vom ersten Pixel an ganz zu sehen, setzen sich und gleiten mit', async ({
     page,
   }) => {
     await openHome(page);
@@ -228,6 +233,8 @@ test.describe('Bewegung folgt dem Scrollen', () => {
           const style = getComputedStyle(img);
           return {
             scale: style.scale === 'none' ? 1 : Number.parseFloat(style.scale),
+            shift:
+              style.translate === 'none' ? 0 : Number.parseFloat(style.translate.split(' ')[1]!),
             opacity: style.opacity,
             clip: style.clipPath,
             loaded:
@@ -243,10 +250,120 @@ test.describe('Bewegung folgt dem Scrollen', () => {
     const entering = await state();
     expect(entering.opacity).toBe('1');
     expect(entering.clip).toBe('none');
-    expect(entering.scale).toBeGreaterThan(1.1);
-    // Mitten im Fenster: in voller Ruhe.
-    await placeAt(page, photo, viewport * 0.25);
-    expect((await state()).scale).toBeCloseTo(1, 3);
+    expect(entering.scale).toBeGreaterThan(1.12);
+    // Auf dem Weg durchs Fenster setzt es sich weiter und gleitet langsamer als sein Rahmen
+    // (es rückt in ihm nach unten): gleichmässig, an jeder Stelle ein Stück weiter.
+    await placeAt(page, photo, viewport * 0.5);
+    const middle = await state();
+    await placeAt(page, photo, viewport * 0.1);
+    const high = await state();
+    expect(middle.scale).toBeLessThan(entering.scale);
+    expect(high.scale).toBeLessThan(middle.scale);
+    expect(high.scale).toBeGreaterThan(1.03);
+    expect(middle.shift).toBeGreaterThan(entering.shift);
+    expect(high.shift).toBeGreaterThan(middle.shift);
+    // Zurück an dieselbe Stelle: derselbe Zustand. Und ohne Scrollen steht das Foto.
+    await placeAt(page, photo, viewport * 0.5);
+    expect(await state()).toEqual(middle);
+    await page.waitForTimeout(400);
+    expect(await state()).toEqual(middle);
+  });
+
+  test('Gleitende Fotos füllen ihren Rahmen in jeder Lage', async ({ page }) => {
+    await openHome(page);
+    const viewport = await page.evaluate(() => window.innerHeight);
+    const frames = ['.room-media', '.story-media', '.portrait-media'];
+    for (const frame of frames) {
+      // Der sichtbare Rahmen (im Sortiment liegen sieben übereinander, einer ist zu sehen).
+      const selector = frame === '.room-media' ? '.room[data-on] .room-media' : frame;
+      const height = await page
+        .locator(selector)
+        .first()
+        .evaluate((element) => (element as HTMLElement).offsetHeight);
+      // Vom Hereinkommen an der unteren Kante bis zum Verlassen an der oberen.
+      for (const fromTop of [
+        viewport - 2,
+        viewport * 0.75,
+        viewport * 0.5,
+        viewport * 0.25,
+        0,
+        40 - height,
+      ]) {
+        await placeAt(page, selector, fromTop);
+        const gap = await page
+          .locator(selector)
+          .first()
+          .evaluate((element) => {
+            const box = element.getBoundingClientRect();
+            const img = element.querySelector('img')!.getBoundingClientRect();
+            // Wie weit der Rahmen an einer Kante über das Foto hinausragt (0: ganz gefüllt)
+            return Math.max(
+              img.top - box.top,
+              box.bottom - img.bottom,
+              img.left - box.left,
+              box.right - img.right,
+            );
+          });
+        expect(gap, `${frame} bei ${Math.round(fromTop)} px`).toBeLessThanOrEqual(0.5);
+        expect(
+          await page
+            .locator(selector)
+            .first()
+            .evaluate((element) => getComputedStyle(element).overflowY),
+          frame,
+        ).toBe('clip');
+      }
+    }
+  });
+
+  test('Bogen über Bogen: Der nächste Bogen erreicht den letzten Inhalt erst um die Fenstermitte', async ({
+    page,
+  }) => {
+    await openHome(page);
+    // Wo im Fenster steht die Unterkante des letzten Inhalts, wenn der nächste Bogen sie erreicht?
+    // Als fester Anteil der Fensterhöhe gerechnet, war das am Handy bei 77 % der Höhe: Die Karte
+    // war verdeckt, kaum dass sie im Bild war.
+    for (const [sheet, last] of [
+      ['#service', '#service .delivery'],
+      ['#aktuell', '#aktuell .story:last-child'],
+    ] as const) {
+      const share = await page.evaluate(
+        async ([sheetSelector, lastSelector]) => {
+          const section = document.querySelector<HTMLElement>(sheetSelector)!;
+          const element = document.querySelector<HTMLElement>(lastSelector)!;
+          let top = 0;
+          for (
+            let node: HTMLElement | null = element;
+            node;
+            node = node.offsetParent as HTMLElement | null
+          ) {
+            top += node.offsetTop;
+          }
+          const frames = () =>
+            new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          /** Liegt an der Unterkante des Elements schon der nächste Bogen? */
+          const covered = async (y: number) => {
+            window.scrollTo({ top: y, behavior: 'instant' });
+            await frames();
+            const rect = element.getBoundingClientRect();
+            const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.bottom - 3);
+            return { covered: hit !== null && !section.contains(hit), bottom: rect.bottom };
+          };
+          // Von «Unterkante am unteren Fensterrand» (frei) bis eine Fensterhöhe weiter (verdeckt).
+          let low = top + element.offsetHeight - window.innerHeight + 8;
+          let high = low + window.innerHeight;
+          for (let step = 0; step < 12; step += 1) {
+            const middle = (low + high) / 2;
+            if ((await covered(middle)).covered) high = middle;
+            else low = middle;
+          }
+          return (await covered(high)).bottom / window.innerHeight;
+        },
+        [sheet, last] as const,
+      );
+      expect(share, sheet).toBeGreaterThan(0.35);
+      expect(share, sheet).toBeLessThan(0.6);
+    }
   });
 
   test('Der Hero hält das Scrollen nicht an, und der nächste Bogen schiebt sich über ihn', async ({
@@ -399,8 +516,8 @@ test.describe('Bewegung folgt dem Scrollen', () => {
   }) => {
     await openHome(page);
     const viewport = await page.evaluate(() => window.innerHeight);
-    // Das Sortiment liegt schon halb über dem Hero: Der letzte Link des Heros ist verdeckt.
-    await placeAt(page, '#sortiment', viewport * 0.45);
+    // Das Sortiment liegt schon weit über dem Hero: Der letzte Link des Heros ist verdeckt.
+    await placeAt(page, '#sortiment', viewport * 0.25);
     const link = page.locator('.hero .visit-links a').last();
     const covered = () =>
       link.evaluate((element) => {

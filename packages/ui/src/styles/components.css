@@ -495,7 +495,7 @@
   /* ---------- Bildwechsel ---------- */
 
   /*
-   * Wechselt eine Bühne durch eine Wahl ihr Bild (choice.ts: «Raum für Raum», «Jahr für Jahr»),
+   * Wechselt eine Bühne durch eine Wahl ihr Bild (choice.ts: «Raum für Raum»),
    * steigt das neue vom unteren Rand seines Rahmens nach oben über das alte und setzt sich dabei
    * aus einem leichten Zoom. Clip und Zoom sitzen beide auf dem Bild selbst: So bewegt der Browser
    * eine einzige Ebene. Mit Ziel: Von einer Form zu «none» springt clip-path, statt zu gleiten.
@@ -518,8 +518,8 @@
   /*
    * Was nicht jeder lesen muss, steht hinter einer leisen Zeile «Mehr lesen» (natives <details>):
    * ohne Skript bedienbar, mit Tastatur und Screenreader, und der Text steht im HTML (für
-   * Suchmaschinen gleichwertig). Fliesstext blendet nie ein: Er steht beim Öffnen sofort da. Nur
-   * das Pluszeichen wird zum Minus (der senkrechte Strich schrumpft, keine Drehung).
+   * Suchmaschinen gleichwertig). Fliesstext blendet nie ein: Beim Öffnen klappt er von oben auf.
+   * Das Pluszeichen wird zum Minus (der senkrechte Strich schrumpft, keine Drehung).
    * Markup: <details class="more"><summary><span class="more-icon" aria-hidden="true"></span>
    * <span class="more-closed">Mehr lesen</span><span class="more-opened">Weniger</span>
    * <span class="sr-only">: Thema</span></summary><div class="more-body">…</div></details>
@@ -598,6 +598,29 @@
     display: grid;
     gap: 1rem;
     padding-top: 0.75rem;
+  }
+
+  /*
+   * Die Antwort auf den Klick: Der Text klappt von oben auf (Ausschnitt, kein Einblenden) und
+   * rückt dabei einen Hauch nach. Der Platz dafür ist sofort da; verschoben wird nichts.
+   * Danach gilt wieder der normale Stil ohne Ausschnitt (kein `both`): Ein Fokus-Ring im Text
+   * wird so nie beschnitten. Bei reduzierter Bewegung entfällt jede Animation (base.css),
+   * angehalten gilt die Regel nicht.
+   */
+  html:not([data-motion='off']) .more[open] > .more-body {
+    animation: more-open var(--dur-3) var(--ease-out);
+  }
+
+  @keyframes more-open {
+    from {
+      transform: translateY(-0.5rem);
+      clip-path: inset(0 0 100% 0);
+    }
+
+    to {
+      transform: none;
+      clip-path: inset(0 0 0 0);
+    }
   }
 
   /* Im Druck steht alles da. */
