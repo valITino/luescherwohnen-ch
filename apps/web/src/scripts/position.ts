@@ -46,15 +46,28 @@ export function scrollTopFor(view: View): number | null {
   return Math.max(0, Math.round(window.scrollY + block.getBoundingClientRect().top - view.top));
 }
 
+/** Der Abschnitt einer gemerkten Ansicht; `null`, wenn es ihn nicht gibt. */
+export function blockOf(view: View): HTMLElement | null {
+  return blocks()[view.index] ?? null;
+}
+
+/**
+ * Die zuletzt gemerkte Ansicht dieser Seite (vom letzten Halt beim Scrollen). Für den Fall, dass
+ * sich das Layout unter dem Leser ändert und er an seiner Stelle bleiben soll (years.ts).
+ */
+export function rememberedView(): View | null {
+  const state: unknown = window.history.state;
+  if (typeof state !== 'object' || state === null) return null;
+  const view = (state as { view?: unknown }).view;
+  return isView(view) ? { index: view.index, top: view.top } : null;
+}
+
 /** Die gemerkte Ansicht, falls die Seite neu geladen oder über den Verlauf geöffnet wurde. */
 export function storedView(): View | null {
   const [navigation] = performance.getEntriesByType('navigation');
   const type = (navigation as PerformanceNavigationTiming | undefined)?.type;
   if (type !== 'reload' && type !== 'back_forward') return null;
-  const state: unknown = window.history.state;
-  if (typeof state !== 'object' || state === null) return null;
-  const view = (state as { view?: unknown }).view;
-  return isView(view) ? { index: view.index, top: view.top } : null;
+  return rememberedView();
 }
 
 /** Merkt die Ansicht, sobald das Scrollen zur Ruhe kommt (höchstens zweimal pro Sekunde). */

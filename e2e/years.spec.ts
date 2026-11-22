@@ -368,6 +368,9 @@ test.describe('Firmengeschichte geht mit dem Scrollen weiter', () => {
       { width: 360, height: 640 },
       { width: 390, height: 844 },
       { width: 768, height: 1024 },
+      // Tablet quer und kleiner Laptop: Der Titel steht neben der Bühne, ihre Spalte ist schmal.
+      { width: 1024, height: 700 },
+      { width: 1280, height: 600 },
       { width: 1366, height: 650 },
       { width: 1440, height: 900 },
       { width: 1920, height: 1080 },
@@ -412,8 +415,9 @@ test.describe('Firmengeschichte geht mit dem Scrollen weiter', () => {
   });
 
   test('Passt die Bühne nicht ins Fenster, bleibt die Zeitleiste', async ({ page }) => {
-    // Schmal und gerade hoch genug für die Bedingung im CSS: Der längste Satz bricht hier so oft
-    // um, dass die Karte nicht mehr ins Fenster passte. Das Skript nimmt die Bühne dann zurück.
+    // Schmal und niedrig: Der längste Satz bricht hier so oft um, dass die Karte nicht mehr ins
+    // Fenster passte. Das Skript misst das, sobald der Abschnitt ausgelegt ist, und nimmt die
+    // Bühne zurück.
     await page.setViewportSize({ width: 320, height: 580 });
     await openHome(page);
     const years = page.locator('[data-years]');
@@ -441,6 +445,11 @@ test.describe('Firmengeschichte geht mit dem Scrollen weiter', () => {
     await openHome(page);
     await toYear(page, 3);
     await expect.poll(current(page)).toBe(3);
+    // Die Seite merkt sich die Ansicht, sobald das Scrollen ruht (position.ts): Daran macht das
+    // Skript die Stelle fest, denn beim Drehen umbricht der Browser erst die ganze Seite neu.
+    await expect
+      .poll(() => page.evaluate(() => (history.state as { view?: unknown } | null)?.view ?? null))
+      .not.toBeNull();
     await page.setViewportSize({ width: 844, height: 390 });
     const years = page.locator('[data-years]');
     await expect
@@ -458,6 +467,162 @@ test.describe('Firmengeschichte geht mit dem Scrollen weiter', () => {
         years.locator('.history-stage').evaluate((element) => getComputedStyle(element).position),
       )
       .toBe('sticky');
+  });
+
+  test('Wo die Bühne nicht passt, landet ein Sprung zum Kontakt trotzdem richtig', async ({
+    browser,
+  }, testInfo) => {
+    // Mit Bühne ist die Seite rund zwei Fensterhöhen länger als mit Zeitleiste. Wird die Bühne
+    // erst zurückgenommen, während der Sprung schon unterwegs ist, landet er im Footer oder in
+    // der Firmengeschichte (so war es, bevor die Passform beim Auslegen entschieden wurde).
+    for (const viewport of [
+      { width: 844, height: 390 },
+      { width: 1024, height: 500 },
+    ]) {
+      for (const way of ['Knopf im Hero', 'Direktlink'] as const) {
+        const label = `${viewport.width}×${viewport.height}, ${way}`;
+        const context = await browser.newContext({ ...testInfo.project.use, viewport });
+        const page = await context.newPage();
+        if (way === 'Direktlink') {
+          await page.goto(`${PROD}/#kontakt`);
+        } else {
+          await page.goto(`${PROD}/`);
+          await page.evaluate(() => document.fonts.ready);
+          await page.locator('[data-hero] a[href$="#kontakt"]').first().click();
+        }
+        /** Abstand der Oberkante des Kontakts von der Linie unter dem Header */
+        const off = () =>
+          page.evaluate(() => {
+            const header = Number.parseFloat(
+              getComputedStyle(document.documentElement).scrollPaddingTop,
+            );
+            return Math.abs(
+              document.querySelector('#kontakt')!.getBoundingClientRect().top - header,
+            );
+          });
+        await expect.poll(off, { message: label, timeout: 10_000 }).toBeLessThanOrEqual(2);
+        // Und die Seite bleibt dort.
+        await page.waitForTimeout(600);
+        expect(await off(), label).toBeLessThanOrEqual(2);
+        await expect(page.locator('[data-years]'), label).not.toHaveAttribute('data-deck');
+        await context.close();
+      }
+    }
+  });
+
+  test('Heranscrollen und direkt landen ergeben dieselbe Form', async ({ browser }, testInfo) => {
+    // Beim Hereinscrollen steht der Inhalt der Bühne noch etwas tiefer (scroll.css). Eine Messung
+    // über den Überlauf zählte das mit: Wer heranscrollte, bekam die Zeitleiste, wer direkt
+    // landete, die Bühne. Gemessen wird darum am Layout, und zwar bevor jemand ankommt.
+    for (const viewport of [
+      { width: 360, height: 600 },
+      { width: 768, height: 560 },
+      { width: 1024, height: 700 },
+      { width: 1280, height: 600 },
+    ]) {
+      const label = `${viewport.width}×${viewport.height}`;
+      const forms: string[] = [];
+      for (const way of ['herangescrollt', 'direkt'] as const) {
+        const context = await browser.newContext({ ...testInfo.project.use, viewport });
+        const page = await context.newPage();
+        await page.goto(`${PROD}/`);
+        await page.evaluate(() => document.fonts.ready);
+        const years = page.locator('[data-years]');
+        if (way === 'direkt') {
+          await layOutAll(page);
+          await years.evaluate((element) => element.scrollIntoView({ block: 'start' }));
+        } else {
+          // Mit dem Rad, Schritt für Schritt, bis die Firmengeschichte mitten im Fenster steht.
+          await page.mouse.move(viewport.width / 2, viewport.height / 2);
+          for (let step = 0; step < 400; step += 1) {
+            const arrived = await years.evaluate(
+              (element) => element.getBoundingClientRect().top < window.innerHeight * 0.5,
+            );
+            if (arrived) break;
+            await page.mouse.wheel(0, 500);
+            await page.waitForTimeout(40);
+          }
+        }
+        await page.waitForTimeout(500);
+        const form = await years.evaluate((root) => {
+          const box = root.querySelector<HTMLElement>('.history-stage')!;
+          if (getComputedStyle(box).position !== 'sticky') return 'Zeitleiste';
+          // Passt die Bühne? Am Layout gemessen, ohne Verschiebungen.
+          const parts = [...box.children] as HTMLElement[];
+          const style = getComputedStyle(box);
+          const room =
+            box.clientHeight -
+            Number.parseFloat(style.paddingTop) -
+            Number.parseFloat(style.paddingBottom);
+          const need =
+            Math.max(...parts.map((part) => part.offsetTop + part.offsetHeight)) -
+            Math.min(...parts.map((part) => part.offsetTop));
+          return need <= room + 1 ? 'Bühne' : `Bühne, ${need - room} px zu hoch`;
+        });
+        expect(form, `${label}, ${way}`).toMatch(/^(Bühne|Zeitleiste)$/);
+        forms.push(form);
+        await context.close();
+      }
+      expect(forms[0], label).toBe(forms[1]);
+    }
+  });
+
+  test('Schaltet die Bühne über dem Leser um, behält er seine Stelle', async ({ page }) => {
+    // Im Kontakt gelesen, in einem Fenster, in das die Bühne nicht passt. Wird das Fenster höher,
+    // passt sie und kommt über dem Leser dazu: Die Seite wird dort rund zwei Fensterhöhen länger.
+    await page.setViewportSize({ width: 1024, height: 500 });
+    await page.goto(`${PROD}/#kontakt`);
+    await page.evaluate(() => document.fonts.ready);
+    const years = page.locator('[data-years]');
+    await expect(years).not.toHaveAttribute('data-deck');
+    await page.waitForSelector('html:not([data-jump])', { state: 'attached', timeout: 10_000 });
+    await page.evaluate(() => window.scrollBy({ top: 300, behavior: 'instant' }));
+    const kontakt = () =>
+      page.evaluate(() =>
+        Math.round(document.querySelector('#kontakt')!.getBoundingClientRect().top),
+      );
+    // Die Seite hat sich die Ansicht gemerkt (Kontakt, 300 px weit gelesen).
+    await expect
+      .poll(async () => {
+        const top = await page.evaluate(
+          () => (history.state as { view?: { top: number } } | null)?.view?.top ?? null,
+        );
+        return top !== null && top === (await kontakt());
+      })
+      .toBe(true);
+    const before = await kontakt();
+    expect(before).toBeLessThan(-100);
+
+    await page.setViewportSize({ width: 1024, height: 700 });
+    await expect(years).toHaveAttribute('data-deck', '');
+    await expect.poll(async () => Math.abs((await kontakt()) - before)).toBeLessThanOrEqual(2);
+    // Und wieder weg: Die Seite wird kürzer, der Leser bleibt im Kontakt.
+    await page.setViewportSize({ width: 1024, height: 500 });
+    await expect(years).not.toHaveAttribute('data-deck');
+    await expect.poll(async () => Math.abs((await kontakt()) - before)).toBeLessThanOrEqual(2);
+  });
+
+  test('Ohne die Einheit svh im Browser bleibt die Zeitleiste', async ({ page }) => {
+    // Die Bühne rechnet mit dem kleinsten Fenster (svh). Kennt ein älterer Browser die Einheit
+    // nicht, fielen ihre Höhen weg: Sie gilt dort darum gar nicht.
+    await page.route('**/*.css', async (route) => {
+      const response = await route.fetch();
+      const body = (await response.text()).replaceAll('(height:100svh)', '(height:100xyz)');
+      await route.fulfill({ response, body });
+    });
+    await openHome(page);
+    const years = page.locator('[data-years]');
+    await years.scrollIntoViewIfNeeded();
+    expect(
+      await years
+        .locator('.history-stage')
+        .evaluate((element) => getComputedStyle(element).position),
+    ).toBe('static');
+    await expect(years.locator('.moment-year')).toHaveText(YEARS);
+    for (const text of await years.locator('.moment-body p').all()) {
+      await expect(text).toBeVisible();
+    }
+    await expect(years.locator('button:visible')).toHaveCount(0);
   });
 
   test('Neu geladen steht wieder dasselbe Jahr da', async ({ page }) => {

@@ -2,9 +2,10 @@
  * Firmengeschichte «Jahr für Jahr»: Die Jahre gehen mit dem Scrollen weiter.
  *
  * Im HTML steht eine Zeitleiste mit allen sechs Momenten; so bleibt sie ohne dieses Skript, bei
- * reduzierter Bewegung, in niedrigen Fenstern und im Druck. Sonst wird sie zur Bühne (scroll.css,
- * `data-deck`): Sie bleibt unter dem Header stehen, solange die Jahre durchlaufen, und die Karte
- * des nächsten Jahrs schiebt sich über die des vorherigen. Niemand muss dafür etwas anklicken.
+ * reduzierter Bewegung, im Druck und wo die Bühne nicht ins Fenster passt. Sonst wird sie zur
+ * Bühne (scroll.css, `data-deck`): Sie bleibt unter dem Header stehen, solange die Jahre
+ * durchlaufen, und die Karte des nächsten Jahrs schiebt sich über die des vorherigen. Niemand
+ * muss dafür etwas anklicken.
  *
  * Was sich dabei bewegt, rechnet der Browser selbst aus der Scrollposition (scroll.css). Dieses
  * Skript führt nur nach, welches Jahr gerade gilt: für die Achse (Punkt, `aria-current`), für
@@ -14,19 +15,46 @@
  * Die Knöpfe der Achse und «Weiter» bleiben als Abkürzung: Sie scrollen an die Stelle ihres
  * Jahrs. Der Zustand hängt also immer an der Scrollposition, ob gescrollt oder geklickt wurde.
  *
- * Ob die Bühne gilt, entscheidet allein das CSS (Bewegung erwünscht, Fenster hoch genug); das
- * Skript liest es an `--yr-deck` ab, statt die Bedingungen zu wiederholen. Passt die Bühne einmal
- * nicht in ihr Fenster (starker Zoom, sehr lange Zeilen), nimmt das Skript sie zurück: Dann steht
- * wieder die Zeitleiste da, und nichts wird abgeschnitten.
+ * Ob Bewegung erwünscht ist, entscheidet das CSS; das Skript liest es an `--yr-deck` ab, statt
+ * die Bedingung zu wiederholen. Ob die Bühne ins Fenster passt, misst das Skript (Handy quer,
+ * niedriges Fenster, starker Zoom): Passt sie nicht, bleibt die Zeitleiste, und nichts wird
+ * abgeschnitten. Mit oder ohne Bühne ist die Seite verschieden lang. Darum gilt:
+ * - Entschieden wird, sobald der Abschnitt ausgelegt ist (home.ts, `data-laid`), also bevor
+ *   jemand dort ankommt und bevor ein Sprung zu einer Marke sein Ziel rechnet.
+ * - Gemessen wird am Layout, ohne Verschiebungen: Beim Hereinscrollen steht der Inhalt der Bühne
+ *   noch etwas tiefer (scroll.css), das zählte sonst als «passt nicht».
+ * - Neu entschieden wird nur, wenn sich etwas ändert, woran die Passform hängt (Breite, Höhe des
+ *   kleinsten Fensters, Schriftgrösse): Die Adressleiste am Handy ändert nichts davon.
+ * - Schaltet die Bühne später um (Handy gedreht), bleibt der Leser an seiner Stelle.
  */
 import { motionPaused, onMotionPausedChange, whileInView } from '@luescher/ui/motion';
 import type { SmoothScroll } from '@luescher/ui/motion/smooth';
+import { blockOf, rememberedView, scrollTopFor } from './position.ts';
 
 /** Im Schrittbetrieb gilt das nächste Jahr, sobald seine Karte halb gestiegen wäre. */
 const fallback = { span: 5.5, rise: 0.75 };
 
 /** Mit dem Finger geführt gilt es, sobald die Linie seinen Punkt erreicht (ein Hauch davor). */
 const ARRIVAL = 0.04;
+
+interface Track {
+  /** Scrollposition, an der die Bühne stehen bleibt */
+  start: number;
+  /** Scrollweg, auf dem die Jahre durchlaufen */
+  distance: number;
+  span: number;
+  rise: number;
+}
+
+/** Wo der Leser steht, bevor die Bühne umschaltet */
+interface Place {
+  /** in der Firmengeschichte selbst */
+  inside: boolean;
+  /** schon dahinter (Kontakt, Footer) */
+  below: boolean;
+  /** Oberkante des Abschnitts danach, im Fenster gemessen */
+  after: number | null;
+}
 
 export function initYears(root: HTMLElement, smooth: () => SmoothScroll | null): void {
   const stage = root.querySelector<HTMLElement>('.history-stage');
@@ -40,12 +68,30 @@ export function initYears(root: HTMLElement, smooth: () => SmoothScroll | null):
   const count = items.length;
   const names = buttons.map((button) => (button.textContent ?? '').trim());
   const scrubs = CSS.supports('animation-timeline: view()');
+  /** Der Abschnitt nach der Firmengeschichte: An ihm misst sich, ob die Seite verrutscht ist. */
+  const after = root.closest('main > *')?.nextElementSibling ?? null;
 
   // Meldung für Screenreader, wenn ein Knopf das Jahr gewechselt hat: «1959, 3 von 6».
   const status = document.createElement('p');
   status.className = 'sr-only';
   status.setAttribute('role', 'status');
   root.append(status);
+
+  /*
+   * Höhe des kleinsten Fensters (mit eingeblendeter Adressleiste), an der die Bühne hängt (`svh`).
+   * Gemessen an einem unsichtbaren Stück ohne Fläche; `window.innerHeight` schwankt am Handy mit
+   * der Adressleiste. Ohne `svh` im Browser gilt die Bühne ohnehin nicht (scroll.css).
+   */
+  const probe = document.createElement('i');
+  probe.setAttribute('aria-hidden', 'true');
+  probe.style.setProperty('position', 'fixed');
+  probe.style.setProperty('top', '0');
+  probe.style.setProperty('left', '0');
+  probe.style.setProperty('width', '0');
+  probe.style.setProperty('height', '100svh');
+  probe.style.setProperty('visibility', 'hidden');
+  probe.style.setProperty('pointer-events', 'none');
+  document.body.append(probe);
 
   let index = -1;
   const show = (to: number) => {
@@ -70,28 +116,52 @@ export function initYears(root: HTMLElement, smooth: () => SmoothScroll | null):
     }
   };
 
-  /** Gilt die Bühne (CSS)? Und führt der Finger die Karten, oder wechseln sie in Schritten? */
+  /** Gilt die Bühne? Und führt der Finger die Karten, oder wechseln sie in Schritten? */
   let deck = false;
   let led = false;
+  /** Die Passform ist gemessen (davor gilt, was das CSS allein sagt). */
+  let decided = false;
   /** Lage und Länge der Strecke im Layout; `null`: neu vermessen. */
-  let track: { start: number; distance: number; span: number; rise: number } | null = null;
+  let track: Track | null = null;
 
-  const measure = () => {
+  /** Sagt das CSS «Bühne» (Skript da, Bewegung erwünscht)? Liest nur Stil, vermisst nichts. */
+  const wanted = () => getComputedStyle(root).getPropertyValue('--yr-deck').trim() === '1';
+  const setLed = () => {
+    led = deck && scrubs && !motionPaused();
+  };
+  /** Abstand für den Header, unter dem die Seite nach einem Sprung beginnt */
+  const header = () =>
+    Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+  /** Lage im Layout, ohne Verschiebungen (was am Scrollen hängt, verschöbe sein Ziel selbst). */
+  const layoutTop = (element: HTMLElement) => {
     let top = 0;
     for (
-      let node: HTMLElement | null = root;
+      let node: HTMLElement | null = element;
       node;
       node = node.offsetParent as HTMLElement | null
     ) {
       top += node.offsetTop;
     }
+    return top;
+  };
+
+  const measure = (): Track => {
+    const sticky = Number.parseFloat(getComputedStyle(stage).top) || 0;
     const style = getComputedStyle(root);
     const number = (name: string, otherwise: number) =>
       Number.parseFloat(style.getPropertyValue(name)) || otherwise;
+    // Solange die Bühne steht: von «Oberkante unter dem Header» bis «Unterkante am Ende».
+    const held = Math.max(1, root.offsetHeight - stage.offsetHeight);
+    /*
+     * Geführt rechnet der Browser die Strecke am Fenster, wie es gerade ist. Am Handy ist es mit
+     * ausgeblendeter Adressleiste höher als die Bühne (die mit dem kleinsten Fenster rechnet):
+     * Karten und Linie sind dann etwas früher fertig, und das Skript rechnet gleich.
+     */
+    const guided = Math.max(1, Math.min(held, root.offsetHeight - (window.innerHeight - sticky)));
     return {
       // Die Bühne bleibt stehen, sobald ihre Oberkante unter dem Header ankommt.
-      start: top - (Number.parseFloat(getComputedStyle(stage).top) || 0),
-      distance: Math.max(1, root.offsetHeight - stage.offsetHeight),
+      start: layoutTop(root) - sticky,
+      distance: led ? guided : held,
       span: number('--yr-span', fallback.span),
       rise: number('--yr-rise', fallback.rise),
     };
@@ -116,41 +186,105 @@ export function initYears(root: HTMLElement, smooth: () => SmoothScroll | null):
     });
   };
 
-  /** Grösse des Fensters, in der die Bühne nicht passte: Bis sie sich ändert, bleibt die Zeitleiste. */
-  let unfit = '';
-  const size = () => `${window.innerWidth}x${window.innerHeight}`;
-
-  /** Nach allem, was die Bühne ein- oder ausschalten oder verschieben kann. */
-  const refresh = () => {
-    const before = deck ? track : null;
-    track = null;
-    deck = getComputedStyle(root).getPropertyValue('--yr-deck').trim() === '1';
-    led = deck && scrubs && !motionPaused();
-    /*
-     * Die Bühne ist weg (Handy gedreht, Fenster verkleinert) und die Seite darum um ihre ganze
-     * Strecke kürzer: Wer auf der Bühne stand, stünde sonst plötzlich weit unten im Kontakt.
-     * Er bleibt in der Firmengeschichte, am Anfang der Zeitleiste.
-     */
-    if (before && !deck) {
-      const y = window.scrollY;
-      if (y >= before.start && y <= before.start + before.distance + stage.offsetHeight) {
-        const header =
-          Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
-        const top = Math.max(0, Math.round(measure().start - header));
-        const lenis = smooth()?.lenis;
-        if (lenis) lenis.scrollTo(top, { immediate: true, force: true });
-        else window.scrollTo({ top, behavior: 'instant' });
-      }
-    }
-    if (near) update();
+  /**
+   * Passt der Inhalt der Bühne in ihre Höhe? Gemessen an der Lage der Teile im Layout: Beim
+   * Hereinscrollen stehen sie noch etwas tiefer (`translate`), und eine Messung über den
+   * Überlauf zählte das mit. Wer heranscrollte, bekam dann die Zeitleiste, wer direkt landete,
+   * die Bühne.
+   */
+  const fits = () => {
+    const parts = [...stage.children].filter(
+      (part): part is HTMLElement => part instanceof HTMLElement && part.offsetHeight > 0,
+    );
+    if (parts.length === 0) return true;
+    const style = getComputedStyle(stage);
+    const room =
+      stage.clientHeight -
+      Number.parseFloat(style.paddingTop) -
+      Number.parseFloat(style.paddingBottom);
+    const top = Math.min(...parts.map((part) => part.offsetTop));
+    const bottom = Math.max(...parts.map((part) => part.offsetTop + part.offsetHeight));
+    // Ein Pixel Spiel: Die Lagen im Layout sind auf ganze Pixel gerundet.
+    return bottom - top <= room + 1;
   };
 
-  /** Ragt etwas aus der stehenden Bühne, wäre es unerreichbar: zurück zur Zeitleiste. */
-  const fit = () => {
-    if (!deck || stage.scrollHeight <= stage.clientHeight + 1) return;
-    unfit = size();
-    delete root.dataset.deck;
-    refresh();
+  /** Woran die Passform hängt. Ändert sich nichts davon, bleibt die Entscheidung. */
+  let basis = '';
+  const inputs = () =>
+    [
+      document.documentElement.clientWidth,
+      probe.offsetHeight,
+      getComputedStyle(document.documentElement).fontSize,
+    ].join('|');
+
+  const remember = (): Place => {
+    const line = header() + 1;
+    const box = root.getBoundingClientRect();
+    return {
+      inside: box.top <= line && box.bottom > line,
+      below: box.bottom <= line,
+      after: after ? after.getBoundingClientRect().top : null,
+    };
+  };
+
+  const scrollNow = (top: number) => {
+    const to = Math.max(0, Math.round(top));
+    const lenis = smooth()?.lenis;
+    if (lenis) lenis.scrollTo(to, { immediate: true, force: true });
+    else window.scrollTo({ top: to, behavior: 'instant' });
+  };
+
+  /**
+   * Die Bühne hat umgeschaltet, die Seite ist um ihre Strecke länger oder kürzer geworden. Wer
+   * oberhalb der Firmengeschichte liest, merkt davon nichts: nichts zu tun. Wer in ihr stand,
+   * steht jetzt an ihrem Anfang. Wer schon dahinter las (Kontakt, Footer), behält seine Stelle.
+   *
+   * Woran die Stelle festmachen? An der Ansicht, die sich die Seite beim letzten Halt gemerkt hat
+   * (position.ts: Abschnitt und Lage). Die Lage im Fenster taugt dafür allein nicht: Hat sich
+   * auch das Fenster geändert (gedreht, Höhe gezogen), hat der Browser die Seite schon neu
+   * umbrochen, bevor dieses Skript etwas erfährt, und der Leser steht längst woanders.
+   */
+  const restore = (place: Place) => {
+    smooth()?.lenis?.resize();
+    if (!place.inside && !place.below) return;
+    const start = () => layoutTop(root) - header();
+    const view = rememberedView();
+    const block = view ? blockOf(view) : null;
+    if (view && block) {
+      // In der Firmengeschichte: Der Abschnitt ist ihrer, und die Linie unter dem Header lag
+      // schon in ihr (oder im Rand danach).
+      const inHistory =
+        block.contains(root) && header() - view.top >= layoutTop(root) - layoutTop(block) - 1;
+      const top = inHistory ? start() : scrollTopFor(view);
+      if (top !== null) scrollNow(top);
+      return;
+    }
+    // Ohne gemerkte Ansicht: nach der Lage im Fenster vor dem Umschalten.
+    if (place.inside) {
+      scrollNow(start());
+    } else if (after && place.after !== null) {
+      const shift = after.getBoundingClientRect().top - place.after;
+      if (Math.abs(shift) >= 1) scrollNow(window.scrollY + shift);
+    }
+  };
+
+  /** Bühne oder Zeitleiste? Misst die Passform und schaltet um, ohne den Leser zu verschieben. */
+  const decide = () => {
+    decided = true;
+    const was = deck;
+    const place = remember();
+    root.dataset.deck = '';
+    let now = wanted();
+    if (now && !fits()) {
+      delete root.dataset.deck;
+      now = false;
+    }
+    basis = inputs();
+    deck = now;
+    setLed();
+    track = null;
+    if (was !== now) restore(place);
+    if (near) update();
   };
 
   /** An die Stelle eines Jahrs scrollen; `instant`: ohne Gleiten (Adresse mit Marke). */
@@ -202,7 +336,7 @@ export function initYears(root: HTMLElement, smooth: () => SmoothScroll | null):
     const at = items.findIndex((item) => item.id === window.location.hash.slice(1));
     if (at < 0) return;
     requestAnimationFrame(() => {
-      refresh();
+      if (!decided) decide();
       go(at, true);
     });
   };
@@ -226,8 +360,26 @@ export function initYears(root: HTMLElement, smooth: () => SmoothScroll | null):
   axis.hidden = false;
   if (next) next.hidden = false;
   // Nur Stil gelesen, nichts vermessen: Der Abschnitt ist beim Laden noch gar nicht ausgelegt.
-  deck = getComputedStyle(root).getPropertyValue('--yr-deck').trim() === '1';
-  led = deck && scrubs && !motionPaused();
+  deck = wanted();
+  setLed();
+
+  /*
+   * Die Passform entscheiden, sobald der Abschnitt ausgelegt ist: home.ts legt ihn nach der
+   * ersten Regung der Besucherin in einem ruhigen Moment aus und vor jedem Sprung sofort
+   * (`data-laid`). So ist die Seite richtig lang, bevor ein Sprung sein Ziel rechnet. Steht der
+   * Abschnitt schon (oder wird er nie zurückgestellt), gleich jetzt.
+   */
+  const section = root.closest<HTMLElement>('[data-lazy]');
+  if (!section || 'laid' in section.dataset) {
+    decide();
+  } else {
+    const laid = new MutationObserver(() => {
+      if (!('laid' in section.dataset)) return;
+      laid.disconnect();
+      if (!decided) decide();
+    });
+    laid.observe(section, { attributes: true, attributeFilter: ['data-laid'] });
+  }
 
   window.addEventListener('scroll', onScroll, { passive: true });
   // Erst rechnen, wenn die Firmengeschichte in die Nähe kommt (eine Fensterhöhe vorher).
@@ -237,21 +389,19 @@ export function initYears(root: HTMLElement, smooth: () => SmoothScroll | null):
       near = inView;
       if (!inView) return;
       loadPhotos();
-      refresh();
-      fit();
+      // Sicherheitsnetz: Wer schneller hier ist, als der Abschnitt ausgelegt wurde.
+      if (!decided) decide();
+      else update();
     },
     { rootMargin: '100% 0px' },
   );
   window.addEventListener(
     'resize',
     () => {
-      // Neues Fenster, neuer Versuch: Vielleicht passt die Bühne jetzt.
-      if (unfit && unfit !== size()) {
-        unfit = '';
-        root.dataset.deck = '';
-      }
-      refresh();
-      if (near) fit();
+      // Die Strecke hängt auch am Fenster, wie es gerade ist (Adressleiste): neu vermessen.
+      track = null;
+      if (decided && inputs() !== basis) decide();
+      else if (near) update();
     },
     { passive: true },
   );
@@ -261,11 +411,24 @@ export function initYears(root: HTMLElement, smooth: () => SmoothScroll | null):
       track = null;
     }).observe(document.body);
   }
+  // Mit der Schrift ändern sich die Umbrüche auf den Karten: noch einmal messen.
   void document.fonts.ready.then(() => {
-    track = null;
-    if (near) fit();
+    if (decided) decide();
   });
-  onMotionPausedChange(refresh);
+  // Angehalten bleibt die Bühne, nur führt dann das Skript die Karten in Schritten.
+  onMotionPausedChange(() => {
+    setLed();
+    track = null;
+    if (near) update();
+  });
+  // Stellt jemand am Gerät die Bewegung um, gilt sofort die andere Form.
+  window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', () => {
+    if (decided) decide();
+    else {
+      deck = wanted();
+      setLed();
+    }
+  });
   window.addEventListener('hashchange', fromHash);
   fromHash();
 }
